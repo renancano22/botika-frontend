@@ -2,8 +2,15 @@ import axios, { AxiosError } from 'axios';
 
 export const TOKEN_KEY = 'botika_token';
 
+/**
+ * Address of the Laravel API. If VITE_API_URL is not set, the API is expected on port 8000
+ * of the same computer the page was opened from, so it works on the laptop (localhost)
+ * and on phones (laptop's Wi-Fi IP) without editing .env when the IP changes.
+ */
+const API_URL = import.meta.env.VITE_API_URL || `${window.location.protocol}//${window.location.hostname}:8000/api`;
+
 export const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL ?? 'http://127.0.0.1:8000/api',
+  baseURL: API_URL,
   headers: { Accept: 'application/json' },
 });
 

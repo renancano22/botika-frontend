@@ -66,9 +66,13 @@ export default function ResidentMedicines() {
                     <td>{m.available_stock} {m.unit}</td>
                     <td><Badge value={m.status} /></td>
                     <td className="right">
-                      {m.status === 'out_of_stock'
-                        ? <button className="btn btn-outline btn-sm" onClick={() => { setRestockFor(m); setRestockQty(1); }}>Request restock</button>
-                        : <button className="btn btn-sm" onClick={() => addToCart(m)} disabled={cart.some((c) => c.medicine.medicine_id === m.medicine_id)}>Add</button>}
+                      {m.status !== 'out_of_stock' && (
+                        <button className="btn btn-sm" onClick={() => addToCart(m)} disabled={cart.some((c) => c.medicine.medicine_id === m.medicine_id)}>Add</button>
+                      )}{' '}
+                      {/* Low stock: the resident may need more than what is left, so restock can be requested too. */}
+                      {m.status !== 'available' && (
+                        <button className="btn btn-outline btn-sm" onClick={() => { setRestockFor(m); setRestockQty(m.available_stock + 1); }}>Request restock</button>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -99,9 +103,13 @@ export default function ResidentMedicines() {
 
       {restockFor && (
         <Modal title="Request restock" onClose={() => setRestockFor(null)}>
-          <p><strong>{restockFor.medicine_name}</strong> is currently out of stock. The administrator will review your restock request and you will get an SMS once it is available.</p>
-          <label>Quantity you need ({restockFor.unit})
-            <input type="number" min={1} value={restockQty} onChange={(e) => setRestockQty(Number(e.target.value))} />
+          <p>
+            <strong>{restockFor.medicine_name}</strong>{' '}
+            {restockFor.available_stock > 0 ? `has only ${restockFor.available_stock} ${restockFor.unit} left.` : 'is currently out of stock.'}{' '}
+            The administrator will review your restock request and you will get an SMS once it is available.
+          </p>
+          <label>Quantity you need ({restockFor.unit}){restockFor.available_stock > 0 && ` — more than ${restockFor.available_stock}`}
+            <input type="number" min={restockFor.available_stock + 1} value={restockQty} onChange={(e) => setRestockQty(Number(e.target.value))} />
           </label>
           <div className="modal-actions">
             <button className="btn btn-outline" onClick={() => setRestockFor(null)}>Cancel</button>
