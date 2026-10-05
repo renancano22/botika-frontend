@@ -13,7 +13,7 @@ export interface Resident {
 export interface User {
   user_id: number;
   name: string;
-  email: string;
+  email: string | null;
   role: Role;
   is_active: boolean;
   created_at: string;

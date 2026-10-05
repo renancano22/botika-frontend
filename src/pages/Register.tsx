@@ -34,8 +34,8 @@ export default function Register() {
         <Message>{error}</Message>
         <label>Full name<input value={form.name} onChange={set('name')} required /></label>
         <label>Address (Barangay / Zone)<input value={form.address} onChange={set('address')} required /></label>
-        <label>Mobile number (for SMS)<input value={form.contact_no} onChange={set('contact_no')} placeholder="09171234567" required /></label>
-        <label>Email<input type="email" value={form.email} onChange={set('email')} required /></label>
+        <label>Mobile number (for log in and SMS updates)<input type="tel" value={form.contact_no} onChange={set('contact_no')} placeholder="09XXXXXXXXX" required /></label>
+        <label>Email (optional — you can also log in with it)<input type="email" value={form.email} onChange={set('email')} /></label>
         <div className="row">
           <label>Password<input type="password" value={form.password} onChange={set('password')} minLength={8} required /></label>
           <label>Confirm password<input type="password" value={form.password_confirmation} onChange={set('password_confirmation')} minLength={8} required /></label>

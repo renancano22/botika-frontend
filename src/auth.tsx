@@ -5,7 +5,7 @@ import type { User } from './types';
 interface AuthState {
   user: User | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (login: string, password: string) => Promise<void>;
   register: (data: Record<string, string>) => Promise<void>;
   logout: () => Promise<void>;
 }
@@ -35,7 +35,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const value: AuthState = {
     user,
     loading,
-    login: async (email, password) => handleAuth((await api.post('/login', { email, password })).data),
+    login: async (login, password) => handleAuth((await api.post('/login', { login, password })).data),
     register: async (data) => handleAuth((await api.post('/register', data)).data),
     logout: async () => {
       try { await api.post('/logout'); } catch { /* token may already be invalid */ }

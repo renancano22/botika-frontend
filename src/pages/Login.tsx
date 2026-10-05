@@ -5,8 +5,8 @@ import { useAuth } from '../auth';
 import { Message } from '../components/ui';
 
 export default function Login() {
-  const { login } = useAuth();
-  const [email, setEmail] = useState('');
+  const { login: signIn } = useAuth();
+  const [login, setLogin] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -16,7 +16,7 @@ export default function Login() {
     setBusy(true);
     setError('');
     try {
-      await login(email, password);
+      await signIn(login, password);
     } catch (err) {
       setError(errorMessage(err));
     } finally {
@@ -33,7 +33,9 @@ export default function Login() {
         </div>
         <h1>Log in</h1>
         <Message>{error}</Message>
-        <label>Email<input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoFocus /></label>
+        <label>Email or mobile number
+          <input value={login} onChange={(e) => setLogin(e.target.value)} placeholder="name@email.com or 09XXXXXXXXX" autoComplete="username" required autoFocus />
+        </label>
         <label>Password<input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required /></label>
         <button className="btn" disabled={busy}>{busy ? 'Logging in…' : 'Log in'}</button>
         <p className="muted center">Resident without an account? <Link to="/register">Register here</Link></p>

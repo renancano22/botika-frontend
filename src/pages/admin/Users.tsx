@@ -21,7 +21,7 @@ export default function Users() {
   const open = (u?: User) => {
     setEditing(u ?? null);
     setFormError('');
-    setForm(u ? { name: u.name, email: u.email, password: '', role: u.role } : { name: '', email: '', password: '', role: 'staff' });
+    setForm(u ? { name: u.name, email: u.email ?? '', password: '', role: u.role } : { name: '', email: '', password: '', role: 'staff' });
   };
 
   const save = async (e: FormEvent) => {
@@ -55,7 +55,7 @@ export default function Users() {
             <option value="staff">Pharmacy staff</option>
             <option value="resident">Residents</option>
           </select>
-          <input className="search" placeholder="Search name or email…" value={search} onChange={(e) => setSearch(e.target.value)} />
+          <input className="search" placeholder="Search name, email, mobile or Patient ID…" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
       }>
         {loading && !data ? <Loading /> : !data?.length ? <Empty>No users found.</Empty> : (
@@ -64,7 +64,7 @@ export default function Users() {
             <tbody>
               {data.map((u) => (
                 <tr key={u.user_id} className={u.is_active ? '' : 'row-muted'}>
-                  <td>{u.name}</td><td>{u.email}</td><td><Badge value={u.role} /></td>
+                  <td>{u.name}</td><td>{u.email ?? '—'}</td><td><Badge value={u.role} /></td>
                   <td>{u.resident ? `${u.resident.qr_code} · ${u.resident.contact_no}` : '—'}</td>
                   <td>{u.is_active ? 'Active' : 'Deactivated'}</td>
                   <td>{formatDate(u.created_at)}</td>
@@ -86,7 +86,9 @@ export default function Users() {
           <form onSubmit={save}>
             <Message>{formError}</Message>
             <label>Full name<input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required /></label>
-            <label>Email<input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required /></label>
+            <label>Email{editing?.role === 'resident' && ' (optional)'}
+              <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required={editing?.role !== 'resident'} />
+            </label>
             <label>{editing ? 'New password (leave blank to keep)' : 'Password'}
               <input type="password" minLength={8} value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required={!editing} />
             </label>
