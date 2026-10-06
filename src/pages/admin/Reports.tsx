@@ -8,6 +8,7 @@ const TYPES: Record<string, string> = {
   inventory: 'Inventory Status',
   dispensing: 'Dispensing Records',
   most_requested: 'Most Requested Medicines',
+  transactions: 'Inventory Transactions (Stock-in / Stock-out)',
   shortages: 'Medicine Shortages',
 };
 

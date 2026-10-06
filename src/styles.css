@@ -93,6 +93,9 @@ tr.clickable:hover td { background: #f0fdfa; }
 .badge-out_of_stock, .badge-expired, .badge-rejected, .badge-failed { background: var(--danger-soft); color: var(--danger); }
 .badge-dispensed, .badge-restock, .badge-admin { background: var(--info-soft); color: #1d4ed8; }
 .badge-medicine, .badge-staff { background: var(--primary-soft); color: var(--primary-dark); }
+.badge-tx-stock_in { background: var(--ok-soft); color: var(--ok); }
+.badge-tx-stock_out { background: var(--danger-soft); color: var(--danger); }
+.badge-tx-dispensed { background: var(--info-soft); color: #1d4ed8; }
 
 /* ---------- forms */
 label { display: flex; flex-direction: column; gap: 5px; font-size: 0.88rem; font-weight: 500; margin-bottom: 12px; flex: 1; }

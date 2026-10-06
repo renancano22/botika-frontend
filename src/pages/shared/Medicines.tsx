@@ -66,7 +66,9 @@ export default function Medicines() {
               {data.map((m) => (
                 <tr key={m.medicine_id}>
                   <td><strong>{m.medicine_name}</strong>{m.description && <div className="muted small">{m.description}</div>}</td>
-                  <td>{m.category}</td><td>{m.unit}</td><td>{m.available_stock}</td><td>{m.reorder_level}</td>
+                  <td>{m.category}</td><td>{m.unit}</td>
+                  <td>{m.available_stock}{!!m.reserved_stock && <div className="muted small">{m.reserved_stock} reserved · {m.free_stock} free</div>}</td>
+                  <td>{m.reorder_level}</td>
                   <td><Badge value={m.status} /></td>
                   <td className="right nowrap">
                     <button className="btn btn-outline btn-sm" onClick={() => open(m)}>Edit</button>{' '}

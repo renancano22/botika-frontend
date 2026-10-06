@@ -74,7 +74,8 @@ export default function Dispense() {
     } finally { setBusy(false); }
   };
 
-  const available = medicines?.filter((m) => m.available_stock > 0) ?? [];
+  // Walk-ins can only use stock that is not reserved for approved requests.
+  const available = medicines?.filter((m) => (m.free_stock ?? m.available_stock) > 0) ?? [];
 
   return (
     <div className="page">
@@ -132,7 +133,7 @@ export default function Dispense() {
                   <div className="cart-row" key={idx}>
                     <select value={item.medicine_id} onChange={(e) => setWalkIn(walkIn.map((x, i) => (i === idx ? { ...x, medicine_id: Number(e.target.value) } : x)))} required>
                       <option value={0}>Select medicine…</option>
-                      {available.map((m) => <option key={m.medicine_id} value={m.medicine_id}>{m.medicine_name} ({m.available_stock} {m.unit})</option>)}
+                      {available.map((m) => <option key={m.medicine_id} value={m.medicine_id}>{m.medicine_name} ({m.free_stock ?? m.available_stock} {m.unit} free)</option>)}
                     </select>
                     <input type="number" min={1} value={item.quantity} onChange={(e) => setWalkIn(walkIn.map((x, i) => (i === idx ? { ...x, quantity: Number(e.target.value) } : x)))} />
                     <button type="button" className="btn-ghost" onClick={() => setWalkIn(walkIn.filter((_, i) => i !== idx))} aria-label="Remove">✕</button>

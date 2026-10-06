@@ -31,6 +31,24 @@ export interface Medicine {
   available_stock: number;
   status: StockStatus;
   reorder_level?: number;
+  /** Staff/admin only: quantity promised to approved requests that are not dispensed yet. */
+  reserved_stock?: number;
+  /** Staff/admin only: available minus reserved (what walk-ins and new requests can use). */
+  free_stock?: number;
+}
+
+export interface StockTransaction {
+  transaction_id: number;
+  medicine_id: number;
+  inventory_id: number | null;
+  type: 'stock_in' | 'stock_out' | 'dispensed';
+  quantity: number;
+  reason: string | null;
+  dispensing_id: number | null;
+  created_at: string;
+  medicine?: Pick<Medicine, 'medicine_id' | 'medicine_name' | 'unit'>;
+  batch?: { inventory_id: number; expiration_date: string } | null;
+  performer?: { user_id: number; name: string } | null;
 }
 
 export interface InventoryBatch {
