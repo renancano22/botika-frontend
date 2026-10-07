@@ -2,7 +2,7 @@ import { useState, type ChangeEvent, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { errorMessage } from '../api';
 import { useAuth } from '../auth';
-import { Message } from '../components/ui';
+import { Message, PasswordInput } from '../components/ui';
 
 export default function Register() {
   const { register } = useAuth();
@@ -37,8 +37,8 @@ export default function Register() {
         <label>Mobile number (for log in and SMS updates)<input type="tel" value={form.contact_no} onChange={set('contact_no')} placeholder="09XXXXXXXXX" required /></label>
         <label>Email (optional — you can also log in with it)<input type="email" value={form.email} onChange={set('email')} /></label>
         <div className="row">
-          <label>Password<input type="password" value={form.password} onChange={set('password')} minLength={8} required /></label>
-          <label>Confirm password<input type="password" value={form.password_confirmation} onChange={set('password_confirmation')} minLength={8} required /></label>
+          <label>Password<PasswordInput value={form.password} onChange={set('password')} minLength={8} autoComplete="new-password" required /></label>
+          <label>Confirm password<PasswordInput value={form.password_confirmation} onChange={set('password_confirmation')} minLength={8} autoComplete="new-password" required /></label>
         </div>
         <button className="btn" disabled={busy}>{busy ? 'Creating account…' : 'Register'}</button>
         <p className="muted center">Already registered? <Link to="/login">Log in</Link></p>

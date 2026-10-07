@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { errorMessage } from '../api';
 import { useAuth } from '../auth';
-import { Message } from '../components/ui';
+import { Message, PasswordInput } from '../components/ui';
 
 export default function Login() {
   const { login: signIn } = useAuth();
@@ -36,7 +36,7 @@ export default function Login() {
         <label>Email or mobile number
           <input value={login} onChange={(e) => setLogin(e.target.value)} placeholder="name@email.com or 09XXXXXXXXX" autoComplete="username" required autoFocus />
         </label>
-        <label>Password<input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required /></label>
+        <label>Password<PasswordInput value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" required /></label>
         <button className="btn" disabled={busy}>{busy ? 'Logging in…' : 'Log in'}</button>
         <p className="muted center">Resident without an account? <Link to="/register">Register here</Link></p>
       </form>

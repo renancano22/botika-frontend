@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { api, errorMessage, formatDate } from '../../api';
 import { useAuth } from '../../auth';
 import { useApi } from '../../hooks';
-import { Badge, Card, Empty, Loading, Message, Modal } from '../../components/ui';
+import { Badge, Card, Empty, Loading, Message, Modal, PasswordInput } from '../../components/ui';
 import type { Role, User } from '../../types';
 
 type Form = { name: string; email: string; password: string; role: Role };
@@ -90,7 +90,7 @@ export default function Users() {
               <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required={editing?.role !== 'resident'} />
             </label>
             <label>{editing ? 'New password (leave blank to keep)' : 'Password'}
-              <input type="password" minLength={8} value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required={!editing} />
+              <PasswordInput minLength={8} value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} autoComplete="new-password" required={!editing} />
             </label>
             <label>Role
               <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value as Role })} disabled={editing?.role === 'resident'}>
