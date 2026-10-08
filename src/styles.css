@@ -223,3 +223,9 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--primary-sof
   .content { padding: 0; }
   .card { border: none; padding: 0; }
 }
+
+/* Form helpers */
+.field-hint { color: var(--muted); font-size: 0.8rem; margin: -6px 0 12px; }
+.forgot-link { align-self: flex-end; display: block; text-align: right; font-size: 0.85rem; margin: -6px 0 12px; }
+.link-button { background: none; border: 0; padding: 0; color: var(--primary); text-decoration: underline; font: inherit; cursor: pointer; }
+.link-button:disabled { color: var(--muted); cursor: default; }

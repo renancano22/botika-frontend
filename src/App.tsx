@@ -5,6 +5,7 @@ import Layout from './components/Layout';
 import type { Role } from './types';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import ForgotPassword from './pages/ForgotPassword';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import Users from './pages/admin/Users';
 import Reports from './pages/admin/Reports';
@@ -39,6 +40,7 @@ export default function App() {
     <Routes>
       <Route path="/login" element={user ? <Navigate to="/dashboard" replace /> : <Login />} />
       <Route path="/register" element={user ? <Navigate to="/dashboard" replace /> : <Register />} />
+      <Route path="/forgot-password" element={user ? <Navigate to="/dashboard" replace /> : <ForgotPassword />} />
 
       <Route element={<Guard roles={ALL}><Layout /></Guard>}>
         <Route path="/dashboard" element={

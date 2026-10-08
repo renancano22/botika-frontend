@@ -3,6 +3,7 @@ import { api, errorMessage, formatDate } from '../../api';
 import { useApi } from '../../hooks';
 import { Badge, Card, Empty, Loading, Message, Modal } from '../../components/ui';
 import type { InventoryBatch, Medicine, StockTransaction } from '../../types';
+import { tomorrow } from '../../validation';
 
 const STOCK_OUT_REASONS = ['Expired', 'Damaged', 'Lost', 'Returned to supplier', 'Other'];
 const TX_LABEL: Record<StockTransaction['type'], string> = { stock_in: 'Stock-in', stock_out: 'Stock-out', dispensed: 'Dispensed' };
@@ -117,7 +118,7 @@ export default function Inventory() {
             </label>
             <div className="row">
               <label>Quantity<input type="number" min={1} value={stockIn.quantity} onChange={(e) => setStockIn({ ...stockIn, quantity: Number(e.target.value) })} required /></label>
-              <label>Expiration date<input type="date" value={stockIn.expiration_date} onChange={(e) => setStockIn({ ...stockIn, expiration_date: e.target.value })} required /></label>
+              <label>Expiration date<input type="date" min={tomorrow()} value={stockIn.expiration_date} onChange={(e) => setStockIn({ ...stockIn, expiration_date: e.target.value })} required /></label>
             </div>
             <div className="modal-actions">
               <button type="button" className="btn btn-outline" onClick={() => setStockIn(null)}>Cancel</button>

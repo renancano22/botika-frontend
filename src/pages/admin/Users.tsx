@@ -4,6 +4,7 @@ import { useAuth } from '../../auth';
 import { useApi } from '../../hooks';
 import { Badge, Card, Empty, Loading, Message, Modal, PasswordInput } from '../../components/ui';
 import type { Role, User } from '../../types';
+import { FIELD } from '../../validation';
 
 type Form = { name: string; email: string; password: string; role: Role };
 
@@ -85,13 +86,14 @@ export default function Users() {
         <Modal title={editing ? 'Edit user' : 'Create account'} onClose={() => setForm(null)}>
           <form onSubmit={save}>
             <Message>{formError}</Message>
-            <label>Full name<input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required /></label>
-            <label>Email{editing?.role === 'resident' && ' (optional)'}
-              <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required={editing?.role !== 'resident'} />
+            <label>Full name<input {...FIELD.name} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} maxLength={100} required /></label>
+            <label>Gmail address{editing?.role === 'resident' && ' (optional)'}
+              <input type="email" {...FIELD.gmail} placeholder="name@gmail.com" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required={editing?.role !== 'resident'} />
             </label>
             <label>{editing ? 'New password (leave blank to keep)' : 'Password'}
-              <PasswordInput minLength={8} value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} autoComplete="new-password" required={!editing} />
+              <PasswordInput {...FIELD.password} value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} autoComplete="new-password" required={!editing} />
             </label>
+            <p className="field-hint">At least 8 characters, with letters and numbers.</p>
             <label>Role
               <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value as Role })} disabled={editing?.role === 'resident'}>
                 <option value="staff">Pharmacy Staff</option>

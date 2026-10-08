@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { errorMessage } from '../api';
 import { useAuth } from '../auth';
 import { Message, PasswordInput } from '../components/ui';
@@ -10,6 +10,8 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  // Message passed from the Forgot Password page after a successful reset.
+  const notice = (useLocation().state as { notice?: string } | null)?.notice ?? '';
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
@@ -32,11 +34,13 @@ export default function Login() {
           <div><strong>BulanBotikaCare</strong><small>Botika ng Bayan · Bulan, Sorsogon</small></div>
         </div>
         <h1>Log in</h1>
+        <Message type="success">{notice}</Message>
         <Message>{error}</Message>
         <label>Email or mobile number
-          <input value={login} onChange={(e) => setLogin(e.target.value)} placeholder="name@email.com or 09XXXXXXXXX" autoComplete="username" required autoFocus />
+          <input value={login} onChange={(e) => setLogin(e.target.value)} placeholder="name@gmail.com or 09XXXXXXXXX" autoComplete="username" required autoFocus />
         </label>
         <label>Password<PasswordInput value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" required /></label>
+        <Link to="/forgot-password" className="forgot-link">Forgot password?</Link>
         <button className="btn" disabled={busy}>{busy ? 'Logging in…' : 'Log in'}</button>
         <p className="muted center">Resident without an account? <Link to="/register">Register here</Link></p>
       </form>
