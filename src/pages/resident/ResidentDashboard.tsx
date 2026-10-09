@@ -1,7 +1,8 @@
 import { Link } from 'react-router-dom';
 import { useApi } from '../../hooks';
-import { Badge, Card, Empty, Loading, Message, StatCard } from '../../components/ui';
+import { Card, Empty, Loading, Message, StatCard } from '../../components/ui';
 import { NotificationItem } from '../../components/Notifications';
+import { RequestRow } from '../../components/RequestCards';
 import type { MedicineRequest, Resident, SmsNotification } from '../../types';
 
 interface ResidentDash {
@@ -42,19 +43,9 @@ export default function ResidentDashboard() {
       <div className="grid-2">
         <Card title="My recent requests" actions={<Link to="/requests">See all</Link>}>
           {data.recent_requests.length === 0 ? <Empty>No requests yet.</Empty> : (
-            <table>
-              <thead><tr><th>#</th><th>Medicines</th><th>Type</th><th>Status</th></tr></thead>
-              <tbody>
-                {data.recent_requests.map((r) => (
-                  <tr key={r.request_id}>
-                    <td>{r.request_id}</td>
-                    <td>{r.items.map((i) => `${i.medicine.medicine_name} ×${i.quantity}`).join(', ')}</td>
-                    <td><Badge value={r.request_type} /></td>
-                    <td><Badge value={r.status} /></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <div className="req-rows">
+              {data.recent_requests.map((r) => <RequestRow key={r.request_id} request={r} />)}
+            </div>
           )}
         </Card>
         <Card title="Latest notifications" actions={<Link to="/notifications">See all</Link>}>

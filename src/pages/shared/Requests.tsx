@@ -1,5 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useState } from 'react';
 import { api, errorMessage, formatDate } from '../../api';
 import { useAuth } from '../../auth';
 import { useApi } from '../../hooks';
@@ -11,32 +10,17 @@ const itemsText = (r: MedicineRequest) => r.items.map((i) => `${i.medicine.medic
 
 const STATUSES = ['', 'pending', 'approved', 'rejected', 'dispensed', 'fulfilled', 'cancelled'];
 
+/** Staff/admin: review medicine and restock requests. (Residents use My Requests.) */
 export default function Requests() {
   const { user } = useAuth();
-  const isResident = user?.role === 'resident';
-  const [type, setType] = useState<'medicine' | 'restock' | ''>(isResident ? '' : 'medicine');
-  const [status, setStatus] = useState(isResident ? '' : 'pending');
+  const [type, setType] = useState<'medicine' | 'restock' | ''>('medicine');
+  const [status, setStatus] = useState('pending');
   const { data, error, loading, reload } = useApi<MedicineRequest[]>('/requests', { type, status }, 30000);
   const [msg, setMsg] = useState<{ type: 'error' | 'success'; text: string } | null>(null);
   const [rejecting, setRejecting] = useState<MedicineRequest | null>(null);
   const [remarks, setRemarks] = useState('');
-  const [editing, setEditing] = useState<MedicineRequest | null>(null);
   const [viewingId, setViewingId] = useState<number | null>(null);
   const viewing = data?.find((r) => r.request_id === viewingId) ?? null;
-
-  // Opened from a notification (/requests?request=12): scroll to that request and highlight it.
-  const [params] = useSearchParams();
-  const focusId = Number(params.get('request')) || null;
-  const scrolledTo = useRef<number | null>(null);
-  useEffect(() => {
-    if (!focusId || !data || scrolledTo.current === focusId) return;
-    scrolledTo.current = focusId;
-    if (isResident) {
-      document.getElementById(`req-${focusId}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    } else if (data.some((r) => r.request_id === focusId)) {
-      setViewingId(focusId);
-    }
-  }, [focusId, data, isResident]);
 
   const act = async (fn: () => Promise<unknown>, success: string) => {
     setMsg(null);
@@ -52,15 +36,7 @@ export default function Requests() {
   };
 
   const canReview = (r: MedicineRequest) =>
-    !isResident && r.status === 'pending' && (r.request_type === 'medicine' || user?.role === 'admin');
-
-  // Residents can cancel while the request is pending, or approved but not yet claimed.
-  const cancel = (r: MedicineRequest) => {
-    const question = r.status === 'approved' && r.request_type === 'medicine'
-      ? `Cancel request #${r.request_id}? The medicines set aside for you will be given back to the stock for other residents.`
-      : `Cancel request #${r.request_id}?`;
-    if (confirm(question)) act(() => api.post(`/requests/${r.request_id}/cancel`), `Request #${r.request_id} cancelled.`);
-  };
+    r.status === 'pending' && (r.request_type === 'medicine' || user?.role === 'admin');
 
   const reviewButtons = (r: MedicineRequest) => canReview(r) && <>
     <button className="btn btn-sm" onClick={() => act(() => api.post(`/requests/${r.request_id}/approve`), `Request #${r.request_id} approved. SMS sent to the resident.`)}>Approve</button>{' '}
@@ -71,8 +47,8 @@ export default function Requests() {
     <div className="page">
       <header className="page-head">
         <div>
-          <h1>{isResident ? 'My Requests' : 'Medicine & Restock Requests'}</h1>
-          {!isResident && <p className="muted">Pharmacy staff review medicine requests. The administrator reviews restock requests. Residents are notified by SMS.</p>}
+          <h1>Medicine & Restock Requests</h1>
+          <p className="muted">Pharmacy staff review medicine requests. The administrator reviews restock requests. Residents are notified by SMS.</p>
         </div>
       </header>
       {msg && <Message type={msg.type}>{msg.text}</Message>}
@@ -90,29 +66,7 @@ export default function Requests() {
           </select>
         </div>
       }>
-        {loading && !data ? <Loading /> : !data?.length ? <Empty>No requests found.</Empty> : isResident ? (
-          // Residents: one card per request with its status tracker.
-          <div className="req-list">
-            {data.map((r) => (
-              <article className={`req-card ${r.request_id === focusId ? 'req-focus' : ''}`} key={r.request_id} id={`req-${r.request_id}`}>
-                <div className="req-head">
-                  <strong>Request #{r.request_id}</strong>
-                  <Badge value={r.request_type} />
-                  <span className="muted small req-date">{formatDate(r.request_date, true)}</span>
-                </div>
-                <p className="req-items">{itemsText(r)}</p>
-                <RequestTracker request={r} forResident />
-                {(r.status === 'pending' || r.status === 'approved' || r.status === 'fulfilled') && (
-                  <div className="req-actions">
-                    {r.status === 'pending' && <button className="btn btn-outline btn-sm" onClick={() => setEditing(structuredClone(r))}>Update</button>}
-                    {(r.status === 'pending' || r.status === 'approved') && <button className="btn btn-danger btn-sm" onClick={() => cancel(r)}>Cancel request</button>}
-                    {r.status === 'fulfilled' && <Link className="btn btn-sm" to="/medicines">Request this medicine</Link>}
-                  </div>
-                )}
-              </article>
-            ))}
-          </div>
-        ) : (
+        {loading && !data ? <Loading /> : !data?.length ? <Empty>No requests found.</Empty> : (
           <table>
             <thead>
               <tr><th>#</th><th>Date</th><th>Resident</th><th>Type</th><th>Medicines</th><th>Status</th><th>Remarks</th><th></th></tr>
@@ -172,28 +126,6 @@ export default function Requests() {
         </Modal>
       )}
 
-      {editing && (
-        <Modal title={`Update request #${editing.request_id}`} onClose={() => setEditing(null)}>
-          {editing.items.map((item, idx) => (
-            <div className="cart-row" key={item.medicine_id}>
-              <div><strong>{item.medicine.medicine_name}</strong></div>
-              <input type="number" min={1} value={item.quantity} onChange={(e) => {
-                const items = editing.items.map((x, i) => (i === idx ? { ...x, quantity: Number(e.target.value) } : x));
-                setEditing({ ...editing, items });
-              }} />
-              <button className="btn-ghost" disabled={editing.items.length === 1}
-                onClick={() => setEditing({ ...editing, items: editing.items.filter((_, i) => i !== idx) })} aria-label="Remove">✕</button>
-            </div>
-          ))}
-          <div className="modal-actions">
-            <button className="btn btn-outline" onClick={() => setEditing(null)}>Close</button>
-            <button className="btn" onClick={async () => {
-              const items = editing.items.map((i) => ({ medicine_id: i.medicine_id, quantity: i.quantity }));
-              if (await act(() => api.put(`/requests/${editing.request_id}`, { items }), 'Request updated.')) setEditing(null);
-            }}>Save changes</button>
-          </div>
-        </Modal>
-      )}
     </div>
   );
 }

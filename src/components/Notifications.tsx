@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { api, NOTIFICATIONS_CHANGED, notificationsChanged, timeAgo } from '../api';
+import { api, NOTIFICATIONS_CHANGED, notificationsChanged } from '../api';
+import { ICONS, Svg } from './RequestCards';
 import type { SmsNotification } from '../types';
 
 const BELL = 'M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10 21h4';
@@ -29,14 +30,43 @@ export async function markAllRead(): Promise<void> {
 
 /** Where a notification leads: request updates open that request; announcements open the notifications list. */
 function target(n: SmsNotification, compact: boolean): string | null {
-  if (n.request_id) return `/requests?request=${n.request_id}`;
+  if (n.request_id) return `/requests/${n.request_id}`;
   return compact ? '/notifications' : null;
 }
 
+type Kind = 'approved' | 'rejected' | 'dispensed' | 'cancelled' | 'available' | 'announcement';
+
+/** Older notifications have no type saved, so it is worked out from the message. */
+function kindOf(n: SmsNotification): Kind {
+  if (n.type) return n.type as Kind;
+  const m = n.message.toLowerCase();
+  if (!n.request_id) return 'announcement';
+  if (m.includes('not approved')) return 'rejected';
+  if (m.includes('approved')) return 'approved';
+  if (m.includes('dispensed')) return 'dispensed';
+  if (m.includes('cancelled')) return 'cancelled';
+  if (m.includes('available')) return 'available';
+  return 'announcement';
+}
+
+const KIND_ICON: Record<Kind, string> = {
+  approved: ICONS.check,
+  rejected: ICONS.x,
+  dispensed: ICONS.hand,
+  cancelled: ICONS.x,
+  available: ICONS.box,
+  announcement: ICONS.megaphone,
+};
+
+function dateTime(value: string): string {
+  const d = new Date(value);
+  return `${d.toLocaleDateString('en-PH', { dateStyle: 'medium' })} • ${d.toLocaleTimeString('en-PH', { hour: 'numeric', minute: '2-digit' })}`;
+}
+
 /**
- * One notification. Unread ones are highlighted (tinted background, bold text and a dot);
- * read ones are greyed out. Tapping it marks it as read and opens what it is about
- * (e.g. the approved request), like social media notifications.
+ * One notification card: a coloured icon for its kind, the message, the date and an arrow.
+ * Unread ones are white with bold text and a dot; read ones are greyed out.
+ * Tapping it marks it as read and opens what it is about (e.g. the approved request).
  */
 export function NotificationItem({ n, onRead, compact = false }: {
   n: SmsNotification; onRead: (n: SmsNotification) => void; compact?: boolean;
@@ -44,27 +74,28 @@ export function NotificationItem({ n, onRead, compact = false }: {
   const navigate = useNavigate();
   const unread = !n.read_at;
   const goTo = target(n, compact);
+  const kind = kindOf(n);
   const read = async () => { if (unread) onRead(await markRead(n)); };
   const open = async () => {
     try { await read(); } catch { /* still open it */ }
     if (goTo) navigate(goTo);
   };
-  const kind = n.request_id ? `Request #${n.request_id}` : 'Announcement';
 
   return (
-    <li className={`notif ${unread ? 'notif-unread' : 'notif-read'} ${compact ? 'notif-compact' : ''}`}>
+    <li className={`notif ${unread ? 'notif-unread' : 'notif-read'}`}>
       <button type="button" className={`notif-body ${goTo ? 'notif-link' : ''}`} onClick={open}
-        aria-label={goTo ? `Open ${kind}` : unread ? 'Mark as read' : undefined}>
-        <span className="notif-icon" aria-hidden="true"><BellIcon size={18} /></span>
+        aria-label={goTo ? 'Open notification' : unread ? 'Mark as read' : undefined}>
+        <span className={`notif-icon kind-${kind}`} aria-hidden="true"><Svg d={KIND_ICON[kind]} size={20} width={2.2} /></span>
         <span className="notif-text">
           <span className="notif-message">{n.message.replace(/^BulanBotikaCare:\s*/, '')}</span>
-          <span className="notif-meta">{kind} · {timeAgo(n.sent_at)}{unread ? '' : ' · Read'}</span>
+          <span className="notif-meta">{dateTime(n.sent_at)}</span>
+          {unread && !compact && !goTo && (
+            <span className="notif-mark">Tap to mark as read</span>
+          )}
         </span>
         {unread && <span className="notif-dot" aria-label="Unread" />}
+        {goTo && <span className="notif-arrow" aria-hidden="true"><Svg d={ICONS.chevron} size={18} /></span>}
       </button>
-      {unread && !compact && (
-        <button type="button" className="link-button notif-mark" onClick={read}>Mark as read</button>
-      )}
     </li>
   );
 }

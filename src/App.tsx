@@ -17,6 +17,8 @@ import ResidentDashboard from './pages/resident/ResidentDashboard';
 import ResidentMedicines from './pages/resident/ResidentMedicines';
 import MyNotifications from './pages/resident/MyNotifications';
 import Profile from './pages/resident/Profile';
+import MyRequests from './pages/resident/MyRequests';
+import RequestDetail from './pages/resident/RequestDetail';
 import Medicines from './pages/shared/Medicines';
 import Inventory from './pages/shared/Inventory';
 import Requests from './pages/shared/Requests';
@@ -48,7 +50,8 @@ export default function App() {
           role === 'admin' ? <AdminDashboard /> : role === 'staff' ? <StaffDashboard /> : <ResidentDashboard />
         } />
         <Route path="/medicines" element={role === 'resident' ? <ResidentMedicines /> : <Medicines />} />
-        <Route path="/requests" element={<Requests />} />
+        <Route path="/requests" element={role === 'resident' ? <MyRequests /> : <Requests />} />
+        <Route path="/requests/:id" element={<Guard roles={['resident']}><RequestDetail /></Guard>} />
         <Route path="/dispensing" element={<DispensingRecords />} />
         <Route path="/notifications" element={role === 'admin' ? <Announcements /> : <Guard roles={['resident']}><MyNotifications /></Guard>} />
 

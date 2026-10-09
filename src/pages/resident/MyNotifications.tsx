@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useApi } from '../../hooks';
-import { Card, Empty, Loading, Message } from '../../components/ui';
+import { Empty, Loading, Message } from '../../components/ui';
 import { markAllRead, NotificationItem } from '../../components/Notifications';
 import type { SmsNotification } from '../../types';
 
@@ -32,7 +32,7 @@ export default function MyNotifications() {
         {unread > 0 && <button className="btn btn-outline" onClick={readAll}>Mark all as read</button>}
       </header>
       <Message>{error}</Message>
-      <Card>
+      <section>
         <div className="tabs" role="tablist">
           <button role="tab" aria-selected={tab === 'all'} className={tab === 'all' ? 'active' : ''} onClick={() => setTab('all')}>All</button>
           <button role="tab" aria-selected={tab === 'unread'} className={tab === 'unread' ? 'active' : ''} onClick={() => setTab('unread')}>
@@ -46,7 +46,7 @@ export default function MyNotifications() {
             {shown.map((n) => <NotificationItem key={n.notification_id} n={n} onRead={replace} />)}
           </ul>
         )}
-      </Card>
+      </section>
     </div>
   );
 }

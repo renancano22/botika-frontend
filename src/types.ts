@@ -124,6 +124,8 @@ export interface SmsNotification {
   notification_id: number;
   resident_id: number;
   request_id: number | null;
+  /** approved | rejected | dispensed | cancelled | available | announcement (null for older ones) */
+  type?: string | null;
   message: string;
   channel: string;
   status: 'sent' | 'failed' | 'logged';
