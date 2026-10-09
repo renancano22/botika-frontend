@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { api, NOTIFICATIONS_CHANGED, notificationsChanged, timeAgo } from '../api';
 import type { SmsNotification } from '../types';
 
@@ -27,20 +27,34 @@ export async function markAllRead(): Promise<void> {
   notificationsChanged();
 }
 
+/** Where a notification leads: request updates open that request; announcements open the notifications list. */
+function target(n: SmsNotification, compact: boolean): string | null {
+  if (n.request_id) return `/requests?request=${n.request_id}`;
+  return compact ? '/notifications' : null;
+}
+
 /**
  * One notification. Unread ones are highlighted (tinted background, bold text and a dot);
- * read ones are greyed out. Tapping an unread notification marks it as read.
+ * read ones are greyed out. Tapping it marks it as read and opens what it is about
+ * (e.g. the approved request), like social media notifications.
  */
 export function NotificationItem({ n, onRead, compact = false }: {
   n: SmsNotification; onRead: (n: SmsNotification) => void; compact?: boolean;
 }) {
+  const navigate = useNavigate();
   const unread = !n.read_at;
+  const goTo = target(n, compact);
   const read = async () => { if (unread) onRead(await markRead(n)); };
+  const open = async () => {
+    try { await read(); } catch { /* still open it */ }
+    if (goTo) navigate(goTo);
+  };
   const kind = n.request_id ? `Request #${n.request_id}` : 'Announcement';
 
   return (
     <li className={`notif ${unread ? 'notif-unread' : 'notif-read'} ${compact ? 'notif-compact' : ''}`}>
-      <button type="button" className="notif-body" onClick={read} aria-label={unread ? 'Open and mark as read' : undefined}>
+      <button type="button" className={`notif-body ${goTo ? 'notif-link' : ''}`} onClick={open}
+        aria-label={goTo ? `Open ${kind}` : unread ? 'Mark as read' : undefined}>
         <span className="notif-icon" aria-hidden="true"><BellIcon size={18} /></span>
         <span className="notif-text">
           <span className="notif-message">{n.message.replace(/^BulanBotikaCare:\s*/, '')}</span>
@@ -86,7 +100,7 @@ export function NotificationBell() {
   const ref = useRef<HTMLDivElement>(null);
   const location = useLocation();
 
-  useEffect(() => { setOpen(false); }, [location.pathname]);
+  useEffect(() => { setOpen(false); }, [location.pathname, location.search]);
 
   useEffect(() => {
     if (!open) return;

@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { api, errorMessage, formatDate } from '../../api';
 import { useAuth } from '../../auth';
 import { useApi } from '../../hooks';
@@ -23,6 +23,20 @@ export default function Requests() {
   const [editing, setEditing] = useState<MedicineRequest | null>(null);
   const [viewingId, setViewingId] = useState<number | null>(null);
   const viewing = data?.find((r) => r.request_id === viewingId) ?? null;
+
+  // Opened from a notification (/requests?request=12): scroll to that request and highlight it.
+  const [params] = useSearchParams();
+  const focusId = Number(params.get('request')) || null;
+  const scrolledTo = useRef<number | null>(null);
+  useEffect(() => {
+    if (!focusId || !data || scrolledTo.current === focusId) return;
+    scrolledTo.current = focusId;
+    if (isResident) {
+      document.getElementById(`req-${focusId}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else if (data.some((r) => r.request_id === focusId)) {
+      setViewingId(focusId);
+    }
+  }, [focusId, data, isResident]);
 
   const act = async (fn: () => Promise<unknown>, success: string) => {
     setMsg(null);
@@ -80,7 +94,7 @@ export default function Requests() {
           // Residents: one card per request with its status tracker.
           <div className="req-list">
             {data.map((r) => (
-              <article className="req-card" key={r.request_id}>
+              <article className={`req-card ${r.request_id === focusId ? 'req-focus' : ''}`} key={r.request_id} id={`req-${r.request_id}`}>
                 <div className="req-head">
                   <strong>Request #{r.request_id}</strong>
                   <Badge value={r.request_type} />
