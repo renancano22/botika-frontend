@@ -1,8 +1,7 @@
-import { QRCodeSVG } from 'qrcode.react';
 import { Link } from 'react-router-dom';
-import { formatDate } from '../../api';
 import { useApi } from '../../hooks';
 import { Badge, Card, Empty, Loading, Message, StatCard } from '../../components/ui';
+import { NotificationItem } from '../../components/Notifications';
 import type { MedicineRequest, Resident, SmsNotification } from '../../types';
 
 interface ResidentDash {
@@ -13,11 +12,14 @@ interface ResidentDash {
 }
 
 export default function ResidentDashboard() {
-  const { data, error, loading } = useApi<ResidentDash>('/dashboard', undefined, 30000);
+  const { data, error, loading, setData } = useApi<ResidentDash>('/dashboard', undefined, 30000);
 
   if (loading && !data) return <Loading />;
   if (!data) return <Message>{error}</Message>;
   const { resident, counts } = data;
+  const replace = (n: SmsNotification) => setData((d) => d && ({
+    ...d, recent_notifications: d.recent_notifications.map((x) => (x.notification_id === n.notification_id ? n : x)),
+  }));
 
   return (
     <div className="page">
@@ -29,24 +31,12 @@ export default function ResidentDashboard() {
         <Link className="btn" to="/medicines">Check medicines</Link>
       </header>
 
-      <div className="grid-2 grid-qr">
-        <Card title="My QR code / Patient ID">
-          <div className="qr-card">
-            <QRCodeSVG value={resident.qr_code} size={160} marginSize={2} />
-            <div>
-              <div className="patient-id">{resident.qr_code}</div>
-              <p className="muted">Show this QR code at Botika ng Bayan when you claim your medicines.</p>
-              <p className="muted small">{resident.address} · {resident.contact_no}</p>
-              <button className="btn btn-outline" onClick={() => window.print()}>Print</button>
-            </div>
-          </div>
-        </Card>
-        <div className="stats stats-2">
-          <StatCard label="Pending requests" value={counts.pending} tone={counts.pending ? 'warn' : 'default'} />
-          <StatCard label="Approved — ready to claim" value={counts.approved} tone={counts.approved ? 'ok' : 'default'} />
-          <StatCard label="Claimed requests" value={counts.dispensed} />
-          <StatCard label="Medicines available now" value={counts.available_medicines} />
-        </div>
+      <div className="stats">
+        <StatCard label="Pending requests" value={counts.pending} tone={counts.pending ? 'warn' : 'default'} />
+        <StatCard label="Approved — ready to claim" value={counts.approved} tone={counts.approved ? 'ok' : 'default'}
+          hint={counts.approved ? 'Bring your QR code (My Profile)' : undefined} />
+        <StatCard label="Claimed requests" value={counts.dispensed} />
+        <StatCard label="Medicines available now" value={counts.available_medicines} />
       </div>
 
       <div className="grid-2">
@@ -69,13 +59,8 @@ export default function ResidentDashboard() {
         </Card>
         <Card title="Latest notifications" actions={<Link to="/notifications">See all</Link>}>
           {data.recent_notifications.length === 0 ? <Empty>No notifications yet.</Empty> : (
-            <ul className="list">
-              {data.recent_notifications.map((n) => (
-                <li key={n.notification_id}>
-                  <p>{n.message}</p>
-                  <small className="muted">{formatDate(n.sent_at, true)}</small>
-                </li>
-              ))}
+            <ul className="notif-list">
+              {data.recent_notifications.map((n) => <NotificationItem key={n.notification_id} n={n} onRead={replace} compact />)}
             </ul>
           )}
         </Card>

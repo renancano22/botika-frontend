@@ -54,3 +54,19 @@ export function formatDate(value: string | null | undefined, withTime = false): 
     ? d.toLocaleString('en-PH', { dateStyle: 'medium', timeStyle: 'short' })
     : d.toLocaleDateString('en-PH', { dateStyle: 'medium' });
 }
+
+/** "Just now", "5m ago", "3h ago", "2d ago", then the date (like social media notifications). */
+export function timeAgo(value: string): string {
+  const seconds = Math.max(0, (Date.now() - new Date(value).getTime()) / 1000);
+  if (seconds < 60) return 'Just now';
+  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+  if (seconds < 7 * 86400) return `${Math.floor(seconds / 86400)}d ago`;
+  return formatDate(value, true);
+}
+
+/** Tells the bell icon to refresh its unread count after notifications are marked as read. */
+export const NOTIFICATIONS_CHANGED = 'botika:notifications-changed';
+export function notificationsChanged() {
+  window.dispatchEvent(new Event(NOTIFICATIONS_CHANGED));
+}

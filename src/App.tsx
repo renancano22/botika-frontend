@@ -16,6 +16,7 @@ import Dispense from './pages/staff/Dispense';
 import ResidentDashboard from './pages/resident/ResidentDashboard';
 import ResidentMedicines from './pages/resident/ResidentMedicines';
 import MyNotifications from './pages/resident/MyNotifications';
+import Profile from './pages/resident/Profile';
 import Medicines from './pages/shared/Medicines';
 import Inventory from './pages/shared/Inventory';
 import Requests from './pages/shared/Requests';
@@ -50,6 +51,8 @@ export default function App() {
         <Route path="/requests" element={<Requests />} />
         <Route path="/dispensing" element={<DispensingRecords />} />
         <Route path="/notifications" element={role === 'admin' ? <Announcements /> : <Guard roles={['resident']}><MyNotifications /></Guard>} />
+
+        <Route path="/profile" element={<Guard roles={['resident']}><Profile /></Guard>} />
 
         <Route path="/inventory" element={<Guard roles={OPS}><Inventory /></Guard>} />
         <Route path="/dispense" element={<Guard roles={OPS}><Dispense /></Guard>} />

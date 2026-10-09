@@ -7,6 +7,8 @@ export interface Resident {
   address: string;
   contact_no: string;
   qr_code: string;
+  /** Profile picture (data URL). Only included for the logged-in resident's own account. */
+  photo?: string | null;
   created_at: string;
 }
 
@@ -117,6 +119,8 @@ export interface SmsNotification {
   channel: string;
   status: 'sent' | 'failed' | 'logged';
   sent_at: string;
+  /** null = not read yet */
+  read_at: string | null;
   resident?: Pick<Resident, 'resident_id' | 'name' | 'contact_no'>;
 }
 

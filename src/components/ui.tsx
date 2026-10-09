@@ -95,3 +95,11 @@ export function PasswordInput(props: Omit<InputHTMLAttributes<HTMLInputElement>,
 export function Loading() {
   return <p className="empty">Loading…</p>;
 }
+
+/** Round profile picture, or the first letter of the name when there is no picture. */
+export function Avatar({ name, photo, size = 38 }: { name: string; photo?: string | null; size?: number }) {
+  const style = { width: size, height: size, fontSize: Math.round(size * 0.42) };
+  return photo
+    ? <img className="avatar" src={photo} alt="" style={style} />
+    : <span className="avatar avatar-letter" style={style} aria-hidden="true">{name.trim().charAt(0).toUpperCase() || '?'}</span>;
+}

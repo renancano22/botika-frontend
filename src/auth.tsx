@@ -8,6 +8,8 @@ interface AuthState {
   login: (login: string, password: string) => Promise<void>;
   register: (data: Record<string, string>) => Promise<void>;
   logout: () => Promise<void>;
+  /** Replaces the logged-in user's details after they edit their profile. */
+  setUser: (user: User) => void;
 }
 
 const AuthContext = createContext<AuthState | null>(null);
@@ -42,6 +44,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.removeItem(TOKEN_KEY);
       setUser(null);
     },
+    setUser,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

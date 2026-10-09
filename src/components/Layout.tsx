@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
-import { NavLink, Outlet, useLocation } from 'react-router-dom';
+import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { ROLE_LABEL } from '../api';
 import { useAuth } from '../auth';
 import type { Role } from '../types';
+import { Avatar } from './ui';
+import { NotificationBell } from './Notifications';
 
 /* Simple line icons (drawn with SVG so no extra package is needed). */
 const ICONS: Record<string, string> = {
@@ -19,6 +21,7 @@ const ICONS: Record<string, string> = {
   search: 'M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14M21 21l-5-5',
   bell: 'M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10 21h4',
   logout: 'M9 21H5V3h4M16 17l5-5-5-5M21 12H9',
+  user: 'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8',
 };
 
 function Icon({ name }: { name: string }) {
@@ -73,8 +76,9 @@ const NAV: Record<Role, Section[]> = {
       { to: '/requests', label: 'My Requests', icon: 'clipboard' },
       { to: '/dispensing', label: 'My Medicine History', icon: 'history' },
     ] },
-    { title: 'Updates', items: [
+    { title: 'Account', items: [
       { to: '/notifications', label: 'Notifications', icon: 'bell' },
+      { to: '/profile', label: 'My Profile', icon: 'user' },
     ] },
   ],
 };
@@ -128,12 +132,20 @@ export default function Layout() {
           </div>
         </NavLink>
         {current && <span className="topbar-page">{current.label}</span>}
+        {user.role === 'resident' && (
+          <div className="topbar-actions">
+            <NotificationBell />
+            <Link to="/profile" className="topbar-profile" aria-label="My profile" title="My profile">
+              <Avatar name={user.name} photo={user.resident?.photo} size={36} />
+            </Link>
+          </div>
+        )}
       </header>
 
       <div className={`drawer-overlay ${open ? 'is-open' : ''}`} onClick={() => setOpen(false)} aria-hidden="true" />
       <aside id="side-menu" className={`drawer ${open ? 'is-open' : ''}`} aria-hidden={!open} aria-label="Main menu">
         <div className="drawer-head">
-          <span className="menu-avatar">{user.name.charAt(0).toUpperCase()}</span>
+          <Avatar name={user.name} photo={user.resident?.photo} size={38} />
           <div className="drawer-user">
             <strong>{user.name}</strong>
             <small>{ROLE_LABEL[user.role]}</small>
