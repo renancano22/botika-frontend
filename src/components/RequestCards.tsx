@@ -74,6 +74,11 @@ export function StatusPill({ request }: { request: MedicineRequest }) {
   return <span className={`pill k-${STATUS_COLOR_KEY[key]}`}>{STATUS_LABEL[key]}</span>;
 }
 
+/** "tablet" → "tablets" (units already ending in s stay the same). */
+export function unitPlural(unit: string): string {
+  return /s$/i.test(unit) ? unit : `${unit}s`;
+}
+
 /** "20 tablets" */
 export function quantityText(quantity: number, unit: string): string {
   return `${quantity} ${unit}${quantity > 1 && !/s$/i.test(unit) ? 's' : ''}`;
