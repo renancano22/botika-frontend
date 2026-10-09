@@ -590,3 +590,16 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--p
   .confirm-modal { border-radius: 20px 20px 0 0; max-width: none; }
 }
 @keyframes sheet-in { from { transform: translateY(40px); opacity: 0.6; } to { transform: none; opacity: 1; } }
+
+/* ---------- medicine filter panel + search box focus fix */
+.search-box input, .search-box input:focus { border: none; box-shadow: none; outline: none; padding-left: 0; background: transparent; }
+.search-box input::-webkit-search-decoration { -webkit-appearance: none; }
+.filter-panel { background: #fff; border: 1px solid var(--border); border-radius: 18px; padding: 14px; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; gap: 10px; }
+.search-soft { background: var(--primary-50); border-color: color-mix(in srgb, var(--primary) 12%, white); box-shadow: none; border-radius: 14px; }
+.search-soft:focus-within { background: #fff; }
+.filter-label { font-size: 0.82rem; color: var(--muted); font-weight: 600; margin-top: 4px; }
+.select-pill { width: 100%; border-radius: 999px; padding: 11px 16px; font-weight: 600; appearance: none; -webkit-appearance: none; cursor: pointer;
+  background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%235f6f6b' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 14px center; padding-right: 42px; }
+.filter-foot { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 4px; padding-top: 12px; border-top: 1px solid var(--border); }
+.filter-foot h2 { font-size: 1.1rem; }
+.count-pill { padding: 4px 12px; border-radius: 999px; background: #eef2f1; color: #3d4d49; font-size: 0.82rem; font-weight: 600; white-space: nowrap; }

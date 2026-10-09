@@ -27,7 +27,13 @@ function QtyStepper({ value, onChange, min = 1, max }: { value: number; onChange
  */
 export default function ResidentMedicines() {
   const [search, setSearch] = useState('');
-  const { data, error, loading } = useApi<Medicine[]>('/medicines', { search }, 30000);
+  const [category, setCategory] = useState('');
+  const [availability, setAvailability] = useState<'all' | 'in_stock' | 'out_of_stock'>('all');
+  const { data, error, loading } = useApi<Medicine[]>('/medicines', { search, category }, 30000);
+  const { data: categories } = useApi<string[]>('/medicines/categories');
+  const shown = (data ?? []).filter((m) => availability === 'all'
+    || (availability === 'out_of_stock' ? m.status === 'out_of_stock' : m.status !== 'out_of_stock'));
+  const listTitle = `${availability === 'in_stock' ? 'Available' : availability === 'out_of_stock' ? 'Out of Stock' : 'All'} ${category || 'Medicines'}`;
   const [cart, setCart] = useState<CartItem[]>([]);
   const [adding, setAdding] = useState<CartItem | null>(null);       // "Add to request" sheet
   const [cartOpen, setCartOpen] = useState(false);                   // request sheet on phones
@@ -135,14 +141,30 @@ export default function ResidentMedicines() {
 
       <div className="grid-main">
         <section>
-          <div className="search-box">
-            <Svg d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14M21 21l-5-5" size={20} />
-            <input type="search" placeholder="Search medicine or category…" value={search} onChange={(e) => setSearch(e.target.value)} />
+          <div className="filter-panel">
+            <div className="search-box search-soft">
+              <Svg d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14M21 21l-5-5" size={20} />
+              <input type="search" placeholder="Search medicine name…" value={search} onChange={(e) => setSearch(e.target.value)} aria-label="Search medicine name" />
+            </div>
+            <span className="filter-label">Availability</span>
+            <div className="chips" role="tablist" aria-label="Availability">
+              {([['all', 'All'], ['in_stock', 'Available'], ['out_of_stock', 'Out of Stock']] as const).map(([key, label]) => (
+                <button key={key} role="tab" aria-selected={availability === key} className={`chip ${availability === key ? 'active' : ''}`} onClick={() => setAvailability(key)}>{label}</button>
+              ))}
+            </div>
+            <select className="select-pill" value={category} onChange={(e) => setCategory(e.target.value)} aria-label="Category">
+              <option value="">All Categories</option>
+              {categories?.map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
+            <div className="filter-foot">
+              <h2>{listTitle}</h2>
+              <span className="count-pill">{shown.length} item{shown.length === 1 ? '' : 's'}</span>
+            </div>
           </div>
           {error && <Message>{error}</Message>}
-          {loading && !data ? <Loading /> : !data?.length ? <div className="card"><Empty>No medicines found.</Empty></div> : (
+          {loading && !data ? <Loading /> : !shown.length ? <div className="card"><Empty>No medicines match your search or filters.</Empty></div> : (
             <div className="med-grid">
-              {data.map((m) => {
+              {shown.map((m) => {
                 const added = inCart(m);
                 return (
                   <article key={m.medicine_id} className={`med-card ${added ? 'med-added' : ''}`}>
