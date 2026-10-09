@@ -311,3 +311,53 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--primary-sof
 @media print {
   .topbar-actions { display: none !important; }
 }
+
+/* ---------- request status tracker */
+.req-list { display: flex; flex-direction: column; gap: 14px; }
+.req-card { border: 1px solid var(--border); border-radius: 12px; padding: 16px; background: var(--card); }
+.req-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.req-head strong { font-size: 1.05rem; }
+.req-date { margin-left: auto; }
+.req-items { margin: 8px 0 14px; }
+.req-actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; margin-top: 12px; }
+.req-detail-info { margin-bottom: 4px; }
+
+.tracker { list-style: none; margin: 0; padding: 0; display: grid; }
+.step { position: relative; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 4px; padding: 0 4px; min-width: 0; }
+/* line joining this step to the previous one */
+.step + .step::before {
+  content: ''; position: absolute; top: 16px; right: 50%; width: 100%; height: 3px;
+  background: #e5e7eb; z-index: 0;
+}
+.step-done + .step::before, .step-done + .step-current::before { background: var(--primary); }
+.step-dot {
+  position: relative; z-index: 1; width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center;
+  font-weight: 700; font-size: 0.85rem; background: #fff; color: #9ca3af; border: 2px solid #d1d5db;
+}
+.step-label { font-size: 0.82rem; font-weight: 600; color: #6b7280; line-height: 1.2; }
+.step-date { font-size: 0.72rem; color: var(--muted); line-height: 1.25; }
+.step-note { font-size: 0.72rem; color: var(--muted); line-height: 1.25; overflow-wrap: anywhere; }
+
+.step-done .step-dot { background: var(--primary); border-color: var(--primary); color: #fff; }
+.step-done .step-label { color: var(--primary-dark); }
+.step-current .step-dot { background: #fff; border-color: var(--primary); color: var(--primary); box-shadow: 0 0 0 4px var(--primary-soft); }
+.step-current .step-label { color: var(--primary-dark); }
+.step-current .step-note { color: var(--primary-dark); font-weight: 600; }
+.step-rejected .step-dot { background: var(--danger); border-color: var(--danger); color: #fff; }
+.step-rejected .step-label { color: var(--danger); }
+.step-cancelled .step-dot { background: #6b7280; border-color: #6b7280; color: #fff; }
+.step-cancelled .step-label { color: #4b5563; }
+
+.status-box { margin-top: 14px; padding: 12px 14px; border-radius: 10px; border-left: 4px solid; }
+.status-box p { margin: 4px 0 0; font-size: 0.92rem; }
+.status-info { background: var(--info-soft); border-color: #2563eb; }
+.status-ok { background: var(--ok-soft); border-color: var(--ok); }
+.status-warn { background: var(--warn-soft); border-color: var(--warn); }
+.status-danger { background: var(--danger-soft); border-color: var(--danger); }
+.status-muted { background: #f3f4f6; border-color: #9ca3af; }
+
+@media (max-width: 480px) {
+  .req-card { padding: 14px 10px; }
+  .step { padding: 0 2px; }
+  .step-label { font-size: 0.74rem; }
+}

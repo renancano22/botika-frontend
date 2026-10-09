@@ -96,9 +96,18 @@ export interface MedicineRequest {
   reviewed_by: number | null;
   reviewed_at: string | null;
   remarks: string | null;
+  /** When the request was cancelled; cancelled_by = null means it was cancelled automatically (not claimed in time). */
+  cancelled_at?: string | null;
+  cancelled_by?: number | null;
+  /** When a restock request's medicine became available. */
+  fulfilled_at?: string | null;
+  /** Approved medicine requests: last day to claim before automatic cancellation. */
+  claim_by?: string | null;
   items: RequestItem[];
   resident?: Resident;
   reviewer?: { user_id: number; name: string } | null;
+  canceller?: { user_id: number; name: string } | null;
+  dispensing?: { dispensing_id: number; dispensed_at: string; dispenser?: { user_id: number; name: string } | null } | null;
 }
 
 export interface Dispensing {

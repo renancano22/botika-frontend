@@ -1,9 +1,13 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { api, errorMessage, formatDate } from '../../api';
 import { useAuth } from '../../auth';
 import { useApi } from '../../hooks';
 import { Badge, Card, Empty, Loading, Message, Modal } from '../../components/ui';
+import RequestTracker from '../../components/RequestTracker';
 import type { MedicineRequest } from '../../types';
+
+const itemsText = (r: MedicineRequest) => r.items.map((i) => `${i.medicine.medicine_name} ×${i.quantity}`).join(', ');
 
 const STATUSES = ['', 'pending', 'approved', 'rejected', 'dispensed', 'fulfilled', 'cancelled'];
 
@@ -17,6 +21,8 @@ export default function Requests() {
   const [rejecting, setRejecting] = useState<MedicineRequest | null>(null);
   const [remarks, setRemarks] = useState('');
   const [editing, setEditing] = useState<MedicineRequest | null>(null);
+  const [viewingId, setViewingId] = useState<number | null>(null);
+  const viewing = data?.find((r) => r.request_id === viewingId) ?? null;
 
   const act = async (fn: () => Promise<unknown>, success: string) => {
     setMsg(null);
@@ -33,6 +39,19 @@ export default function Requests() {
 
   const canReview = (r: MedicineRequest) =>
     !isResident && r.status === 'pending' && (r.request_type === 'medicine' || user?.role === 'admin');
+
+  // Residents can cancel while the request is pending, or approved but not yet claimed.
+  const cancel = (r: MedicineRequest) => {
+    const question = r.status === 'approved' && r.request_type === 'medicine'
+      ? `Cancel request #${r.request_id}? The medicines set aside for you will be given back to the stock for other residents.`
+      : `Cancel request #${r.request_id}?`;
+    if (confirm(question)) act(() => api.post(`/requests/${r.request_id}/cancel`), `Request #${r.request_id} cancelled.`);
+  };
+
+  const reviewButtons = (r: MedicineRequest) => canReview(r) && <>
+    <button className="btn btn-sm" onClick={() => act(() => api.post(`/requests/${r.request_id}/approve`), `Request #${r.request_id} approved. SMS sent to the resident.`)}>Approve</button>{' '}
+    <button className="btn btn-danger btn-sm" onClick={() => { setRejecting(r); setRemarks(''); }}>Reject</button>
+  </>;
 
   return (
     <div className="page">
@@ -57,30 +76,50 @@ export default function Requests() {
           </select>
         </div>
       }>
-        {loading && !data ? <Loading /> : !data?.length ? <Empty>No requests found.</Empty> : (
+        {loading && !data ? <Loading /> : !data?.length ? <Empty>No requests found.</Empty> : isResident ? (
+          // Residents: one card per request with its status tracker.
+          <div className="req-list">
+            {data.map((r) => (
+              <article className="req-card" key={r.request_id}>
+                <div className="req-head">
+                  <strong>Request #{r.request_id}</strong>
+                  <Badge value={r.request_type} />
+                  <span className="muted small req-date">{formatDate(r.request_date, true)}</span>
+                </div>
+                <p className="req-items">{itemsText(r)}</p>
+                <RequestTracker request={r} forResident />
+                {(r.status === 'pending' || r.status === 'approved' || r.status === 'fulfilled') && (
+                  <div className="req-actions">
+                    {r.status === 'pending' && <button className="btn btn-outline btn-sm" onClick={() => setEditing(structuredClone(r))}>Update</button>}
+                    {(r.status === 'pending' || r.status === 'approved') && <button className="btn btn-danger btn-sm" onClick={() => cancel(r)}>Cancel request</button>}
+                    {r.status === 'fulfilled' && <Link className="btn btn-sm" to="/medicines">Request this medicine</Link>}
+                  </div>
+                )}
+              </article>
+            ))}
+          </div>
+        ) : (
           <table>
             <thead>
-              <tr><th>#</th><th>Date</th>{!isResident && <th>Resident</th>}<th>Type</th><th>Medicines</th><th>Status</th><th>Remarks</th><th></th></tr>
+              <tr><th>#</th><th>Date</th><th>Resident</th><th>Type</th><th>Medicines</th><th>Status</th><th>Remarks</th><th></th></tr>
             </thead>
             <tbody>
               {data.map((r) => (
                 <tr key={r.request_id}>
                   <td>{r.request_id}</td>
                   <td className="nowrap">{formatDate(r.request_date, true)}</td>
-                  {!isResident && <td>{r.resident?.name}<div className="muted small">{r.resident?.qr_code}</div></td>}
+                  <td>{r.resident?.name}<div className="muted small">{r.resident?.qr_code}</div></td>
                   <td><Badge value={r.request_type} /></td>
-                  <td>{r.items.map((i) => `${i.medicine.medicine_name} ×${i.quantity}`).join(', ')}</td>
-                  <td><Badge value={r.status} />{r.reviewer && <div className="muted small">by {r.reviewer.name}</div>}</td>
+                  <td>{itemsText(r)}</td>
+                  <td>
+                    <Badge value={r.status} />
+                    {r.status === 'approved' && r.claim_by && <div className="muted small">claim by {formatDate(r.claim_by)}</div>}
+                    {r.status !== 'approved' && r.reviewer && <div className="muted small">by {r.reviewer.name}</div>}
+                  </td>
                   <td>{r.remarks}</td>
                   <td className="right nowrap">
-                    {canReview(r) && <>
-                      <button className="btn btn-sm" onClick={() => act(() => api.post(`/requests/${r.request_id}/approve`), `Request #${r.request_id} approved. SMS sent to the resident.`)}>Approve</button>{' '}
-                      <button className="btn btn-danger btn-sm" onClick={() => { setRejecting(r); setRemarks(''); }}>Reject</button>
-                    </>}
-                    {isResident && r.status === 'pending' && <>
-                      <button className="btn btn-outline btn-sm" onClick={() => setEditing(structuredClone(r))}>Update</button>{' '}
-                      <button className="btn btn-danger btn-sm" onClick={() => confirm('Cancel this request?') && act(() => api.post(`/requests/${r.request_id}/cancel`), 'Request cancelled.')}>Cancel</button>
-                    </>}
+                    <button className="btn btn-outline btn-sm" onClick={() => setViewingId(r.request_id)}>Details</button>{' '}
+                    {reviewButtons(r)}
                   </td>
                 </tr>
               ))}
@@ -88,6 +127,22 @@ export default function Requests() {
           </table>
         )}
       </Card>
+
+      {viewing && (
+        <Modal title={`Request #${viewing.request_id}`} onClose={() => setViewingId(null)}>
+          <div className="resident-info req-detail-info">
+            <div><small className="muted">Resident</small><strong>{viewing.resident?.name}</strong></div>
+            <div><small className="muted">Patient ID</small><strong>{viewing.resident?.qr_code}</strong></div>
+            <div><small className="muted">Type</small><strong>{viewing.request_type === 'restock' ? 'Restock request' : 'Medicine request'}</strong></div>
+          </div>
+          <p className="req-items">{itemsText(viewing)}</p>
+          <RequestTracker request={viewing} forResident={false} />
+          <div className="modal-actions">
+            {reviewButtons(viewing)}
+            <button className="btn btn-outline" onClick={() => setViewingId(null)}>Close</button>
+          </div>
+        </Modal>
+      )}
 
       {rejecting && (
         <Modal title={`Reject request #${rejecting.request_id}`} onClose={() => setRejecting(null)}>
