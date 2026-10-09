@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { api, errorMessage } from '../../api';
-import { useApi } from '../../hooks';
+import { useApi, useGoBack } from '../../hooks';
 import { Loading, Message, Modal } from '../../components/ui';
 import RequestTracker from '../../components/RequestTracker';
 import { ICONS, Svg } from '../../components/RequestCards';
@@ -11,7 +11,7 @@ import type { MedicineRequest } from '../../types';
 /** Resident: one request with its tracking timeline (opened from My Requests). */
 export default function RequestDetail() {
   const { id } = useParams();
-  const navigate = useNavigate();
+  const goBack = useGoBack('/requests');
   const { data: r, error, loading, setData } = useApi<MedicineRequest>(`/requests/${id}`, undefined, 30000);
   const [msg, setMsg] = useState<{ type: 'error' | 'success'; text: string } | null>(null);
   const [editing, setEditing] = useState<MedicineRequest | null>(null);
@@ -49,7 +49,7 @@ export default function RequestDetail() {
   return (
     <div className="page page-narrow">
       <header className="detail-topbar">
-        <button className="icon-btn" onClick={() => navigate(-1)} aria-label="Back"><Svg d={ICONS.back} size={22} /></button>
+        <button className="icon-btn" onClick={goBack} aria-label="Back"><Svg d={ICONS.back} size={22} /></button>
         <h1>Request Details</h1>
       </header>
 
@@ -72,7 +72,6 @@ export default function RequestDetail() {
             </button>
           )}
           {r.status === 'fulfilled' && <Link className="btn btn-block" to="/medicines">Request this medicine</Link>}
-          <Link className="btn btn-outline btn-block" to="/requests"><Svg d={ICONS.back} size={18} /> Back to My Requests</Link>
         </div>
       </>}
 

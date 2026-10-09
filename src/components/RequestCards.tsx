@@ -57,9 +57,21 @@ export const STATUS_LABEL: Record<StatusKey, string> = {
   rejected: 'Rejected',
 };
 
+/** Colour of each status (from the agreed status colour palette). */
+export const STATUS_COLOR_KEY: Record<StatusKey, string> = {
+  review: 'review',
+  claim: 'ready',
+  stock: 'approved',
+  claimed: 'completed',
+  available: 'available',
+  cancelled: 'cancelled',
+  expired: 'expired',
+  rejected: 'rejected',
+};
+
 export function StatusPill({ request }: { request: MedicineRequest }) {
   const key = statusKey(request);
-  return <span className={`pill pill-${key}`}>{STATUS_LABEL[key]}</span>;
+  return <span className={`pill k-${STATUS_COLOR_KEY[key]}`}>{STATUS_LABEL[key]}</span>;
 }
 
 /** "20 tablets" */
@@ -74,11 +86,12 @@ export function dateTime(value: string): string {
 
 /** One request in a list: icon, request number, date, medicine and quantity, status and an arrow. */
 export function RequestRow({ request: r }: { request: MedicineRequest }) {
+  const colour = STATUS_COLOR_KEY[statusKey(r)];
   const first = r.items[0];
   const more = r.items.length - 1;
   return (
-    <Link to={`/requests/${r.request_id}`} className="req-row">
-      <span className={`req-icon ${r.request_type === 'restock' ? 'req-icon-restock' : ''}`}>
+    <Link to={`/requests/${r.request_id}`} className={`req-row k-${colour}`}>
+      <span className="req-icon kicon">
         <Svg d={r.request_type === 'restock' ? ICONS.box : ICONS.pill} size={24} width={1.9} />
       </span>
       <span className="req-row-main">

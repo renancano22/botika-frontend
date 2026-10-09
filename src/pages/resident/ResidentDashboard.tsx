@@ -21,7 +21,7 @@ export default function ResidentDashboard() {
 
   return (
     <div className="page">
-      <header className="page-head">
+      <header className="page-head hero-head">
         <div>
           <h1>Hello, {resident.name.split(' ')[0]}!</h1>
           <p className="muted">Check medicines, send requests and follow their status here.</p>

@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { formatDate, notificationsChanged } from '../../api';
-import { useApi } from '../../hooks';
+import { useApi, useGoBack } from '../../hooks';
 import { Loading, Message } from '../../components/ui';
 import { cleanMessage, KIND, kindOf, titleOf, type Kind } from '../../components/Notifications';
 import RequestTracker from '../../components/RequestTracker';
@@ -89,7 +89,7 @@ function tip(kind: Kind, r: MedicineRequest | null): string | null {
 /** Resident: details of one notification (opened from the bell, the dashboard or the Notifications page). */
 export default function NotificationDetail() {
   const { id } = useParams();
-  const navigate = useNavigate();
+  const goBack = useGoBack('/notifications');
   const { data, error, loading } = useApi<Detail>(`/notifications/${id}`);
 
   // Opening the notification marks it as read: update the bell count.
@@ -108,15 +108,15 @@ export default function NotificationDetail() {
   return (
     <div className="page page-narrow">
       <header className="detail-topbar">
-        <button className="icon-btn" onClick={() => navigate(-1)} aria-label="Back"><Svg d={ICONS.back} size={22} /></button>
+        <button className="icon-btn" onClick={goBack} aria-label="Back"><Svg d={ICONS.back} size={22} /></button>
         <h1>Notification Details</h1>
       </header>
 
       <section className="hero card">
-        <span className={`hero-icon kind-soft-${kind}`}><Svg d={KIND[kind].icon} size={34} width={2} /></span>
+        <span className={`hero-icon kicon k-${kind}`}><Svg d={KIND[kind].icon} size={34} width={2} /></span>
         <h2>{hero.title || titleOf(n)}</h2>
         <p className="muted">{hero.text}</p>
-        <span className={`pill pill-kind-${kind}`}>{hero.tag}</span>
+        <span className={`pill k-${kind}`}>{hero.tag}</span>
         <small className="muted">{dateTime(n.sent_at)}</small>
       </section>
 
@@ -144,13 +144,11 @@ export default function NotificationDetail() {
         </div>
       )}
 
-      <div className="detail-actions">
-        {r?.status === 'fulfilled' && <Link className="btn btn-block" to="/medicines">Request this medicine</Link>}
-        {r && <Link className="btn btn-outline btn-block" to={`/requests/${r.request_id}`}>Open request #{r.request_id}</Link>}
-        <Link className="btn btn-outline btn-block" to={r ? '/requests' : '/notifications'}>
-          <Svg d={ICONS.back} size={18} /> Back to {r ? 'My Requests' : 'Notifications'}
-        </Link>
-      </div>
+      {r?.status === 'fulfilled' && (
+        <div className="detail-actions">
+          <Link className="btn btn-block" to="/medicines">Request this medicine</Link>
+        </div>
+      )}
     </div>
   );
 }

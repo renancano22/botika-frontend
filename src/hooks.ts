@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { api, errorMessage } from './api';
 
 /**
@@ -33,4 +34,17 @@ export function useApi<T>(url: string | null, params?: Record<string, unknown>, 
   }, [load, refreshMs]);
 
   return { data, error, loading, reload: load, setData };
+}
+
+/**
+ * Back arrow: goes to the previous page, or to `fallback` when the page was opened directly
+ * (e.g. from a link or after refreshing), so it never leaves the system.
+ */
+export function useGoBack(fallback: string) {
+  const navigate = useNavigate();
+  return () => {
+    const idx = (window.history.state as { idx?: number } | null)?.idx ?? 0;
+    if (idx > 0) navigate(-1);
+    else navigate(fallback, { replace: true });
+  };
 }

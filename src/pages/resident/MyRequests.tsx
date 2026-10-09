@@ -33,7 +33,7 @@ export default function MyRequests() {
 
   return (
     <div className="page">
-      <header className="page-head">
+      <header className="page-head hero-head">
         <div>
           <h1>{greeting()}, {user?.name.split(' ')[0]}!</h1>
           <p className="muted">Here are your medicine requests.</p>

@@ -23,7 +23,7 @@ export default function MyNotifications() {
 
   return (
     <div className="page page-narrow">
-      <header className="page-head">
+      <header className="page-head hero-head">
         <div>
           <h1>Notifications</h1>
           <p className="muted">Stay updated on your medicine requests. SMS messages sent to you are also kept here.</p>

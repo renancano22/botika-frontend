@@ -1,7 +1,7 @@
 import { formatDate } from '../api';
 import type { MedicineRequest } from '../types';
 import { statusSummary } from './RequestTracker';
-import { dateTime, ICONS, quantityText, StatusPill, Svg } from './RequestCards';
+import { dateTime, ICONS, quantityText, STATUS_COLOR_KEY, statusKey, StatusPill, Svg } from './RequestCards';
 
 /** "Pickup schedule" row: approval means the medicines are ready at Botika ng Bayan until the claim deadline. */
 export function pickupText(r: MedicineRequest): string {
@@ -24,7 +24,7 @@ export function notesText(r: MedicineRequest): string {
 export function RequestSummaryCard({ r }: { r: MedicineRequest }) {
   return (
     <section className="detail-card">
-      <div className={`detail-card-head tone-${statusSummary(r).tone}`}>
+      <div className={`detail-card-head k-${STATUS_COLOR_KEY[statusKey(r)]}`}>
         <div>
           <strong className="detail-id">Request #{r.request_id}</strong>
           <span className="muted small">{dateTime(r.request_date)}{r.request_type === 'restock' ? ' • Restock' : ''}</span>
@@ -34,7 +34,7 @@ export function RequestSummaryCard({ r }: { r: MedicineRequest }) {
       <ul className="detail-meds">
         {r.items.map((i) => (
           <li key={i.request_item_id ?? i.medicine_id}>
-            <span className={`req-icon req-icon-sm ${r.request_type === 'restock' ? 'req-icon-restock' : ''}`}>
+            <span className={`req-icon req-icon-sm kicon k-${STATUS_COLOR_KEY[statusKey(r)]}`}>
               <Svg d={r.request_type === 'restock' ? ICONS.box : ICONS.pill} size={20} width={1.9} />
             </span>
             <span>
@@ -56,7 +56,7 @@ export function RequestSummaryCard({ r }: { r: MedicineRequest }) {
 export function StatusBox({ r }: { r: MedicineRequest }) {
   const s = statusSummary(r);
   return (
-    <div className={`status-box status-${s.tone}`}>
+    <div className={`status-box k-${STATUS_COLOR_KEY[statusKey(r)]}`}>
       <span className="status-box-icon"><Svg d={ICONS.info} size={22} /></span>
       <div>
         <small>Request Status</small>

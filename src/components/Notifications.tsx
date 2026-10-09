@@ -86,9 +86,9 @@ export function NotificationItem({ n, compact = false }: { n: SmsNotification; c
   const kind = kindOf(n);
 
   return (
-    <li className={`notif ${unread ? 'notif-unread' : 'notif-read'}`}>
+    <li className={`notif k-${kind} ${unread ? 'notif-unread' : 'notif-read'}`}>
       <button type="button" className="notif-body notif-link" onClick={() => navigate(`/notifications/${n.notification_id}`)}>
-        <span className={`notif-icon kind-${kind}`} aria-hidden="true"><Svg d={KIND[kind].icon} size={20} width={2.2} /></span>
+        <span className="notif-icon kicon" aria-hidden="true"><Svg d={KIND[kind].icon} size={20} width={2.2} /></span>
         <span className="notif-text">
           <span className="notif-title">{titleOf(n)}{unread && <span className="notif-dot" aria-label="Unread" />}</span>
           <span className="notif-message">{cleanMessage(n.message)}</span>
