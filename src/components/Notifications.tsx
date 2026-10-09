@@ -28,13 +28,17 @@ export async function markAllRead(): Promise<void> {
   notificationsChanged();
 }
 
-export type Kind = 'approved' | 'rejected' | 'dispensed' | 'cancelled' | 'available' | 'announcement';
+export type Kind = 'submitted' | 'approved' | 'reminder' | 'rejected' | 'dispensed' | 'cancelled' | 'expired' | 'available'
+  | 'announcement' | 'closure' | 'hours' | 'distribution';
 
 /** Older notifications have no type saved, so it is worked out from the message. */
 export function kindOf(n: SmsNotification): Kind {
   if (n.type) return n.type as Kind;
   const m = n.message.toLowerCase();
   if (!n.request_id) return 'announcement';
+  if (m.includes('submitted')) return 'submitted';
+  if (m.includes('reminder')) return 'reminder';
+  if (m.includes('expired') || m.includes('not claimed')) return 'expired';
   if (m.includes('not approved')) return 'rejected';
   if (m.includes('approved')) return 'approved';
   if (m.includes('dispensed')) return 'dispensed';
@@ -45,16 +49,30 @@ export function kindOf(n: SmsNotification): Kind {
 
 /** Title and icon for each kind of notification. */
 export const KIND: Record<Kind, { title: string; icon: string }> = {
-  approved: { title: 'Request Approved!', icon: ICONS.check },
-  available: { title: 'Medicine Available', icon: ICONS.box },
+  submitted: { title: 'Request Submitted', icon: ICONS.note },
+  approved: { title: 'Approved — Ready for Pickup', icon: ICONS.check },
+  reminder: { title: 'Pickup Deadline Reminder', icon: ICONS.clock },
+  available: { title: 'Requested Medicine Is Back in Stock', icon: ICONS.box },
   dispensed: { title: 'Request Completed', icon: ICONS.hand },
   rejected: { title: 'Request Rejected', icon: ICONS.x },
   cancelled: { title: 'Request Cancelled', icon: ICONS.ban },
+  expired: { title: 'Request Expired', icon: ICONS.clock },
   announcement: { title: 'Announcement', icon: ICONS.megaphone },
+  closure: { title: 'Temporary Pharmacy Closure', icon: ICONS.ban },
+  hours: { title: 'Operating Hours Changed', icon: ICONS.clock },
+  distribution: { title: 'Medicine Distribution', icon: ICONS.megaphone },
 };
 
+/** Title shown on the card (a restock approval is not ready for pickup yet). */
+export function titleOf(n: SmsNotification): string {
+  const kind = kindOf(n);
+  if (kind === 'approved' && /restock/i.test(n.message)) return 'Restock Request Approved';
+  return KIND[kind].title;
+}
+
+/** Removes the "BulanBotikaCare:" / "BulanBotikaCare (Pharmacy Closure):" prefix used in SMS. */
 export function cleanMessage(message: string): string {
-  return message.replace(/^BulanBotikaCare:\s*/, '');
+  return message.replace(/^BulanBotikaCare(\s*\([^)]*\))?:\s*/, '');
 }
 
 /**
@@ -72,7 +90,7 @@ export function NotificationItem({ n, compact = false }: { n: SmsNotification; c
       <button type="button" className="notif-body notif-link" onClick={() => navigate(`/notifications/${n.notification_id}`)}>
         <span className={`notif-icon kind-${kind}`} aria-hidden="true"><Svg d={KIND[kind].icon} size={20} width={2.2} /></span>
         <span className="notif-text">
-          <span className="notif-title">{KIND[kind].title}{unread && <span className="notif-dot" aria-label="Unread" />}</span>
+          <span className="notif-title">{titleOf(n)}{unread && <span className="notif-dot" aria-label="Unread" />}</span>
           <span className="notif-message">{cleanMessage(n.message)}</span>
           <span className="notif-meta">{timeAgo(n.sent_at)}</span>
           {!compact && <span className="notif-view">View details →</span>}

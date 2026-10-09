@@ -85,7 +85,7 @@ export interface RequestItem {
   medicine: Pick<Medicine, 'medicine_id' | 'medicine_name' | 'unit'>;
 }
 
-export type RequestStatus = 'pending' | 'approved' | 'rejected' | 'dispensed' | 'fulfilled' | 'cancelled';
+export type RequestStatus = 'pending' | 'approved' | 'rejected' | 'dispensed' | 'fulfilled' | 'cancelled' | 'expired';
 
 export interface MedicineRequest {
   request_id: number;
@@ -96,7 +96,7 @@ export interface MedicineRequest {
   reviewed_by: number | null;
   reviewed_at: string | null;
   remarks: string | null;
-  /** When the request was cancelled; cancelled_by = null means it was cancelled automatically (not claimed in time). */
+  /** When the request was cancelled (or, for expired requests, when the pickup deadline passed). */
   cancelled_at?: string | null;
   cancelled_by?: number | null;
   /** When a restock request's medicine became available. */
@@ -124,7 +124,8 @@ export interface SmsNotification {
   notification_id: number;
   resident_id: number;
   request_id: number | null;
-  /** approved | rejected | dispensed | cancelled | available | announcement (null for older ones) */
+  /** submitted | approved | reminder | rejected | dispensed | cancelled | expired | available |
+   *  announcement | closure | hours | distribution (null for older ones) */
   type?: string | null;
   message: string;
   channel: string;

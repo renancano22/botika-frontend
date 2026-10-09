@@ -16,7 +16,7 @@ const BADGE_LABEL: Record<string, string> = {
   available: 'Available', low_stock: 'Low stock', out_of_stock: 'Out of stock',
   near_expiry: 'Near expiry', expired: 'Expired', ok: 'OK',
   pending: 'Pending', approved: 'Approved', rejected: 'Rejected', dispensed: 'Dispensed',
-  fulfilled: 'Fulfilled', cancelled: 'Cancelled', sent: 'Sent', failed: 'Failed', logged: 'Logged (no SMS key)',
+  fulfilled: 'Fulfilled', cancelled: 'Cancelled', app: 'In-app only', sent: 'Sent', failed: 'Failed', logged: 'Logged (no SMS key)',
   medicine: 'Medicine', restock: 'Restock', admin: 'Administrator', staff: 'Pharmacy Staff', resident: 'Resident',
 };
 

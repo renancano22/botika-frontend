@@ -59,18 +59,20 @@ function buildSteps(r: MedicineRequest, forResident: boolean): Step[] {
         text: r.remarks ? `Reason: ${r.remarks}` : 'The request was not approved.',
       }];
     case 'cancelled': {
-      const auto = !!r.cancelled_at && !r.cancelled_by;
       const cancelled: Step = {
         title: 'Request Cancelled', state: 'cancelled', date: r.cancelled_at, tag: 'Final status',
-        text: auto
-          ? 'Cancelled automatically because the medicines were not claimed in time.'
-          : r.cancelled_by
-            ? (forResident ? 'This request was cancelled by you.' : `Cancelled by ${r.canceller?.name ?? 'the resident'}.`)
-            : 'The request was cancelled before completion.',
+        text: r.cancelled_by
+          ? (forResident ? 'This request was cancelled by you.' : `Cancelled by ${r.canceller?.name ?? 'the resident'}.`)
+          : 'The request was cancelled before completion.',
       };
       if (!r.reviewed_at) return [submitted, cancelled];
       return restock ? [submitted, review, approved, cancelled] : [submitted, review, approved, ready, cancelled];
     }
+    case 'expired':
+      return [submitted, review, approved, ready, {
+        title: 'Request Expired', state: 'cancelled', date: r.cancelled_at, tag: 'Final status',
+        text: `The pickup deadline passed without collection. ${forResident ? 'Please submit a new request if you still need the medicine.' : 'The set-aside medicine went back to the stock.'}`,
+      }];
     default:
       return [submitted];
   }
@@ -126,6 +128,7 @@ export function statusSummary(r: MedicineRequest, forResident = true): { tone: T
     case 'dispensed': return { tone: 'ok', title: 'Completed', text: 'This request is now part of your medicine history.' };
     case 'fulfilled': return { tone: 'ok', title: 'Medicine Available', text: 'The medicine is now in stock. You may now submit a medicine request.' };
     case 'rejected': return { tone: 'danger', title: 'Rejected', text: 'This request was not approved.' };
+    case 'expired': return { tone: 'danger', title: 'Expired', text: forResident ? 'The pickup deadline passed. This request can no longer be claimed; please submit a new request if you still need the medicine.' : 'The pickup deadline passed without collection.' };
     case 'cancelled': return { tone: 'danger', title: 'Cancelled', text: forResident ? 'This medicine request is no longer active.' : 'This request is no longer active.' };
     default: return { tone: 'muted', title: r.status, text: '' };
   }

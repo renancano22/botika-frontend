@@ -9,15 +9,14 @@ export function pickupText(r: MedicineRequest): string {
   if (r.status === 'approved') return `Botika ng Bayan, Bulan · on or before ${formatDate(r.claim_by)}`;
   if (r.status === 'dispensed') return `Claimed on ${dateTime(r.dispensing?.dispensed_at ?? r.request_date)}`;
   if (r.status === 'pending') return 'Not yet available';
+  if (r.status === 'expired') return `Deadline passed${r.cancelled_at ? ` (${formatDate(r.cancelled_at)})` : ''}`;
   return '—';
 }
 
 export function notesText(r: MedicineRequest): string {
   if (r.status === 'rejected') return r.remarks ? `Not approved: ${r.remarks}` : 'Not approved';
-  if (r.status === 'cancelled') {
-    if (r.cancelled_at && !r.cancelled_by) return 'Cancelled automatically (not claimed in time)';
-    return r.cancelled_by ? 'Cancelled by resident' : 'Cancelled';
-  }
+  if (r.status === 'expired') return 'Expired — not claimed before the pickup deadline';
+  if (r.status === 'cancelled') return r.cancelled_by ? 'Cancelled by resident' : 'Cancelled';
   return r.remarks || 'None';
 }
 

@@ -31,7 +31,7 @@ export function Svg({ d, size = 20, width = 2 }: { d: string; size?: number; wid
   );
 }
 
-export type StatusKey = 'review' | 'claim' | 'stock' | 'claimed' | 'available' | 'cancelled' | 'rejected';
+export type StatusKey = 'review' | 'claim' | 'stock' | 'claimed' | 'available' | 'cancelled' | 'expired' | 'rejected';
 
 /** The status a resident sees, e.g. an approved medicine request is "Ready to claim". */
 export function statusKey(r: MedicineRequest): StatusKey {
@@ -41,6 +41,7 @@ export function statusKey(r: MedicineRequest): StatusKey {
     case 'dispensed': return 'claimed';
     case 'fulfilled': return 'available';
     case 'rejected': return 'rejected';
+    case 'expired': return 'expired';
     default: return 'cancelled';
   }
 }
@@ -52,6 +53,7 @@ export const STATUS_LABEL: Record<StatusKey, string> = {
   claimed: 'Completed',
   available: 'Available',
   cancelled: 'Cancelled',
+  expired: 'Expired',
   rejected: 'Rejected',
 };
 

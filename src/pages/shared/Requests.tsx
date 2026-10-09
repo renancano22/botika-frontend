@@ -8,7 +8,7 @@ import type { MedicineRequest } from '../../types';
 
 const itemsText = (r: MedicineRequest) => r.items.map((i) => `${i.medicine.medicine_name} ×${i.quantity}`).join(', ');
 
-const STATUSES = ['', 'pending', 'approved', 'rejected', 'dispensed', 'fulfilled', 'cancelled'];
+const STATUSES = ['', 'pending', 'approved', 'rejected', 'dispensed', 'fulfilled', 'cancelled', 'expired'];
 
 /** Staff/admin: review medicine and restock requests. (Residents use My Requests.) */
 export default function Requests() {

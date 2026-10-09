@@ -283,7 +283,12 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--primary-sof
 .kind-dispensed, .kind-soft-dispensed { background: #dbeafe; color: #2563eb; }
 .kind-rejected, .kind-soft-rejected { background: #fee2e2; color: #dc2626; }
 .kind-cancelled, .kind-soft-cancelled { background: #ffe4e6; color: #e11d48; }
-.kind-announcement, .kind-soft-announcement { background: #ede9fe; color: #7c3aed; }
+.kind-announcement, .kind-soft-announcement, .kind-distribution, .kind-soft-distribution { background: #ede9fe; color: #7c3aed; }
+.kind-submitted, .kind-soft-submitted { background: #e0f2fe; color: #0284c7; }
+.kind-reminder, .kind-soft-reminder { background: #ffedd5; color: #ea580c; }
+.kind-expired, .kind-soft-expired { background: #fee2e2; color: #b91c1c; }
+.kind-closure, .kind-soft-closure { background: #fce7f3; color: #be185d; }
+.kind-hours, .kind-soft-hours { background: #e0e7ff; color: #4338ca; }
 
 .notif-unread .notif-body { background: #effcf7; border-color: #b7e8d6; }
 .notif-read .notif-title { color: #64748b; font-weight: 600; }
@@ -391,6 +396,7 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--primary-sof
 .pill-available { background: #ede9fe; color: #6d28d9; }
 .pill-cancelled { background: #f1f5f9; color: #475569; }
 .pill-rejected { background: #fee2e2; color: #b91c1c; }
+.pill-expired { background: #ffedd5; color: #c2410c; }
 
 .page-narrow { max-width: 760px; }
 .back-link { display: inline-flex; align-items: center; gap: 4px; font-weight: 600; text-decoration: none; }
@@ -461,7 +467,13 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--primary-sof
 .pill-kind-available { background: #fef3c7; color: #b45309; }
 .pill-kind-dispensed { background: #dbeafe; color: #1d4ed8; }
 .pill-kind-rejected, .pill-kind-cancelled { background: #fee2e2; color: #b91c1c; }
-.pill-kind-announcement { background: #ede9fe; color: #6d28d9; }
+.pill-kind-announcement, .pill-kind-distribution { background: #ede9fe; color: #6d28d9; }
+.pill-kind-submitted { background: #e0f2fe; color: #0369a1; }
+.pill-kind-reminder { background: #ffedd5; color: #c2410c; }
+.pill-kind-expired { background: #fee2e2; color: #b91c1c; }
+.pill-kind-closure { background: #fce7f3; color: #be185d; }
+.pill-kind-hours { background: #e0e7ff; color: #4338ca; }
+.badge-app { background: #e0f2fe; color: #0369a1; }
 .sms-card p { margin: 4px 0 0; }
 
 .detail-actions { display: flex; flex-direction: column; gap: 10px; }

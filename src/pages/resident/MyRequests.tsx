@@ -6,7 +6,7 @@ import { Empty, Loading, Message } from '../../components/ui';
 import { RequestRow, STATUS_LABEL, statusKey, Svg, type StatusKey } from '../../components/RequestCards';
 import type { MedicineRequest } from '../../types';
 
-const FILTERS: ('all' | StatusKey)[] = ['all', 'review', 'claim', 'stock', 'claimed', 'available', 'cancelled', 'rejected'];
+const FILTERS: ('all' | StatusKey)[] = ['all', 'review', 'claim', 'stock', 'claimed', 'available', 'cancelled', 'expired', 'rejected'];
 
 function greeting(): string {
   const h = new Date().getHours();
