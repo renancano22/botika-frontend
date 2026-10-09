@@ -13,14 +13,11 @@ interface ResidentDash {
 }
 
 export default function ResidentDashboard() {
-  const { data, error, loading, setData } = useApi<ResidentDash>('/dashboard', undefined, 30000);
+  const { data, error, loading } = useApi<ResidentDash>('/dashboard', undefined, 30000);
 
   if (loading && !data) return <Loading />;
   if (!data) return <Message>{error}</Message>;
   const { resident, counts } = data;
-  const replace = (n: SmsNotification) => setData((d) => d && ({
-    ...d, recent_notifications: d.recent_notifications.map((x) => (x.notification_id === n.notification_id ? n : x)),
-  }));
 
   return (
     <div className="page">
@@ -51,7 +48,7 @@ export default function ResidentDashboard() {
         <Card title="Latest notifications" actions={<Link to="/notifications">See all</Link>}>
           {data.recent_notifications.length === 0 ? <Empty>No notifications yet.</Empty> : (
             <ul className="notif-list">
-              {data.recent_notifications.map((n) => <NotificationItem key={n.notification_id} n={n} onRead={replace} compact />)}
+              {data.recent_notifications.map((n) => <NotificationItem key={n.notification_id} n={n} compact />)}
             </ul>
           )}
         </Card>

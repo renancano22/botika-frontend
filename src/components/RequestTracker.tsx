@@ -1,97 +1,78 @@
 import type { MedicineRequest } from '../types';
+import { dateTime } from './RequestCards';
 import { formatDate } from '../api';
 
 type StepState = 'done' | 'current' | 'todo' | 'rejected' | 'cancelled';
-interface Step { title: string; state: StepState; text: string; date?: string | null }
+interface Step { title: string; state: StepState; text: string; date?: string | null; tag?: string }
 
 /**
- * Vertical timeline of a request:
- *  medicine: Submitted → Under review → Approved → Claimed
- *  restock : Submitted → Under review → Approved → Medicine available
- * Steps not reached yet are shown greyed out. A rejected or cancelled request ends with a ✕ step.
+ * Request tracking timeline.
+ *  medicine: Request Submitted → Under Review → Approved → Ready for Pickup → Dispensed / Completed
+ *            (approving sets the medicine aside, so it is ready for pickup at the same time)
+ *  restock : Request Submitted → Under Review → Approved → Medicine Available
+ * Steps not reached yet are greyed out ("Pending"). Rejected/cancelled requests end with a ✕ step.
  */
 function buildSteps(r: MedicineRequest, forResident: boolean): Step[] {
   const restock = r.request_type === 'restock';
-  const reviewerRole = restock ? 'the administrator' : 'the pharmacy staff';
-  const reviewer = r.reviewer?.name ?? reviewerRole;
-  const you = forResident ? 'you' : (r.resident?.name ?? 'the resident');
+  const your = forResident ? 'Your' : 'The';
 
-  const submitted: Step = {
-    title: 'Request submitted', state: 'done', date: r.request_date,
-    text: restock ? 'Restock request submitted successfully.' : 'Medicine request submitted successfully.',
-  };
-  const review: Step = { title: 'Under review', state: 'done', text: `Checked by ${reviewerRole}.` };
+  const submitted: Step = { title: 'Request Submitted', state: 'done', date: r.request_date, text: `${your} request has been submitted successfully.` };
+  const review: Step = { title: 'Under Review', state: 'done', text: `${restock ? 'The administrator' : 'The pharmacy staff'} reviewed ${forResident ? 'your' : 'the'} request.` };
   const approved: Step = {
     title: 'Approved', state: 'done', date: r.reviewed_at,
-    text: restock ? `Approved by ${reviewer}.` : `Approved by ${reviewer}. The medicines are set aside for ${you}.`,
+    text: `${your} request has been approved${r.reviewer ? ` by ${r.reviewer.name}` : ''}.`,
   };
-  const last: Step = restock
-    ? { title: 'Medicine available', state: 'todo', text: `${forResident ? 'You' : 'The resident'} will get an SMS when the medicine arrives.` }
-    : { title: 'Claimed', state: 'todo', text: forResident ? 'Show your QR code at Botika ng Bayan to claim your medicines.' : 'The resident shows their QR code at Botika ng Bayan to claim the medicines.' };
+  const ready: Step = {
+    title: 'Ready for Pickup', state: 'done', date: r.reviewed_at,
+    text: `The medicines are set aside at Botika ng Bayan${r.claim_by ? ` until ${formatDate(r.claim_by)}` : ''}.`,
+  };
+  const completed: Step = { title: 'Dispensed / Completed', state: 'todo', text: 'Pending' };
+  const available: Step = { title: 'Medicine Available', state: 'todo', text: 'Pending' };
+  const pending = (s: Step): Step => ({ ...s, state: 'todo', date: null, text: 'Pending' });
 
   switch (r.status) {
     case 'pending':
-      return [
-        submitted,
-        { ...review, state: 'current', text: `${restock ? 'The administrator is' : 'The pharmacy staff is'} checking ${forResident ? 'your' : 'this'} request.` },
-        { ...approved, state: 'todo', date: null, text: forResident ? 'You will get an SMS once it is approved.' : 'The resident gets an SMS once it is approved.' },
-        last,
-      ];
+      return [submitted, { ...review, state: 'current', tag: 'Current', text: `${restock ? 'The administrator' : 'The pharmacy staff'} is reviewing ${forResident ? 'your' : 'the'} request.` },
+        pending(approved), ...(restock ? [available] : [pending(ready), completed])];
     case 'approved':
-      return [submitted, review, approved, restock
-        ? { ...last, state: 'current', text: 'Waiting for the medicine to arrive.' }
-        : { ...last, state: 'current', text: `${forResident ? 'Claim your medicines' : 'Must be claimed'} on or before ${formatDate(r.claim_by)}, or the request is cancelled automatically.` }];
+      return restock
+        ? [submitted, review, approved, { ...available, state: 'current', tag: 'Current', text: `Waiting for the medicine to arrive. ${forResident ? 'You' : 'The resident'} will get an SMS.` }]
+        : [submitted, review, approved, {
+          ...ready, state: 'current', tag: 'Current',
+          text: forResident
+            ? `Your medicines are ready. Bring your QR code / Patient ID and claim them on or before ${formatDate(r.claim_by)}.`
+            : `Waiting for the resident to claim the medicines on or before ${formatDate(r.claim_by)}.`,
+        }, completed];
     case 'dispensed':
-      return [submitted, review, approved, {
-        ...last, state: 'done', date: r.dispensing?.dispensed_at,
-        text: `Medicines ${forResident ? 'received' : 'dispensed'}${r.dispensing?.dispenser ? ` (released by ${r.dispensing.dispenser.name})` : ''}.`,
+      return [submitted, review, approved, ready, {
+        ...completed, state: 'done', date: r.dispensing?.dispensed_at, tag: 'Final status',
+        text: `${forResident ? 'Your medicine was' : 'The medicines were'} released and recorded${r.dispensing?.dispenser ? ` by ${r.dispensing.dispenser.name}` : ' by the pharmacy staff'}.`,
       }];
     case 'fulfilled':
       return [submitted, review, approved, {
-        ...last, state: 'done', date: r.fulfilled_at,
-        text: forResident ? 'The medicine is now in stock. You may now submit a medicine request.' : 'The medicine arrived and the resident was notified by SMS.',
+        ...available, state: 'done', date: r.fulfilled_at, tag: 'Final status',
+        text: forResident ? 'The medicine is now in stock. You may now submit a medicine request.' : 'The medicine arrived and the resident was notified.',
       }];
     case 'rejected':
       return [submitted, review, {
-        title: 'Not approved', state: 'rejected', date: r.reviewed_at,
-        text: `Rejected by ${reviewer}.${r.remarks ? ` Reason: ${r.remarks}` : ''}`,
+        title: 'Rejected', state: 'rejected', date: r.reviewed_at, tag: 'Final status',
+        text: r.remarks ? `Reason: ${r.remarks}` : 'The request was not approved.',
       }];
     case 'cancelled': {
       const auto = !!r.cancelled_at && !r.cancelled_by;
       const cancelled: Step = {
-        title: 'Request cancelled', state: 'cancelled', date: r.cancelled_at,
+        title: 'Request Cancelled', state: 'cancelled', date: r.cancelled_at, tag: 'Final status',
         text: auto
           ? 'Cancelled automatically because the medicines were not claimed in time.'
           : r.cancelled_by
-            ? (forResident ? 'You cancelled this request.' : `Cancelled by ${r.canceller?.name ?? 'the resident'}.`)
-            : 'This request was cancelled.',
+            ? (forResident ? 'This request was cancelled by you.' : `Cancelled by ${r.canceller?.name ?? 'the resident'}.`)
+            : 'The request was cancelled before completion.',
       };
-      // Cancelled after approval keeps the approval step; otherwise it stopped while under review.
-      return r.reviewed_at ? [submitted, review, approved, cancelled] : [submitted, cancelled];
+      if (!r.reviewed_at) return [submitted, cancelled];
+      return restock ? [submitted, review, approved, cancelled] : [submitted, review, approved, ready, cancelled];
     }
     default:
       return [submitted];
-  }
-}
-
-type Tone = 'info' | 'ok' | 'warn' | 'danger' | 'muted';
-
-/** One-line summary box under the timeline. */
-function summary(r: MedicineRequest, forResident: boolean): { tone: Tone; title: string; text: string } {
-  const restock = r.request_type === 'restock';
-  switch (r.status) {
-    case 'pending': return { tone: 'info', title: 'Status: Under review', text: 'This request is waiting for approval.' };
-    case 'approved':
-      return restock
-        ? { tone: 'warn', title: 'Status: Approved — waiting for stock', text: 'An SMS is sent once the medicine arrives.' }
-        : { tone: 'ok', title: 'Status: Ready to claim', text: forResident
-          ? `Bring your QR code / Patient ID (${r.resident?.qr_code ?? 'see My Profile'}) on or before ${formatDate(r.claim_by)}.`
-          : `Set aside until ${formatDate(r.claim_by)}.` };
-    case 'dispensed': return { tone: 'ok', title: `Status: ${forResident ? 'Claimed' : 'Dispensed'}`, text: 'This request is complete.' };
-    case 'fulfilled': return { tone: 'ok', title: 'Status: Medicine available', text: 'This restock request is complete.' };
-    case 'rejected': return { tone: 'danger', title: 'Status: Not approved', text: r.remarks ? `Reason: ${r.remarks}` : 'This request was not approved.' };
-    case 'cancelled': return { tone: 'muted', title: 'Status: Cancelled', text: forResident && !restock ? 'This request is no longer active. You may submit a new request anytime.' : 'This request is no longer active.' };
-    default: return { tone: 'muted', title: r.status, text: '' };
   }
 }
 
@@ -102,38 +83,50 @@ const ICON_PATH: Record<Exclude<StepState, 'todo'>, string> = {
   cancelled: 'M7 7l10 10M17 7 7 17',
 };
 
-/** Vertical status timeline + summary for one request. */
+/** Vertical "Request Tracking" timeline for one request. */
 export default function RequestTracker({ request, forResident }: { request: MedicineRequest; forResident: boolean }) {
   const steps = buildSteps(request, forResident);
-  const info = summary(request, forResident);
-
   return (
-    <div className="tracker-wrap">
-      <ol className="vtrack">
-        {steps.map((s, i) => (
-          <li key={i} className={`vstep st-${s.state}`} aria-current={s.state === 'current' ? 'step' : undefined}>
-            <span className="step-dot" aria-hidden="true">
-              {s.state === 'todo' ? i + 1 : (
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
-                  {s.state === 'current' && <circle cx="12" cy="12" r="8" strokeWidth="2" />}
-                  <path d={ICON_PATH[s.state]} />
-                </svg>
-              )}
-            </span>
-            <div className="vstep-body">
-              <div className="vstep-title">
-                <strong>{s.title}</strong>
-                {s.date && <span className="vstep-date">{formatDate(s.date, true)}</span>}
-              </div>
-              <p className="vstep-text">{s.text}</p>
+    <ol className="vtrack">
+      {steps.map((s, i) => (
+        <li key={i} className={`vstep st-${s.state}`} aria-current={s.state === 'current' ? 'step' : undefined}>
+          <span className="step-dot" aria-hidden="true">
+            {s.state === 'todo' ? i + 1 : (
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+                {s.state === 'current' && <circle cx="12" cy="12" r="8" strokeWidth="2" />}
+                <path d={ICON_PATH[s.state]} />
+              </svg>
+            )}
+          </span>
+          <div className="vstep-body">
+            <div className="vstep-title">
+              <strong>{s.title}</strong>
+              {s.tag && <span className={`step-tag ${s.state === 'current' ? 'tag-current' : `tag-${s.state}`}`}>{s.tag}</span>}
             </div>
-          </li>
-        ))}
-      </ol>
-      <div className={`status-box status-${info.tone}`}>
-        <strong>{info.title}</strong>
-        {info.text && <p>{info.text}</p>}
-      </div>
-    </div>
+            {s.date && <span className="vstep-date">{dateTime(s.date)}</span>}
+            <p className="vstep-text">{s.text}</p>
+          </div>
+        </li>
+      ))}
+    </ol>
   );
+}
+
+export type Tone = 'info' | 'ok' | 'warn' | 'danger' | 'muted';
+
+/** "Request Status" box shown under the timeline. */
+export function statusSummary(r: MedicineRequest, forResident = true): { tone: Tone; title: string; text: string } {
+  const restock = r.request_type === 'restock';
+  switch (r.status) {
+    case 'pending': return { tone: 'info', title: 'Under Review', text: 'This request is waiting for approval. You will get an SMS once it is reviewed.' };
+    case 'approved':
+      return restock
+        ? { tone: 'warn', title: 'Approved — Waiting for Stock', text: 'You will get an SMS as soon as the medicine arrives.' }
+        : { tone: 'ok', title: 'Ready for Pickup', text: `Claim your medicines at Botika ng Bayan on or before ${formatDate(r.claim_by)}, or the request will be cancelled automatically.` };
+    case 'dispensed': return { tone: 'ok', title: 'Completed', text: 'This request is now part of your medicine history.' };
+    case 'fulfilled': return { tone: 'ok', title: 'Medicine Available', text: 'The medicine is now in stock. You may now submit a medicine request.' };
+    case 'rejected': return { tone: 'danger', title: 'Rejected', text: 'This request was not approved.' };
+    case 'cancelled': return { tone: 'danger', title: 'Cancelled', text: forResident ? 'This medicine request is no longer active.' : 'This request is no longer active.' };
+    default: return { tone: 'muted', title: r.status, text: '' };
+  }
 }

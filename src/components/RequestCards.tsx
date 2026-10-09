@@ -11,6 +11,15 @@ export const ICONS = {
   hand: 'M4 13h3l4 2h4a2 2 0 0 1 0 4H9m6-4 4-2a2 2 0 0 1 2 3l-6 5H4',
   megaphone: 'M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1zM15 9a3 3 0 0 1 0 6M18 6a7 7 0 0 1 0 12',
   chevron: 'M9 6l6 6-6 6',
+  back: 'M15 6l-6 6 6 6',
+  trash: 'M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6',
+  user: 'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8',
+  calendar: 'M4 6h16v14H4zM4 10h16M8 3v4M16 3v4',
+  note: 'M14 3H6v18h12V7zM14 3v4h4M9 12h6M9 16h4',
+  info: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 11v5M12 8h.01',
+  ban: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM5.6 5.6l12.8 12.8',
+  bulb: 'M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.7.7 1 1.5 1 2.5h6c0-1 .3-1.8 1-2.5A6 6 0 0 0 12 3z',
+  pin: 'M12 21s-6-5.5-6-11a6 6 0 0 1 12 0c0 5.5-6 11-6 11zM12 12a2 2 0 1 0 0-4 2 2 0 0 0 0 4',
 };
 
 export function Svg({ d, size = 20, width = 2 }: { d: string; size?: number; width?: number }) {
@@ -38,9 +47,9 @@ export function statusKey(r: MedicineRequest): StatusKey {
 
 export const STATUS_LABEL: Record<StatusKey, string> = {
   review: 'Under review',
-  claim: 'Ready to claim',
+  claim: 'Ready for pickup',
   stock: 'Waiting for stock',
-  claimed: 'Claimed',
+  claimed: 'Completed',
   available: 'Available',
   cancelled: 'Cancelled',
   rejected: 'Rejected',
@@ -56,7 +65,7 @@ export function quantityText(quantity: number, unit: string): string {
   return `${quantity} ${unit}${quantity > 1 && !/s$/i.test(unit) ? 's' : ''}`;
 }
 
-function dateTime(value: string): string {
+export function dateTime(value: string): string {
   const d = new Date(value);
   return `${d.toLocaleDateString('en-PH', { dateStyle: 'medium' })} • ${d.toLocaleTimeString('en-PH', { hour: 'numeric', minute: '2-digit' })}`;
 }

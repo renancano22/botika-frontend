@@ -15,7 +15,6 @@ export default function MyNotifications() {
   const unread = data?.filter((n) => !n.read_at).length ?? 0;
   const shown = tab === 'unread' ? data?.filter((n) => !n.read_at) : data;
 
-  const replace = (n: SmsNotification) => setData((list) => list?.map((x) => (x.notification_id === n.notification_id ? n : x)) ?? null);
   const readAll = async () => {
     await markAllRead();
     const now = new Date().toISOString();
@@ -23,30 +22,35 @@ export default function MyNotifications() {
   };
 
   return (
-    <div className="page">
+    <div className="page page-narrow">
       <header className="page-head">
         <div>
           <h1>Notifications</h1>
-          <p className="muted">Text messages (SMS) sent to you by Botika ng Bayan are also kept here.</p>
+          <p className="muted">Stay updated on your medicine requests. SMS messages sent to you are also kept here.</p>
         </div>
-        {unread > 0 && <button className="btn btn-outline" onClick={readAll}>Mark all as read</button>}
       </header>
       <Message>{error}</Message>
-      <section>
-        <div className="tabs" role="tablist">
-          <button role="tab" aria-selected={tab === 'all'} className={tab === 'all' ? 'active' : ''} onClick={() => setTab('all')}>All</button>
-          <button role="tab" aria-selected={tab === 'unread'} className={tab === 'unread' ? 'active' : ''} onClick={() => setTab('unread')}>
-            Unread{unread > 0 && <span className="tab-count">{unread}</span>}
-          </button>
-        </div>
-        {loading && !data ? <Loading /> : !shown?.length ? (
-          <Empty>{tab === 'unread' ? 'You have read all your notifications.' : 'No notifications yet.'}</Empty>
-        ) : (
-          <ul className="notif-list">
-            {shown.map((n) => <NotificationItem key={n.notification_id} n={n} onRead={replace} />)}
-          </ul>
-        )}
-      </section>
+
+      <div className="section-head">
+        <h2 className="section-title">Recent Notifications</h2>
+        {unread > 0 && <button className="link-button" onClick={readAll}>Mark all as read</button>}
+      </div>
+      <div className="chips" role="tablist">
+        <button role="tab" aria-selected={tab === 'all'} className={`chip ${tab === 'all' ? 'active' : ''}`} onClick={() => setTab('all')}>
+          All <span className="chip-count">{data?.length ?? 0}</span>
+        </button>
+        <button role="tab" aria-selected={tab === 'unread'} className={`chip ${tab === 'unread' ? 'active' : ''}`} onClick={() => setTab('unread')}>
+          Unread <span className="chip-count">{unread}</span>
+        </button>
+      </div>
+
+      {loading && !data ? <Loading /> : !shown?.length ? (
+        <div className="card"><Empty>{tab === 'unread' ? 'You have read all your notifications.' : 'No notifications yet.'}</Empty></div>
+      ) : (
+        <ul className="notif-list">
+          {shown.map((n) => <NotificationItem key={n.notification_id} n={n} />)}
+        </ul>
+      )}
     </div>
   );
 }

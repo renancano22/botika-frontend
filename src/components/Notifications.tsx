@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { api, NOTIFICATIONS_CHANGED, notificationsChanged } from '../api';
+import { api, NOTIFICATIONS_CHANGED, notificationsChanged, timeAgo } from '../api';
 import { ICONS, Svg } from './RequestCards';
 import type { SmsNotification } from '../types';
 
@@ -28,16 +28,10 @@ export async function markAllRead(): Promise<void> {
   notificationsChanged();
 }
 
-/** Where a notification leads: request updates open that request; announcements open the notifications list. */
-function target(n: SmsNotification, compact: boolean): string | null {
-  if (n.request_id) return `/requests/${n.request_id}`;
-  return compact ? '/notifications' : null;
-}
-
-type Kind = 'approved' | 'rejected' | 'dispensed' | 'cancelled' | 'available' | 'announcement';
+export type Kind = 'approved' | 'rejected' | 'dispensed' | 'cancelled' | 'available' | 'announcement';
 
 /** Older notifications have no type saved, so it is worked out from the message. */
-function kindOf(n: SmsNotification): Kind {
+export function kindOf(n: SmsNotification): Kind {
   if (n.type) return n.type as Kind;
   const m = n.message.toLowerCase();
   if (!n.request_id) return 'announcement';
@@ -49,52 +43,40 @@ function kindOf(n: SmsNotification): Kind {
   return 'announcement';
 }
 
-const KIND_ICON: Record<Kind, string> = {
-  approved: ICONS.check,
-  rejected: ICONS.x,
-  dispensed: ICONS.hand,
-  cancelled: ICONS.x,
-  available: ICONS.box,
-  announcement: ICONS.megaphone,
+/** Title and icon for each kind of notification. */
+export const KIND: Record<Kind, { title: string; icon: string }> = {
+  approved: { title: 'Request Approved!', icon: ICONS.check },
+  available: { title: 'Medicine Available', icon: ICONS.box },
+  dispensed: { title: 'Request Completed', icon: ICONS.hand },
+  rejected: { title: 'Request Rejected', icon: ICONS.x },
+  cancelled: { title: 'Request Cancelled', icon: ICONS.ban },
+  announcement: { title: 'Announcement', icon: ICONS.megaphone },
 };
 
-function dateTime(value: string): string {
-  const d = new Date(value);
-  return `${d.toLocaleDateString('en-PH', { dateStyle: 'medium' })} • ${d.toLocaleTimeString('en-PH', { hour: 'numeric', minute: '2-digit' })}`;
+export function cleanMessage(message: string): string {
+  return message.replace(/^BulanBotikaCare:\s*/, '');
 }
 
 /**
- * One notification card: a coloured icon for its kind, the message, the date and an arrow.
- * Unread ones are white with bold text and a dot; read ones are greyed out.
- * Tapping it marks it as read and opens what it is about (e.g. the approved request).
+ * One notification card: coloured icon, title, message, time and "View details".
+ * Unread ones are tinted with a dot; read ones are greyed out.
+ * Tapping opens the notification details (and marks it as read).
  */
-export function NotificationItem({ n, onRead, compact = false }: {
-  n: SmsNotification; onRead: (n: SmsNotification) => void; compact?: boolean;
-}) {
+export function NotificationItem({ n, compact = false }: { n: SmsNotification; compact?: boolean }) {
   const navigate = useNavigate();
   const unread = !n.read_at;
-  const goTo = target(n, compact);
   const kind = kindOf(n);
-  const read = async () => { if (unread) onRead(await markRead(n)); };
-  const open = async () => {
-    try { await read(); } catch { /* still open it */ }
-    if (goTo) navigate(goTo);
-  };
 
   return (
     <li className={`notif ${unread ? 'notif-unread' : 'notif-read'}`}>
-      <button type="button" className={`notif-body ${goTo ? 'notif-link' : ''}`} onClick={open}
-        aria-label={goTo ? 'Open notification' : unread ? 'Mark as read' : undefined}>
-        <span className={`notif-icon kind-${kind}`} aria-hidden="true"><Svg d={KIND_ICON[kind]} size={20} width={2.2} /></span>
+      <button type="button" className="notif-body notif-link" onClick={() => navigate(`/notifications/${n.notification_id}`)}>
+        <span className={`notif-icon kind-${kind}`} aria-hidden="true"><Svg d={KIND[kind].icon} size={20} width={2.2} /></span>
         <span className="notif-text">
-          <span className="notif-message">{n.message.replace(/^BulanBotikaCare:\s*/, '')}</span>
-          <span className="notif-meta">{dateTime(n.sent_at)}</span>
-          {unread && !compact && !goTo && (
-            <span className="notif-mark">Tap to mark as read</span>
-          )}
+          <span className="notif-title">{KIND[kind].title}{unread && <span className="notif-dot" aria-label="Unread" />}</span>
+          <span className="notif-message">{cleanMessage(n.message)}</span>
+          <span className="notif-meta">{timeAgo(n.sent_at)}</span>
+          {!compact && <span className="notif-view">View details →</span>}
         </span>
-        {unread && <span className="notif-dot" aria-label="Unread" />}
-        {goTo && <span className="notif-arrow" aria-hidden="true"><Svg d={ICONS.chevron} size={18} /></span>}
       </button>
     </li>
   );
@@ -150,7 +132,6 @@ export function NotificationBell() {
     };
   }, [open]);
 
-  const replace = (n: SmsNotification) => setItems((list) => list?.map((x) => (x.notification_id === n.notification_id ? n : x)) ?? null);
   const readAll = async () => {
     await markAllRead();
     const now = new Date().toISOString();
@@ -178,7 +159,7 @@ export function NotificationBell() {
           </div>
           {items === null ? <p className="empty">Loading…</p> : items.length === 0 ? <p className="empty">No notifications yet.</p> : (
             <ul className="notif-list">
-              {items.map((n) => <NotificationItem key={n.notification_id} n={n} onRead={replace} compact />)}
+              {items.map((n) => <NotificationItem key={n.notification_id} n={n} compact />)}
             </ul>
           )}
           <Link to="/notifications" className="bell-all">See all notifications</Link>
