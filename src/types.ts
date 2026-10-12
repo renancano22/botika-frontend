@@ -152,16 +152,43 @@ export interface SmsNotification {
   resident?: Pick<Resident, 'resident_id' | 'name' | 'contact_no'>;
 }
 
+export type ForecastMethod = 'moving_average' | 'linear_regression' | 'exponential_smoothing';
+
+/** One medicine on the Demand Forecasting page. */
 export interface ForecastResult {
   medicine_id: number;
   medicine_name: string;
+  category: string;
   unit: string;
   forecast_date: string;
+  /** dispensed quantity per past month, e.g. { "2026-04": 40 } */
   history: Record<string, number>;
-  methods: Record<'moving_average' | 'linear_regression' | 'exponential_smoothing', { predicted_demand: number; mae: number | null }>;
-  best_method: string;
+  /** forecast of the chosen method per coming month */
+  forecast: Record<string, number>;
+  methods: Record<ForecastMethod, { predicted_demand: number; monthly: number[]; mae: number | null }>;
+  /** most accurate method for this medicine (lowest back-tested error) */
+  best_method: ForecastMethod;
+  /** total for the whole forecast period, chosen method */
   predicted_demand: number;
   available_stock: number;
   reorder_level: number;
   recommended_restock: number;
+  /** high = stock runs out within the period, medium = falls below the reorder level, null = enough stock */
+  priority: 'high' | 'medium' | null;
+}
+
+export interface ForecastReport {
+  generated_at: string;
+  history_months: number;
+  horizon: number;
+  method: ForecastMethod;
+  best_method: ForecastMethod;
+  method_error: Record<ForecastMethod, number | null>;
+  history_keys: string[];
+  forecast_keys: string[];
+  summary: { medicines_analyzed: number; potential_stockouts: number; restock_recommendations: number };
+  top_barangays: { barangay: string; total: number }[];
+  top_medicines: { medicine_id: number; medicine_name: string; unit: string; total: number; quantity: number }[];
+  results: ForecastResult[];
+  saved?: boolean;
 }
