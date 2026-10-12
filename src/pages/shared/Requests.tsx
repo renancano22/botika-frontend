@@ -69,7 +69,7 @@ export default function Requests() {
         {loading && !data ? <Loading /> : !data?.length ? <Empty>No requests found.</Empty> : (
           <table>
             <thead>
-              <tr><th>#</th><th>Date</th><th>Resident</th><th>Type</th><th>Medicines</th><th>Status</th><th>Remarks</th><th></th></tr>
+              <tr><th>#</th><th>Date</th><th>Resident</th><th>Type</th><th>Medicines</th><th>Status</th><th>Resident's note / Remarks</th><th></th></tr>
             </thead>
             <tbody>
               {data.map((r) => (
@@ -84,7 +84,10 @@ export default function Requests() {
                     {r.status === 'approved' && r.claim_by && <div className="muted small">claim by {formatDate(r.claim_by)}</div>}
                     {r.status !== 'approved' && r.reviewer && <div className="muted small">by {r.reviewer.name}</div>}
                   </td>
-                  <td>{r.remarks}</td>
+                  <td>
+                    {r.resident_note && <div className="note-text">“{r.resident_note}”</div>}
+                    {r.remarks && <div className="muted small">Remarks: {r.remarks}</div>}
+                  </td>
                   <td className="right nowrap">
                     <button className="btn btn-outline btn-sm" onClick={() => setViewingId(r.request_id)}>Details</button>{' '}
                     {reviewButtons(r)}
@@ -104,6 +107,9 @@ export default function Requests() {
             <div><small className="muted">Type</small><strong>{viewing.request_type === 'restock' ? 'Restock request' : 'Medicine request'}</strong></div>
           </div>
           <p className="req-items">{itemsText(viewing)}</p>
+          {viewing.resident_note && (
+            <div className="review-note"><span className="muted small">Resident's reason for request</span><p>{viewing.resident_note}</p></div>
+          )}
           <RequestTracker request={viewing} forResident={false} />
           <div className="modal-actions">
             {reviewButtons(viewing)}

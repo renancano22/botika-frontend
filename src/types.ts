@@ -92,6 +92,8 @@ export interface MedicineRequest {
   resident_id: number;
   request_type: 'medicine' | 'restock';
   request_date: string;
+  /** The resident's reason / note for the request (optional). */
+  resident_note?: string | null;
   status: RequestStatus;
   reviewed_by: number | null;
   reviewed_at: string | null;

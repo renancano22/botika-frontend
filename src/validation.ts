@@ -33,7 +33,7 @@ export function tomorrow(): string {
 }
 
 /** Most a resident can ask for of one medicine in a single request (same as the backend setting). */
-export const MAX_REQUEST_QUANTITY = 1000;
+export const MAX_REQUEST_QUANTITY = 30;
 
 /**
  * Checks a requested quantity and returns a warning to show under the field, or null when it is fine.

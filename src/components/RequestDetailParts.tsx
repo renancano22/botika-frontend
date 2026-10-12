@@ -47,7 +47,8 @@ export function RequestSummaryCard({ r }: { r: MedicineRequest }) {
       <dl className="detail-rows">
         <div><dt><Svg d={ICONS.user} size={18} /> Requested by</dt><dd>{r.resident?.name ?? '—'}</dd></div>
         <div><dt><Svg d={ICONS.calendar} size={18} /> Pickup schedule</dt><dd>{pickupText(r)}</dd></div>
-        <div><dt><Svg d={ICONS.note} size={18} /> Notes</dt><dd>{notesText(r)}</dd></div>
+        <div><dt><Svg d={ICONS.note} size={18} /> Reason for request</dt><dd className="note-text">{r.resident_note || 'None'}</dd></div>
+        <div><dt><Svg d={ICONS.info} size={18} /> Pharmacy notes</dt><dd>{notesText(r)}</dd></div>
       </dl>
     </section>
   );

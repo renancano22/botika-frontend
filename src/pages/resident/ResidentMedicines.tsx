@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api, errorMessage } from '../../api';
 import { useApi } from '../../hooks';
 import { Badge, Empty, Loading, Message, Modal } from '../../components/ui';
@@ -42,7 +42,23 @@ export default function ResidentMedicines() {
   const [sheetError, setSheetError] = useState('');
   const [toast, setToast] = useState('');
   const [busy, setBusy] = useState(false);
+  const [note, setNote] = useState('');
+  const [restockNote, setRestockNote] = useState('');
   const navigate = useNavigate();
+
+  // Steps: browse medicines → "Medicine Request Form" (quantities + reason) → review → submit.
+  // The step is kept in the address (?step=form / ?step=review) so the phone's back button works.
+  const [params, setParams] = useSearchParams();
+  const step = params.get('step');
+  const goStep = (s: 'form' | 'review' | null) => {
+    setSheetError('');
+    setCartOpen(false);
+    setParams(s ? { step: s } : {});
+    window.scrollTo({ top: 0 });
+  };
+  useEffect(() => {
+    if (step && cart.length === 0) setParams({}, { replace: true }); // e.g. after refreshing the page
+  }, [step, cart.length, setParams]);
 
   useEffect(() => {
     if (!toast) return;
@@ -73,10 +89,15 @@ export default function ResidentMedicines() {
     setBusy(true);
     setSheetError('');
     try {
-      await api.post('/requests', { request_type: 'medicine', items: cart.map((c) => ({ medicine_id: c.medicine.medicine_id, quantity: c.quantity })) });
+      const res = await api.post<{ request_id: number }>('/requests', {
+        request_type: 'medicine',
+        note: note.trim() || null,
+        items: cart.map((c) => ({ medicine_id: c.medicine.medicine_id, quantity: c.quantity })),
+      });
       setCart([]);
+      setNote('');
       setCartOpen(false);
-      navigate('/requests');
+      navigate(`/requests/${res.data.request_id}`, { replace: true });
     } catch (err) {
       setSheetError(errorMessage(err));
     } finally { setBusy(false); }
@@ -87,7 +108,7 @@ export default function ResidentMedicines() {
     setBusy(true);
     setSheetError('');
     try {
-      await api.post('/requests', { request_type: 'restock', items: [{ medicine_id: restockFor.medicine_id, quantity: restockQty }] });
+      await api.post('/requests', { request_type: 'restock', note: restockNote.trim() || null, items: [{ medicine_id: restockFor.medicine_id, quantity: restockQty }] });
       setRestockFor(null);
       setToast('Restock request sent. You will get an SMS once the medicine is available.');
     } catch (err) {
@@ -123,12 +144,101 @@ export default function ResidentMedicines() {
       )}
       {sheetError && <Message>{sheetError}</Message>}
       {cart.length > 0 && (
-        <button className="btn btn-block" disabled={busy || !cartValid} onClick={submitRequest}>
-          {busy ? 'Submitting…' : `Submit request (${cart.length})`}
+        <button className="btn btn-block" disabled={!cartValid} onClick={() => goStep('form')}>
+          Continue to request form ({cart.length})
         </button>
       )}
     </>
   );
+
+  if ((step === 'form' || step === 'review') && cart.length > 0) {
+    const prescription = cart.filter((c) => /prescription/i.test(c.medicine.description ?? ''));
+    return (
+      <div className="page page-narrow">
+        <header className="page-head hero-head form-hero">
+          <div>
+            <button className="hero-back" onClick={() => navigate(-1)}><Svg d={ICONS.back} size={18} /> {step === 'review' ? 'Edit request' : 'View Medicines'}</button>
+            <h1>{step === 'review' ? 'Review Your Request' : 'Medicine Request Form'}</h1>
+            <p className="muted">{step === 'review' ? 'Please check the details before submitting.' : 'Enter the details of your medicine request.'}</p>
+          </div>
+        </header>
+
+        <section className="card form-card">
+          {cart.map((c, idx) => {
+            const max = Math.min(c.medicine.available_stock, MAX_REQUEST_QUANTITY);
+            return (
+              <div className="form-med" key={c.medicine.medicine_id}>
+                <div className="form-med-head">
+                  <span className="form-med-tile"><Svg d={ICONS.pill} size={30} width={1.8} /></span>
+                  <div className="form-med-name">
+                    <strong>{c.medicine.medicine_name}</strong>
+                    <span className="muted">{c.medicine.category} · {c.medicine.unit}</span>
+                    <span className={`badge badge-${c.medicine.status}`}>{quantityText(c.medicine.available_stock, c.medicine.unit)} available</span>
+                  </div>
+                  {step === 'form' && cart.length > 1 && (
+                    <button className="icon-btn" onClick={() => setCart(cart.filter((_, i) => i !== idx))} aria-label={`Remove ${c.medicine.medicine_name}`}>
+                      <Svg d={ICONS.trash} size={18} />
+                    </button>
+                  )}
+                </div>
+                {step === 'form' ? (
+                  <label>Requested Quantity
+                    <select className="select-pill" value={c.quantity} onChange={(e) => setCart(cart.map((x, i) => (i === idx ? { ...x, quantity: Number(e.target.value) } : x)))}>
+                      {Array.from({ length: Math.max(max, 1) }, (_, i) => i + 1).map((q) => (
+                        <option key={q} value={q}>{quantityText(q, c.medicine.unit)}</option>
+                      ))}
+                    </select>
+                  </label>
+                ) : (
+                  <div className="review-row"><span>Requested quantity</span><strong>{quantityText(c.quantity, c.medicine.unit)}</strong></div>
+                )}
+                {cartWarnings[idx] && <p className="field-warning">{cartWarnings[idx]}</p>}
+              </div>
+            );
+          })}
+
+          {step === 'form' ? (
+            <>
+              <label><span>Reason for Request <span className="muted small">(optional)</span></span>
+                <textarea rows={3} maxLength={500} value={note} onChange={(e) => setNote(e.target.value)}
+                  placeholder="Enter reason for requesting this medicine… e.g. for my child's fever, maintenance for high blood pressure" />
+              </label>
+              <p className="field-hint right">{note.length}/500</p>
+
+              <div className="info-box info-warn">
+                <strong><Svg d={ICONS.info} size={18} /> Important reminder</strong>
+                <p>Medicines are not suitable for everyone. Follow a doctor's or health worker's advice on whether to use them and how to take them.</p>
+                {prescription.length > 0 && (
+                  <p><b>Bring your prescription for: {prescription.map((c) => c.medicine.medicine_name).join(', ')}.</b></p>
+                )}
+                <p>You can request up to {MAX_REQUEST_QUANTITY} of each medicine per request.</p>
+              </div>
+
+              <button className="btn btn-block btn-lg" disabled={!cartValid} onClick={() => goStep('review')}>Review Request</button>
+              <button className="btn btn-outline btn-block" onClick={() => goStep(null)}>+ Add another medicine</button>
+            </>
+          ) : (
+            <>
+              <div className="review-note">
+                <span className="muted small">Reason for request</span>
+                <p>{note.trim() || 'No reason given.'}</p>
+              </div>
+              <div className="info-box info-ok">
+                <strong><Svg d={ICONS.calendar} size={18} /> What happens next</strong>
+                <p>The pharmacy staff will review your request. You will get an SMS once it is approved.</p>
+                <p>Then claim your medicines at Botika ng Bayan, Bulan within 7 days. Bring your QR code / Patient ID.</p>
+              </div>
+              {sheetError && <Message>{sheetError}</Message>}
+              <button className="btn btn-block btn-lg" disabled={busy || !cartValid} onClick={submitRequest}>
+                {busy ? 'Submitting…' : 'Confirm & Submit Request'}
+              </button>
+              <button className="btn btn-outline btn-block" disabled={busy} onClick={() => navigate(-1)}>Edit request</button>
+            </>
+          )}
+        </section>
+      </div>
+    );
+  }
 
   return (
     <div className="page page-with-bar">
@@ -182,7 +292,7 @@ export default function ResidentMedicines() {
                       <div className="med-actions">
                         {/* Low stock: the resident may need more than what is left, so restock can be requested too. */}
                         {m.status !== 'available' && (
-                          <button className="btn btn-outline btn-sm" onClick={() => { setSheetError(''); setRestockFor(m); setRestockQty(m.available_stock + 1); }}>Request restock</button>
+                          <button className="btn btn-outline btn-sm" onClick={() => { setSheetError(''); setRestockNote(''); setRestockFor(m); setRestockQty(m.available_stock + 1); }}>Request restock</button>
                         )}
                         {m.status !== 'out_of_stock' && (
                           <button className={`btn btn-sm ${added ? 'btn-added' : ''}`} onClick={() => openAdd(m)}>
@@ -211,7 +321,7 @@ export default function ResidentMedicines() {
           <span className="cart-bar-count">{cart.length}</span>
           <span className="cart-bar-text">
             <strong>{cart.length} medicine{cart.length > 1 ? 's' : ''} in your request</strong>
-            <small>Tap to review and submit</small>
+            <small>Tap to continue to the request form</small>
           </span>
           <Svg d={ICONS.chevron} size={20} />
         </button>
@@ -258,6 +368,10 @@ export default function ResidentMedicines() {
           </label>
           <p className="field-hint">Up to {MAX_REQUEST_QUANTITY} {unitPlural(restockFor.unit)} per request.</p>
           {restockWarning && <p className="field-warning">{restockWarning}</p>}
+          <label>Note for the administrator (optional)
+            <textarea rows={2} maxLength={500} value={restockNote} onChange={(e) => setRestockNote(e.target.value)}
+              placeholder="e.g. I need this maintenance medicine every month." />
+          </label>
           {sheetError && <Message>{sheetError}</Message>}
           <div className="modal-actions">
             <button className="btn btn-outline" onClick={() => setRestockFor(null)}>Cancel</button>

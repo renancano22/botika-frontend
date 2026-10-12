@@ -618,3 +618,21 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--p
 .expiry-banner-icon { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; flex-shrink: 0; }
 .expiry-banner .expiry-list { padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
 .expiry-banner-foot { display: flex; justify-content: flex-end; align-items: center; gap: 12px; }
+
+/* ---------- medicine request form */
+.form-hero { flex-direction: column; align-items: flex-start; }
+.hero-back { display: inline-flex; align-items: center; gap: 4px; margin: -4px 0 8px -4px; padding: 4px 6px; border: none; border-radius: 8px; background: transparent; color: rgba(236, 253, 247, 0.9); font: inherit; font-weight: 600; cursor: pointer; }
+.hero-back:hover { background: rgba(255, 255, 255, 0.12); }
+.form-card { display: flex; flex-direction: column; gap: 12px; padding: 18px; }
+.form-med { padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+.form-med-head { display: flex; gap: 14px; align-items: flex-start; margin-bottom: 12px; }
+.form-med-tile { width: 64px; height: 64px; border-radius: 16px; display: grid; place-items: center; flex-shrink: 0; background: linear-gradient(135deg, #dff6ee, #cfeaf5); color: var(--primary); }
+.form-med-name { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; align-items: flex-start; }
+.form-med-name strong { font-size: 1.2rem; }
+.form-card textarea { min-height: 90px; resize: vertical; border-radius: 14px; }
+.form-card .field-hint.right { margin: -10px 0 0; }
+.btn-lg { padding: 13px 18px; font-size: 1rem; border-radius: 14px; }
+.review-row { display: flex; justify-content: space-between; gap: 10px; padding: 10px 12px; border-radius: 12px; background: var(--primary-50); }
+.review-note { padding: 12px; border-radius: 12px; border: 1px dashed #cfdcd8; }
+.review-note p { margin: 4px 0 0; white-space: pre-wrap; }
+.note-text { white-space: pre-wrap; overflow-wrap: anywhere; }
