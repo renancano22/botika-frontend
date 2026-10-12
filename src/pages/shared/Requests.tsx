@@ -11,6 +11,33 @@ import type { MedicineRequest } from '../../types';
 
 const itemsText = (r: MedicineRequest) => r.items.map((i) => `${i.medicine.medicine_name} ×${i.quantity}`).join(', ');
 
+/** Common reasons for not approving a request (shown in the Reject dropdown). Sent to the resident by SMS after "Reason:". */
+const PRESCRIPTION_REASONS = [
+  'No prescription was uploaded for a medicine that requires one.',
+  'The prescription is unclear, incomplete or not valid.',
+  'The prescription does not match the requested medicine or quantity.',
+];
+const MEDICINE_REASONS = [
+  'Not enough stock of the requested medicine right now.',
+  'The requested quantity is more than what can be given per request.',
+  'You already have an active request for this medicine.',
+  'This medicine was given to you recently. Please request again when your supply runs out.',
+  'Please consult a doctor or the Rural Health Unit (RHU) first.',
+  'Your resident information is incomplete or could not be verified.',
+];
+const RESTOCK_REASONS = [
+  'This medicine is not supplied by Botika ng Bayan.',
+  'A restock of this medicine is already scheduled.',
+  'The supplier currently has no stock of this medicine.',
+  'You already have a pending restock request for this medicine.',
+  'The medicine is already available. You may now submit a medicine request.',
+];
+const OTHER = '__other__';
+
+const reasonsFor = (r: MedicineRequest) => (r.request_type === 'restock'
+  ? RESTOCK_REASONS
+  : [...(requiresPrescription(r) ? PRESCRIPTION_REASONS : []), ...MEDICINE_REASONS]);
+
 const STATUSES = ['', 'pending', 'approved', 'rejected', 'dispensed', 'fulfilled', 'cancelled', 'expired'];
 
 /** Staff/admin: review medicine and restock requests. (Residents use My Requests.) */
@@ -21,7 +48,11 @@ export default function Requests() {
   const { data, error, loading, reload } = useApi<MedicineRequest[]>('/requests', { type, status }, 30000);
   const [msg, setMsg] = useState<{ type: 'error' | 'success'; text: string } | null>(null);
   const [rejecting, setRejecting] = useState<MedicineRequest | null>(null);
-  const [remarks, setRemarks] = useState('');
+  const [reason, setReason] = useState('');            // a reason from the list, or OTHER
+  const [otherReason, setOtherReason] = useState('');  // typed by hand when "Other reason" is chosen
+  const [rejectError, setRejectError] = useState('');
+  const remarks = reason === OTHER ? otherReason.trim() : reason;
+  const openReject = (r: MedicineRequest) => { setRejecting(r); setReason(''); setOtherReason(''); setRejectError(''); };
   const [viewingId, setViewingId] = useState<number | null>(null);
   const viewing = data?.find((r) => r.request_id === viewingId) ?? null;
   const [rxChecked, setRxChecked] = useState(false);
@@ -55,7 +86,7 @@ export default function Requests() {
     {requiresPrescription(r) && !inDetails
       ? <button className="btn btn-sm" onClick={() => openDetails(r)}>Check & approve</button>
       : <button className="btn btn-sm" disabled={requiresPrescription(r) && (!rxChecked || !r.prescription)} onClick={() => approve(r)}>Approve</button>}{' '}
-    <button className="btn btn-danger btn-sm" onClick={() => { setRejecting(r); setRemarks(''); }}>Reject</button>
+    <button className="btn btn-danger btn-sm" onClick={() => openReject(r)}>Reject</button>
   </>;
 
   return (
@@ -166,12 +197,38 @@ export default function Requests() {
       {rejecting && (
         <Modal title={`Reject request #${rejecting.request_id}`} onClose={() => setRejecting(null)}>
           <label>Reason (sent to the resident by SMS)
-            <textarea rows={3} value={remarks} onChange={(e) => setRemarks(e.target.value)} required />
+            <select className="select-pill" value={reason} onChange={(e) => { setReason(e.target.value); setRejectError(''); }} autoFocus>
+              <option value="" disabled>Choose a reason…</option>
+              {reasonsFor(rejecting).map((text) => <option key={text} value={text}>{text}</option>)}
+              <option value={OTHER}>Other reason (type it)</option>
+            </select>
           </label>
+          {reason === OTHER && (
+            <label>Type the reason
+              <textarea rows={3} maxLength={200} value={otherReason} onChange={(e) => setOtherReason(e.target.value)}
+                placeholder="Only if the reason is not in the list. Write it so the resident can understand it." autoFocus />
+              <span className="field-hint right">{otherReason.length}/200</span>
+            </label>
+          )}
+          {remarks && (
+            <div className="reject-preview">
+              <small>The resident will receive:</small>
+              <p>BulanBotikaCare: Your {rejecting.request_type === 'restock' ? 'restock' : 'medicine'} request #{rejecting.request_id} was not approved. Reason: {remarks}</p>
+            </div>
+          )}
+          {rejectError && <Message>{rejectError}</Message>}
           <div className="modal-actions">
             <button className="btn btn-outline" onClick={() => setRejecting(null)}>Cancel</button>
-            <button className="btn btn-danger" disabled={!remarks.trim()} onClick={async () => {
-              if (await act(() => api.post(`/requests/${rejecting.request_id}/reject`, { remarks }), `Request #${rejecting.request_id} rejected.`)) setRejecting(null);
+            <button className="btn btn-danger" disabled={!remarks} onClick={async () => {
+              try {
+                await api.post(`/requests/${rejecting.request_id}/reject`, { remarks });
+                setMsg({ type: 'success', text: `Request #${rejecting.request_id} rejected. SMS sent to the resident.` });
+                setRejecting(null);
+                setViewingId(null);
+                reload(true);
+              } catch (err) {
+                setRejectError(errorMessage(err));
+              }
             }}>Reject request</button>
           </div>
         </Modal>

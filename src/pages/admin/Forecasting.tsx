@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type RefObject } from 'react';
-import { CartesianGrid, Line, LineChart, ReferenceArea, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { CartesianGrid, LabelList, Line, LineChart, ReferenceArea, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { api, errorMessage, formatDate } from '../../api';
 import { useApi } from '../../hooks';
 import { Empty, Loading, Message, Modal } from '../../components/ui';
@@ -48,6 +48,27 @@ function MonthTick({ x = 0, y = 0, payload }: { x?: number; y?: number; payload?
         <tspan x={0} dy={14}>{year}</tspan>
       </text>
     </g>
+  );
+}
+
+/** Hover box: "Sep 2026 · Given out: 12 tablets" or "Oct 2026 · Expected: about 13 tablets". */
+function ChartTip({ active, payload, label, unit, forecastKeys }: {
+  active?: boolean; payload?: { dataKey?: string | number; value?: number | string }[]; label?: string | number;
+  unit: string; forecastKeys: string[];
+}) {
+  if (!active || !payload?.length || label === undefined) return null;
+  const key = String(label);
+  const isForecast = forecastKeys.includes(key);
+  const value = payload.find((p) => p.dataKey === (isForecast ? 'forecast' : 'actual'))?.value;
+  if (value === undefined) return null;
+  return (
+    <div className="fc-tip">
+      <strong>{monthText(key)}{key === forecastKeys[0] ? ' (this month)' : ''}</strong>
+      {isForecast
+        ? <span><i className="lg-forecast" /> Expected: about <b>{Math.round(Number(value))}</b> {unit}</span>
+        : <span><i className="lg-actual" /> Given out: <b>{value}</b> {unit}</span>}
+      <small>{isForecast ? 'Forecast — not yet happened' : 'Actual — from dispensing records'}</small>
+    </div>
   );
 }
 
@@ -116,16 +137,30 @@ export default function Forecasting() {
   // Actual monthly demand (dispensed) and the forecast, for all medicines together or the chosen one.
   const chartData = useMemo(() => {
     if (!data) return [];
-    const points: { key: string; actual?: number; forecast?: number }[] = data.history_keys.map((k) => ({
+    const points: { key: string; actual?: number; forecast?: number; forecastLabel?: number }[] = data.history_keys.map((k) => ({
       key: k, actual: chartRows.reduce((s, r) => s + (r.history[k] ?? 0), 0),
     }));
     const last = points[points.length - 1];
     if (last) last.forecast = last.actual; // the dashed forecast line starts at the last actual month
     data.forecast_keys.forEach((k) => {
-      points.push({ key: k, forecast: round1(chartRows.reduce((s, r) => s + (r.forecast[k] ?? 0), 0)) });
+      const value = round1(chartRows.reduce((s, r) => s + (r.forecast[k] ?? 0), 0));
+      points.push({ key: k, forecast: value, forecastLabel: Math.round(value) });
     });
     return points;
   }, [data, chartRows]);
+
+  // Plain-language summary of the chart: what was given out before and what is expected next.
+  const story = useMemo(() => {
+    if (!data) return null;
+    const past = chartRows.reduce((s, r) => s + Object.values(r.history).reduce((a, b) => a + b, 0), 0);
+    const avg = past / Math.max(data.history_keys.length, 1);
+    const next = chartRows.reduce((s, r) => s + Object.values(r.forecast).reduce((a, b) => a + b, 0), 0);
+    const perMonth = next / Math.max(data.horizon, 1);
+    const change = avg > 0 ? (perMonth - avg) / avg : null;
+    return { past, avg: round1(avg), next: Math.round(next), perMonth: round1(perMonth), change };
+  }, [data, chartRows]);
+  // Any medicine dispensed at all in the chosen period? (Without records there is nothing to learn from.)
+  const hasHistory = results.some((r) => Object.values(r.history).some((v) => v > 0));
 
   const tableRows = useMemo(() => {
     if (selectedMedicine) return [selectedMedicine];
@@ -247,27 +282,72 @@ export default function Forecasting() {
                   <span><i className="lg-forecast" /> Forecast Demand</span>
                 </span>
               </div>
-              <div className="fc-chart">
-                <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={chartData} margin={{ top: 10, right: 18, left: 6, bottom: 0 }}>
-                    <CartesianGrid vertical={false} stroke="#e8eeec" />
-                    {chartData.length > 1 && (
-                      <ReferenceArea x1={data.history_keys[data.history_keys.length - 1]} x2={data.forecast_keys[data.forecast_keys.length - 1]} fill="#dbe7fd" fillOpacity={0.45} />
-                    )}
-                    <ReferenceLine x={data.history_keys[data.history_keys.length - 1]} stroke="#94a3b8" strokeDasharray="4 4" />
-                    <XAxis dataKey="key" tick={<MonthTick />} height={42} interval="preserveStartEnd" tickLine={false} axisLine={{ stroke: '#cbd5d1' }} />
-                    <YAxis allowDecimals={false} fontSize={12} tickLine={false} axisLine={false} width={52}
-                      label={{ value: `Quantity (${unitLabel})`, angle: -90, position: 'insideLeft', style: { fontSize: 12, fill: '#5f6f6b', textAnchor: 'middle' } }} />
-                    <Tooltip labelFormatter={(k) => monthText(String(k))} formatter={(v) => `${v} ${unitLabel}`} />
-                    <Line dataKey="actual" name="Actual Demand" stroke="#0b7a63" strokeWidth={2.5} dot={{ r: 4, fill: '#0b7a63' }} isAnimationActive={false} />
-                    <Line dataKey="forecast" name="Forecast Demand" stroke="#2563eb" strokeWidth={2.5} strokeDasharray="6 5" dot={{ r: 4, fill: '#2563eb' }} isAnimationActive={false} />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-              <div className="fc-periods">
-                <span style={{ flex: Math.max(data.history_keys.length - 1, 1) }}>Historical (Actual Demand)</span>
-                <span className="fc-period-forecast" style={{ flex: data.forecast_keys.length }}>Forecast Period</span>
-              </div>
+              {story && story.past === 0 ? (
+                <div className="fc-nodata">
+                  <span className="fc-nodata-icon"><Svg d={ICON.bars} size={30} /></span>
+                  <strong>No dispensing records yet{selectedMedicine ? ` for ${selectedMedicine.medicine_name}` : ''}</strong>
+                  <p>
+                    The forecast learns from the medicines actually given out (dispensed) each month from {since} to {monthText(data.history_keys[data.history_keys.length - 1] ?? '')}.
+                    There are no records in this period yet, so the predicted demand is 0.
+                  </p>
+                  <p>As the pharmacy staff dispense medicines, this chart fills in: the <b className="txt-actual">green line</b> shows what was given out each month, and the <b className="txt-forecast">blue dashed line</b> shows what is expected next.</p>
+                  {data.history_months < 24 && <p className="muted small">Tip: choose a longer period (e.g. Last 24 Months) at the top if older records exist.</p>}
+                </div>
+              ) : story && (
+                <>
+                  <div className="fc-story">
+                    <div><small>Given out in the last {monthsText(data.history_months).toLowerCase()}</small><strong>{story.past}</strong><span>{unitLabel}</span></div>
+                    <div><small>Average per month</small><strong>{story.avg}</strong><span>{unitLabel} / month</span></div>
+                    <div className="fc-story-next">
+                      <small>Expected in {periodText(data.forecast_keys)}</small>
+                      <strong>{story.next}</strong>
+                      <span>about {story.perMonth} / month
+                        {story.change !== null && (Math.abs(story.change) < 0.05
+                          ? <em className="trend trend-flat">≈ same as usual</em>
+                          : <em className={`trend ${story.change > 0 ? 'trend-up' : 'trend-down'}`}>{story.change > 0 ? '▲' : '▼'} {Math.round(Math.abs(story.change) * 100)}% {story.change > 0 ? 'more' : 'less'} than usual</em>)}
+                      </span>
+                    </div>
+                  </div>
+                  <p className="fc-sentence">
+                    {selectedMedicine ? selectedMedicine.medicine_name : 'All medicines together'}: Botika ng Bayan gave out an average of <b>{story.avg} {unitLabel}</b> per month
+                    ({since} – {monthText(data.history_keys[data.history_keys.length - 1] ?? '')}). Using <b>{METHOD_LABEL[data.method]}</b>, about <b>{story.perMonth} {unitLabel}</b> per month
+                    are expected for {periodText(data.forecast_keys)}.
+                  </p>
+                  <div className="fc-chart">
+                    <ResponsiveContainer width="100%" height={300}>
+                      <LineChart data={chartData} margin={{ top: 24, right: 18, left: 6, bottom: 0 }}>
+                        <CartesianGrid vertical={false} stroke="#e8eeec" />
+                        {chartData.length > 1 && (
+                          <ReferenceArea x1={data.history_keys[data.history_keys.length - 1]} x2={data.forecast_keys[data.forecast_keys.length - 1]} fill="#dbe7fd" fillOpacity={0.45} />
+                        )}
+                        <ReferenceLine x={data.history_keys[data.history_keys.length - 1]} stroke="#94a3b8" strokeDasharray="4 4"
+                          label={{ value: 'Forecast starts →', position: 'insideTopRight', fontSize: 11, fill: '#2563eb', offset: 6 }} />
+                        <XAxis dataKey="key" tick={<MonthTick />} height={42} interval="preserveStartEnd" tickLine={false} axisLine={{ stroke: '#cbd5d1' }} />
+                        <YAxis allowDecimals={false} fontSize={12} tickLine={false} axisLine={false} width={52}
+                          label={{ value: `Quantity (${unitLabel})`, angle: -90, position: 'insideLeft', style: { fontSize: 12, fill: '#5f6f6b', textAnchor: 'middle' } }} />
+                        <Tooltip content={<ChartTip unit={unitLabel} forecastKeys={data.forecast_keys} />} />
+                        <Line dataKey="actual" name="Given out (actual)" stroke="#0b7a63" strokeWidth={2.5} dot={{ r: 4, fill: '#0b7a63' }} activeDot={{ r: 6 }} isAnimationActive={false} />
+                        <Line dataKey="forecast" name="Expected (forecast)" stroke="#2563eb" strokeWidth={2.5} strokeDasharray="6 5" dot={{ r: 4, fill: '#2563eb' }} activeDot={{ r: 6 }} isAnimationActive={false}>
+                          <LabelList dataKey="forecastLabel" position="top" fontSize={12} fontWeight={700} fill="#1e3a8a" />
+                        </Line>
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div className="fc-periods">
+                    <span style={{ flex: Math.max(data.history_keys.length - 1, 1) }}>Past months (actual)</span>
+                    <span className="fc-period-forecast" style={{ flex: data.forecast_keys.length }}>Forecast Period</span>
+                  </div>
+                </>
+              )}
+              <details className="fc-howto">
+                <summary><Svg d={ICONS.info} size={16} /> How to read this chart</summary>
+                <ul>
+                  <li><i className="lg-actual" /> <span><b>Green line — Actual Demand:</b> how many {unitLabel} were given out (dispensed) each past month, taken from the dispensing records.</span></li>
+                  <li><i className="lg-forecast" /> <span><b>Blue dashed line — Forecast Demand:</b> how many are expected to be needed each coming month, calculated from the green line with the method chosen in Filter &amp; Settings. The numbers above the blue dots are the expected quantities.</span></li>
+                  <li><i className="lg-area" /> <span><b>Shaded area — Forecast Period:</b> the months being predicted. The first one is the current month, because it is not finished yet.</span></li>
+                  {!selectedMedicine && <li><i className="lg-tip" /> <span>The chart adds up <b>all medicines</b>. Choose one medicine in Filter &amp; Settings to see its own demand.</span></li>}
+                </ul>
+              </details>
             </section>
 
             <section className="card fc-card fc-settings">
@@ -290,13 +370,15 @@ export default function Forecasting() {
                     <input type="radio" name="method" checked={(method ?? data.method) === m.key} onChange={() => setMethod(m.key)} />
                     <span>
                       <strong>{m.label}</strong>
-                      {data.best_method === m.key && <em className="fc-best">Most accurate</em>}
-                      <small>{m.hint}{data.method_error[m.key] !== null ? ` · avg. error ±${data.method_error[m.key]}/month` : ''}</small>
+                      {hasHistory && data.best_method === m.key && <em className="fc-best">Most accurate</em>}
+                      <small>{m.hint}{hasHistory && data.method_error[m.key] !== null ? ` · avg. error ±${data.method_error[m.key]}/month` : ''}</small>
                     </span>
                   </label>
                 ))}
               </fieldset>
-              <p className="fc-note">"Most accurate" = the method with the lowest error when tested on your past records.</p>
+              <p className="fc-note">{hasHistory
+                ? '"Most accurate" = the method whose past forecasts came closest to what was actually given out.'
+                : 'The most accurate method will be shown once there are dispensing records to test the methods on.'}</p>
             </section>
           </div>
 
@@ -387,7 +469,7 @@ export default function Forecasting() {
                 const v = details.methods[m.key];
                 return (
                   <tr key={m.key} className={m.key === data.method ? 'row-selected' : ''}>
-                    <td>{m.label}{m.key === details.best_method && <em className="fc-best">Most accurate</em>}</td>
+                    <td>{m.label}{hasHistory && m.key === details.best_method && <em className="fc-best">Most accurate</em>}</td>
                     <td className="right">{Math.ceil(v.predicted_demand)}</td>
                     <td className="right">{v.mae === null ? 'Not enough data' : `±${v.mae}`}</td>
                   </tr>
