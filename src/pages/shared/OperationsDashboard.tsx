@@ -5,6 +5,7 @@ import { useAuth } from '../../auth';
 import { useApi } from '../../hooks';
 import { Badge, Card, Empty, Loading, Message, StatCard } from '../../components/ui';
 import type { Alerts, MedicineRequest } from '../../types';
+import { ExpiryBanner, expiryText } from '../../components/ExpiryAlerts';
 
 interface OpsDashboard {
   counts: Record<string, number>;
@@ -39,6 +40,8 @@ export default function OperationsDashboard() {
         </div>
       </header>
 
+      <ExpiryBanner alerts={data.alerts} />
+
       <div className="stats">
         <StatCard label="Pending medicine requests" value={c.pending_requests} tone={c.pending_requests ? 'warn' : 'default'} />
         <StatCard label="Approved, waiting to dispense" value={c.approved_to_dispense} />
@@ -46,7 +49,7 @@ export default function OperationsDashboard() {
         <StatCard label="Pending restock requests" value={c.pending_restock} tone={c.pending_restock ? 'warn' : 'default'} />
         <StatCard label="Low stock" value={c.low_stock} tone={c.low_stock ? 'warn' : 'default'} />
         <StatCard label="Out of stock" value={c.out_of_stock} tone={c.out_of_stock ? 'danger' : 'default'} />
-        <StatCard label="Batches near expiry" value={c.near_expiry} tone={c.near_expiry ? 'warn' : 'default'} />
+        <StatCard label="Expiring within 1 month" value={c.near_expiry} tone={c.near_expiry ? 'warn' : 'default'} />
         <StatCard label="Expired batches" value={c.expired} tone={c.expired ? 'danger' : 'default'} hint={c.expired ? 'Remove from stock' : undefined} />
         <StatCard label="Medicines" value={c.medicines} />
         <StatCard label="Registered residents" value={c.residents} />
@@ -100,8 +103,8 @@ export default function OperationsDashboard() {
           )}
         </Card>
 
-        <Card title="Expiration alerts">
-          {data.alerts.expired.length + data.alerts.near_expiry.length === 0 ? <Empty>No batches near expiry.</Empty> : (
+        <Card title="Expiration alerts (within 1 month)">
+          {data.alerts.expired.length + data.alerts.near_expiry.length === 0 ? <Empty>No medicine will expire within 1 month.</Empty> : (
             <table>
               <thead><tr><th>Medicine</th><th>Qty</th><th>Expires</th><th>Status</th></tr></thead>
               <tbody>
@@ -109,7 +112,7 @@ export default function OperationsDashboard() {
                   const expired = data.alerts.expired.includes(b);
                   return (
                     <tr key={b.inventory_id}>
-                      <td>{b.medicine.medicine_name}</td><td>{b.quantity}</td><td>{formatDate(b.expiration_date)}</td>
+                      <td>{b.medicine.medicine_name}</td><td>{b.quantity}</td><td>{formatDate(b.expiration_date)}<div className="muted small">{expiryText(b).replace(/ \(.*\)$/, '')}</div></td>
                       <td><Badge value={expired ? 'expired' : 'near_expiry'} /></td>
                     </tr>
                   );

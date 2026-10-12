@@ -5,6 +5,7 @@ import { useAuth } from '../auth';
 import type { Role } from '../types';
 import { Avatar } from './ui';
 import { NotificationBell } from './Notifications';
+import { ExpiryBell } from './ExpiryAlerts';
 
 /* Simple line icons (drawn with SVG so no extra package is needed). */
 const ICONS: Record<string, string> = {
@@ -132,6 +133,11 @@ export default function Layout() {
           </div>
         </NavLink>
         {current && <span className="topbar-page">{current.label}</span>}
+        {user.role !== 'resident' && (
+          <div className="topbar-actions">
+            <ExpiryBell />
+          </div>
+        )}
         {user.role === 'resident' && (
           <div className="topbar-actions">
             <NotificationBell />

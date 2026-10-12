@@ -603,3 +603,18 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--p
 .filter-foot { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 4px; padding-top: 12px; border-top: 1px solid var(--border); }
 .filter-foot h2 { font-size: 1.1rem; }
 .count-pill { padding: 4px 12px; border-radius: 999px; background: #eef2f1; color: #3d4d49; font-size: 0.82rem; font-weight: 600; white-space: nowrap; }
+
+/* ---------- admin/staff expiry warnings */
+.expiry-list { list-style: none; margin: 0; padding: 0 10px 10px; display: flex; flex-direction: column; gap: 8px; }
+.expiry-item { display: flex; gap: 10px; align-items: flex-start; padding: 10px; border-radius: 12px; background: color-mix(in srgb, var(--k) 7%, white); border: 1px solid color-mix(in srgb, var(--k) 22%, white); }
+.expiry-icon { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; flex-shrink: 0; }
+.expiry-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; font-size: 0.88rem; }
+.expiry-text > span { color: var(--muted); }
+.expiry-text .expiry-when { color: color-mix(in srgb, var(--k) 80%, black); font-weight: 700; }
+.expiry-banner { border-radius: 16px; padding: 16px; background: #fff; border: 1px solid color-mix(in srgb, var(--k) 35%, white); border-left: 6px solid var(--k); box-shadow: var(--shadow-sm); display: flex; flex-direction: column; gap: 12px; }
+.expiry-banner-head { display: flex; gap: 12px; align-items: flex-start; }
+.expiry-banner-head strong { color: color-mix(in srgb, var(--k) 80%, black); font-size: 1.02rem; }
+.expiry-banner-head p { margin: 2px 0 0; color: var(--muted); font-size: 0.88rem; }
+.expiry-banner-icon { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; flex-shrink: 0; }
+.expiry-banner .expiry-list { padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
+.expiry-banner-foot { display: flex; justify-content: flex-end; align-items: center; gap: 12px; }
