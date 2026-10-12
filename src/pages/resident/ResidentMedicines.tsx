@@ -4,7 +4,7 @@ import { api, errorMessage, formatDate } from '../../api';
 import { useApi } from '../../hooks';
 import { Badge, Empty, Loading, Message, Modal } from '../../components/ui';
 import { ICONS, quantityText, Svg, unitPlural } from '../../components/RequestCards';
-import type { Medicine, MonthlyUsage } from '../../types';
+import type { Medicine, MedicineRequest, MonthlyUsage } from '../../types';
 import { MAX_REQUEST_QUANTITY, quantityWarning } from '../../validation';
 import { PrescriptionUpload, PrescriptionViewer, RX_ICON, RxBadge, type PrescriptionFile } from '../../components/Prescription';
 
@@ -34,6 +34,12 @@ export default function ResidentMedicines() {
   const { data: categories } = useApi<string[]>('/medicines/categories');
   // Monthly limit: total medicines a resident can receive per month (online requests and walk-ins).
   const { data: monthly, reload: reloadMonthly } = useApi<MonthlyUsage>('/monthly-limit');
+  // The resident's open restock requests (pending, or approved and waiting for stock): one per medicine at a time.
+  const { data: myRestocks, reload: reloadRestocks } = useApi<MedicineRequest[]>('/requests', { type: 'restock' }, 30000);
+  const openRestock = new Map<number, number>(); // medicine_id → request_id
+  (myRestocks ?? []).filter((r) => r.status === 'pending' || r.status === 'approved')
+    .forEach((r) => r.items.forEach((i) => { if (!openRestock.has(i.medicine_id)) openRestock.set(i.medicine_id, r.request_id); }));
+  const [alreadyRequested, setAlreadyRequested] = useState<{ medicine: Medicine; requestId: number } | null>(null);
   const shown = (data ?? []).filter((m) => availability === 'all'
     || (availability === 'out_of_stock' ? m.status === 'out_of_stock' : m.status !== 'out_of_stock'));
   const listTitle = `${availability === 'in_stock' ? 'Available' : availability === 'out_of_stock' ? 'Out of Stock' : 'All'} ${category || 'Medicines'}`;
@@ -121,6 +127,17 @@ export default function ResidentMedicines() {
     } finally { setBusy(false); }
   };
 
+  /** Opens the restock form, or tells the resident they already asked for this medicine. */
+  const startRestock = (m: Medicine) => {
+    setDetails(null);
+    const requestId = openRestock.get(m.medicine_id);
+    if (requestId) { setAlreadyRequested({ medicine: m, requestId }); return; }
+    setSheetError('');
+    setRestockNote('');
+    setRestockFor(m);
+    setRestockQty(m.available_stock + 1);
+  };
+
   const submitRestock = async () => {
     if (!restockFor) return;
     setBusy(true);
@@ -128,6 +145,7 @@ export default function ResidentMedicines() {
     try {
       await api.post('/requests', { request_type: 'restock', note: restockNote.trim() || null, items: [{ medicine_id: restockFor.medicine_id, quantity: restockQty }] });
       setRestockFor(null);
+      reloadRestocks(true);
       setToast('Restock request sent. You will get an SMS once the medicine is available.');
     } catch (err) {
       setSheetError(errorMessage(err));
@@ -352,9 +370,13 @@ export default function ResidentMedicines() {
                       <span className="med-stock"><b>{m.available_stock}</b> {m.available_stock === 1 ? m.unit : unitPlural(m.unit)} available</span>
                       <div className="med-actions">
                         {/* Low stock: the resident may need more than what is left, so restock can be requested too. */}
-                        {m.status !== 'available' && (
-                          <button className="btn btn-outline btn-sm" onClick={() => { setSheetError(''); setRestockNote(''); setRestockFor(m); setRestockQty(m.available_stock + 1); }}>Request restock</button>
-                        )}
+                        {m.status !== 'available' && (openRestock.has(m.medicine_id) ? (
+                          <button className="btn btn-sm btn-added" onClick={() => startRestock(m)} title="You already asked for a restock of this medicine">
+                            <Svg d={ICONS.check} size={16} width={2.6} /> Restock requested
+                          </button>
+                        ) : (
+                          <button className="btn btn-outline btn-sm" onClick={() => startRestock(m)}>Request restock</button>
+                        ))}
                         {m.status !== 'out_of_stock' && (
                           <button className={`btn btn-sm ${added ? 'btn-added' : ''}`} onClick={() => openAdd(m)}>
                             {added ? <><Svg d={ICONS.check} size={16} width={2.6} /> Added ({added.quantity})</> : '+ Add'}
@@ -416,7 +438,7 @@ export default function ResidentMedicines() {
           <div className="modal-actions">
             <button className="btn btn-outline" onClick={() => setDetails(null)}>Close</button>
             {details.status === 'out_of_stock' ? (
-              <button className="btn" onClick={() => { const m = details; setDetails(null); setSheetError(''); setRestockNote(''); setRestockFor(m); setRestockQty(m.available_stock + 1); }}>Request restock</button>
+              <button className="btn" onClick={() => startRestock(details)}>{openRestock.has(details.medicine_id) ? 'Restock requested' : 'Request restock'}</button>
             ) : (
               <button className="btn" onClick={() => openAdd(details)}>
                 {inCart(details) ? 'Change quantity' : details.requires_prescription ? 'Request with Prescription' : 'Add to request'}
@@ -446,6 +468,23 @@ export default function ResidentMedicines() {
           <div className="modal-actions">
             <button className="btn btn-outline" onClick={() => setAdding(null)}>Cancel</button>
             <button className="btn" disabled={!!addWarning} onClick={confirmAdd}>{inCart(adding.medicine) ? 'Update' : 'Add to request'}</button>
+          </div>
+        </Modal>
+      )}
+
+      {alreadyRequested && (
+        <Modal title="Restock already requested" onClose={() => setAlreadyRequested(null)}>
+          <div className="info-box info-ok">
+            <strong><Svg d={ICONS.check} size={18} width={2.4} /> You already submitted a restock request</strong>
+            <p>
+              You already asked for a restock of <b>{alreadyRequested.medicine.medicine_name}</b> (request #{alreadyRequested.requestId}).
+              We will notify you by SMS when the medicine is available.
+            </p>
+            <small>You can still request a restock of other medicines.</small>
+          </div>
+          <div className="modal-actions">
+            <button className="btn btn-outline" onClick={() => setAlreadyRequested(null)}>Close</button>
+            <button className="btn" onClick={() => navigate(`/requests/${alreadyRequested.requestId}`)}>View my request</button>
           </div>
         </Modal>
       )}
