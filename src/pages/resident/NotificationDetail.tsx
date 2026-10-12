@@ -60,7 +60,7 @@ function InfoBox({ kind, r }: { kind: Kind; r: MedicineRequest }) {
       <div className="info-box info-ok">
         <strong><Svg d={ICONS.calendar} size={18} /> Pickup Schedule</strong>
         <p><Svg d={ICONS.pin} size={16} /> Botika ng Bayan, Bulan, Sorsogon</p>
-        <p><Svg d={ICONS.clock} size={16} /> Claim on or before <b>{formatDate(r.claim_by)}</b></p>
+        <p><Svg d={ICONS.clock} size={16} /> Claim on or before <b>{formatDate(r.claim_by)}</b>, or the request will be cancelled automatically.</p>
         <small>Bring your QR code / Patient ID ({r.resident?.qr_code}) for verification.</small>
       </div>
     );

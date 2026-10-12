@@ -40,7 +40,7 @@ function buildSteps(r: MedicineRequest, forResident: boolean): Step[] {
         : [submitted, review, approved, {
           ...ready, state: 'current', tag: 'Current',
           text: forResident
-            ? `Your medicines are ready. Bring your QR code / Patient ID and claim them on or before ${formatDate(r.claim_by)}.`
+            ? `Your medicines are ready. Bring your QR code / Patient ID and claim them on or before ${formatDate(r.claim_by)}, or the request will be cancelled automatically.`
             : `Waiting for the resident to claim the medicines on or before ${formatDate(r.claim_by)}.`,
         }, completed];
     case 'dispensed':
@@ -71,7 +71,7 @@ function buildSteps(r: MedicineRequest, forResident: boolean): Step[] {
     case 'expired':
       return [submitted, review, approved, ready, {
         k: 'expired', title: 'Request Expired', state: 'cancelled', date: r.cancelled_at, tag: 'Final status',
-        text: `The pickup deadline passed without collection. ${forResident ? 'Please submit a new request if you still need the medicine.' : 'The set-aside medicine went back to the stock.'}`,
+        text: `Cancelled automatically: the medicines were not claimed by the pickup deadline. ${forResident ? 'Please submit a new request if you still need the medicine.' : 'The set-aside medicine went back to the stock.'}`,
       }];
     default:
       return [submitted];

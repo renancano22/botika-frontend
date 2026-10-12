@@ -186,6 +186,12 @@ export interface ForecastReport {
   method_error: Record<ForecastMethod, number | null>;
   history_keys: string[];
   forecast_keys: string[];
+  /** this month ('2026-10'); it is the last of history_keys and is counted so far */
+  current_month: string;
+  /** first month with dispensing records (null = none yet) */
+  data_start: string | null;
+  /** how many months of records the methods learned from */
+  months_with_data: number;
   summary: { medicines_analyzed: number; potential_stockouts: number; restock_recommendations: number };
   top_barangays: { barangay: string; total: number }[];
   top_medicines: { medicine_id: number; medicine_name: string; unit: string; total: number; quantity: number }[];
