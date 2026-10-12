@@ -20,7 +20,7 @@ function buildSteps(r: MedicineRequest, forResident: boolean): Step[] {
   const review: Step = { k: 'review', title: 'Under Review', state: 'done', text: `${restock ? 'The administrator' : 'The pharmacy staff'} reviewed ${forResident ? 'your' : 'the'} request.` };
   const approved: Step = {
     k: 'approved', title: 'Approved', state: 'done', date: r.reviewed_at,
-    text: `${your} request has been approved${r.reviewer ? ` by ${r.reviewer.name}` : ''}.`,
+    text: `${your} request has been approved${r.reviewer ? ` by ${r.reviewer.name}` : ''}${r.prescription_verified_at ? ' after checking the prescription' : ''}.`,
   };
   const ready: Step = {
     k: 'ready', title: 'Ready for Pickup', state: 'done', date: r.reviewed_at,
@@ -32,7 +32,7 @@ function buildSteps(r: MedicineRequest, forResident: boolean): Step[] {
 
   switch (r.status) {
     case 'pending':
-      return [submitted, { ...review, state: 'current', tag: 'Current', text: `${restock ? 'The administrator' : 'The pharmacy staff'} is reviewing ${forResident ? 'your' : 'the'} request.` },
+      return [submitted, { ...review, state: 'current', tag: 'Current', text: `${restock ? 'The administrator' : 'The pharmacy staff'} is reviewing ${forResident ? 'your' : 'the'} request${r.prescription ? ' and checking the prescription' : ''}.` },
         pending(approved), ...(restock ? [available] : [pending(ready), completed])];
     case 'approved':
       return restock

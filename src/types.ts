@@ -30,6 +30,8 @@ export interface Medicine {
   category: string;
   unit: string;
   description: string | null;
+  /** Can only be requested/dispensed with a doctor's prescription. */
+  requires_prescription?: boolean;
   available_stock: number;
   status: StockStatus;
   reorder_level?: number;
@@ -82,7 +84,16 @@ export interface RequestItem {
   request_item_id: number;
   medicine_id: number;
   quantity: number;
-  medicine: Pick<Medicine, 'medicine_id' | 'medicine_name' | 'unit'>;
+  medicine: Pick<Medicine, 'medicine_id' | 'medicine_name' | 'unit'> & { requires_prescription?: boolean };
+}
+
+/** Prescription uploaded with a request (the file itself is loaded separately). */
+export interface PrescriptionInfo {
+  prescription_id: number;
+  file_name: string;
+  mime_type: string;
+  size: number;
+  uploaded_at: string;
 }
 
 export type RequestStatus = 'pending' | 'approved' | 'rejected' | 'dispensed' | 'fulfilled' | 'cancelled' | 'expired';
@@ -109,6 +120,9 @@ export interface MedicineRequest {
   resident?: Resident;
   reviewer?: { user_id: number; name: string } | null;
   canceller?: { user_id: number; name: string } | null;
+  prescription?: PrescriptionInfo | null;
+  prescription_verified_at?: string | null;
+  prescription_verifier?: { user_id: number; name: string } | null;
   dispensing?: { dispensing_id: number; dispensed_at: string; dispenser?: { user_id: number; name: string } | null } | null;
 }
 

@@ -1,7 +1,10 @@
 import { useCallback, useState, type FormEvent } from 'react';
 import { api, errorMessage, formatDate } from '../../api';
 import { useApi } from '../../hooks';
-import { Badge, Card, Empty, Message } from '../../components/ui';
+import { Badge, Card, Empty, Message, Modal } from '../../components/ui';
+import { PrescriptionViewer, requiresPrescription, RX_ICON, RxBadge } from '../../components/Prescription';
+import { prescriptionStatus } from '../../components/RequestDetailParts';
+import { Svg } from '../../components/RequestCards';
 import type { Dispensing, Medicine, MedicineRequest, Resident } from '../../types';
 import QrScanner from './QrScanner';
 
@@ -20,6 +23,11 @@ export default function Dispense() {
   const [busy, setBusy] = useState(false);
   const [walkIn, setWalkIn] = useState<{ medicine_id: number; quantity: number }[]>([]);
   const { data: medicines, reload: reloadMedicines } = useApi<Medicine[]>('/medicines');
+  // Prescription medicines: the staff confirm they checked the resident's original prescription before releasing.
+  const [confirming, setConfirming] = useState<MedicineRequest | null>(null);
+  const [rxChecked, setRxChecked] = useState(false);
+  const [walkInRxChecked, setWalkInRxChecked] = useState(false);
+  const [viewRxId, setViewRxId] = useState<number | null>(null);
 
   const lookup = useCallback(async (raw: string) => {
     const value = raw.trim().toUpperCase(); // Patient IDs look like BBC-000001
@@ -54,9 +62,11 @@ export default function Dispense() {
     if (!found) return;
     setBusy(true);
     try {
-      await api.post('/dispensing', { request_id: r.request_id, qr_code: found.resident.qr_code });
+      await api.post('/dispensing', { request_id: r.request_id, qr_code: found.resident.qr_code, prescription_checked: requiresPrescription(r) ? rxChecked : false });
+      setConfirming(null);
       await afterDispense(`Request #${r.request_id} dispensed. Inventory updated and SMS sent.`);
     } catch (err) {
+      setConfirming(null);
       setMsg({ type: 'error', text: errorMessage(err) });
     } finally { setBusy(false); }
   };
@@ -66,8 +76,9 @@ export default function Dispense() {
     if (!found) return;
     setBusy(true);
     try {
-      await api.post('/dispensing/walk-in', { qr_code: found.resident.qr_code, items: walkIn });
+      await api.post('/dispensing/walk-in', { qr_code: found.resident.qr_code, items: walkIn, prescription_checked: walkInRx.length > 0 && walkInRxChecked });
       setWalkIn([]);
+      setWalkInRxChecked(false);
       await afterDispense('Walk-in dispensing recorded. Inventory updated and SMS sent.');
     } catch (err) {
       setMsg({ type: 'error', text: errorMessage(err) });
@@ -76,6 +87,7 @@ export default function Dispense() {
 
   // Walk-ins can only use stock that is not reserved for approved requests.
   const available = medicines?.filter((m) => (m.free_stock ?? m.available_stock) > 0) ?? [];
+  const walkInRx = walkIn.map((i) => medicines?.find((m) => m.medicine_id === i.medicine_id)).filter((m): m is Medicine => !!m?.requires_prescription);
 
   return (
     <div className="page">
@@ -117,9 +129,15 @@ export default function Dispense() {
                     {found.approved_requests.map((r) => (
                       <tr key={r.request_id}>
                         <td>{r.request_id}</td>
-                        <td>{r.items.map((i) => `${i.medicine.medicine_name} ×${i.quantity}`).join(', ')}</td>
+                        <td>
+                          {r.items.map((i) => `${i.medicine.medicine_name} ×${i.quantity}`).join(', ')}
+                          {requiresPrescription(r) && <div className="rx-cell"><RxBadge small /></div>}
+                        </td>
                         <td>{formatDate(r.reviewed_at, true)}</td>
-                        <td className="right"><button className="btn btn-sm" disabled={busy} onClick={() => dispenseRequest(r)}>Dispense</button></td>
+                        <td className="right">
+                          <button className="btn btn-sm" disabled={busy}
+                            onClick={() => (requiresPrescription(r) ? (setRxChecked(false), setConfirming(r)) : dispenseRequest(r))}>Dispense</button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -139,9 +157,19 @@ export default function Dispense() {
                     <button type="button" className="btn-ghost" onClick={() => setWalkIn(walkIn.filter((_, i) => i !== idx))} aria-label="Remove">✕</button>
                   </div>
                 ))}
+                {walkInRx.length > 0 && (
+                  <div className="rx-box">
+                    <strong><Svg d={RX_ICON} size={18} width={2.4} /> Prescription medicine</strong>
+                    <p>{walkInRx.map((m) => m.medicine_name).join(', ')} can only be given with a doctor's prescription.</p>
+                    <label className="rx-check">
+                      <input type="checkbox" checked={walkInRxChecked} onChange={(e) => setWalkInRxChecked(e.target.checked)} />
+                      <span>I checked the resident's original prescription: it is valid, written for this resident, and matches the medicine and quantity.</span>
+                    </label>
+                  </div>
+                )}
                 <div className="modal-actions">
                   <button type="button" className="btn btn-outline" onClick={() => setWalkIn([...walkIn, { medicine_id: 0, quantity: 1 }])}>+ Add medicine</button>
-                  <button className="btn" disabled={busy || walkIn.length === 0 || walkIn.some((i) => !i.medicine_id)}>Dispense</button>
+                  <button className="btn" disabled={busy || walkIn.length === 0 || walkIn.some((i) => !i.medicine_id) || (walkInRx.length > 0 && !walkInRxChecked)}>Dispense</button>
                 </div>
               </form>
             </Card>
@@ -166,6 +194,34 @@ export default function Dispense() {
           </Card>
         </>
       )}
+
+      {confirming && (
+        <Modal title={`Dispense request #${confirming.request_id}`} onClose={() => !busy && setConfirming(null)}>
+          <p className="req-items">{confirming.items.map((i) => `${i.medicine.medicine_name} ×${i.quantity}`).join(', ')}</p>
+          <div className="rx-box">
+            <strong><Svg d={RX_ICON} size={18} width={2.4} /> Prescription medicine</strong>
+            {confirming.prescription ? (
+              <div className="rx-review-row">
+                <div className="rx-file-info">
+                  <span className="small">Uploaded copy</span>
+                  <strong>{confirming.prescription.file_name}</strong>
+                  <span className="small">{prescriptionStatus(confirming)}</span>
+                </div>
+                <button type="button" className="btn btn-outline btn-sm" onClick={() => setViewRxId(confirming.request_id)}>View</button>
+              </div>
+            ) : <p>No prescription copy was uploaded with this request.</p>}
+            <label className="rx-check">
+              <input type="checkbox" checked={rxChecked} onChange={(e) => setRxChecked(e.target.checked)} />
+              <span>I checked the resident's original prescription: it is valid, written for this resident, and matches the uploaded copy and the medicines being released.</span>
+            </label>
+          </div>
+          <div className="modal-actions">
+            <button className="btn btn-outline" onClick={() => setConfirming(null)} disabled={busy}>Cancel</button>
+            <button className="btn" disabled={busy || !rxChecked} onClick={() => dispenseRequest(confirming)}>{busy ? 'Dispensing…' : 'Dispense'}</button>
+          </div>
+        </Modal>
+      )}
+      {viewRxId && <PrescriptionViewer requestId={viewRxId} onClose={() => setViewRxId(null)} />}
     </div>
   );
 }

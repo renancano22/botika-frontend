@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useLocation, useParams } from 'react-router-dom';
 import { api, errorMessage } from '../../api';
 import { useApi, useGoBack } from '../../hooks';
 import { Loading, Message, Modal } from '../../components/ui';
 import RequestTracker from '../../components/RequestTracker';
 import { ICONS, Svg } from '../../components/RequestCards';
 import { RequestSummaryCard, StatusBox } from '../../components/RequestDetailParts';
+import { PrescriptionUpload, type PrescriptionFile } from '../../components/Prescription';
 import type { MedicineRequest } from '../../types';
 
 /** Resident: one request with its tracking timeline (opened from My Requests). */
@@ -17,6 +18,24 @@ export default function RequestDetail() {
   const [editing, setEditing] = useState<MedicineRequest | null>(null);
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [newRx, setNewRx] = useState<PrescriptionFile | null>(null);
+  const [replacingRx, setReplacingRx] = useState(false);
+  // Opened right after submitting from the request form.
+  const justSubmitted = (useLocation().state as { submitted?: boolean } | null)?.submitted === true;
+
+  const replacePrescription = async () => {
+    if (!r || !newRx) return;
+    setBusy(true);
+    setMsg(null);
+    try {
+      setData((await api.post<MedicineRequest>(`/requests/${r.request_id}/prescription`, { prescription: { name: newRx.name, data: newRx.data } })).data);
+      setReplacingRx(false);
+      setNewRx(null);
+      setMsg({ type: 'success', text: 'Your prescription has been updated.' });
+    } catch (err) {
+      setMsg({ type: 'error', text: errorMessage(err) });
+    } finally { setBusy(false); }
+  };
 
   const cancel = async () => {
     if (!r) return;
@@ -54,7 +73,20 @@ export default function RequestDetail() {
       </header>
 
       {loading && !r ? <Loading /> : !r ? <Message>{error}</Message> : <>
-        <RequestSummaryCard r={r} />
+        {justSubmitted && r.status === 'pending' && (
+          <div className="submitted-banner">
+            <span className="submitted-icon"><Svg d={ICONS.check} size={30} width={2.8} /></span>
+            <div>
+              <strong>Request Submitted!</strong>
+              <p>Your request #{r.request_id} has been sent to Botika ng Bayan. {r.prescription ? 'The pharmacy staff will check your prescription and review your request.' : 'The pharmacy staff will review it.'} You will get an SMS once it is approved.</p>
+            </div>
+          </div>
+        )}
+        <RequestSummaryCard r={r} prescriptionAction={r.status === 'pending' && r.request_type === 'medicine' && (r.prescription || r.items.some((i) => i.medicine.requires_prescription)) ? (
+          <button type="button" className="btn btn-outline btn-sm" disabled={busy} onClick={() => { setNewRx(null); setReplacingRx(true); }}>
+            {r.prescription ? 'Replace' : 'Upload'}
+          </button>
+        ) : undefined} />
         <Message type={msg?.type}>{msg?.text}</Message>
 
         <section>
@@ -90,6 +122,17 @@ export default function RequestDetail() {
             </div>
           </div>
         </div>
+      )}
+
+      {replacingRx && r && (
+        <Modal title={r.prescription ? 'Replace prescription' : 'Upload prescription'} onClose={() => !busy && setReplacingRx(false)}>
+          <p className="muted small">Upload a clear photo of your doctor's prescription. The pharmacy staff will check it before approving your request.</p>
+          <PrescriptionUpload value={newRx} onChange={setNewRx} />
+          <div className="modal-actions">
+            <button className="btn btn-outline" onClick={() => setReplacingRx(false)} disabled={busy}>Cancel</button>
+            <button className="btn" disabled={busy || !newRx} onClick={replacePrescription}>{busy ? 'Uploading…' : 'Save prescription'}</button>
+          </div>
+        </Modal>
       )}
 
       {editing && (

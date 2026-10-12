@@ -4,8 +4,9 @@ import { useAuth } from '../../auth';
 import { useApi } from '../../hooks';
 import { Badge, Card, Empty, Loading, Message, Modal } from '../../components/ui';
 import type { Medicine } from '../../types';
+import { RxBadge } from '../../components/Prescription';
 
-const EMPTY = { medicine_name: '', category: '', unit: '', description: '', reorder_level: 20 };
+const EMPTY = { medicine_name: '', category: '', unit: '', description: '', reorder_level: 20, requires_prescription: false };
 type Form = typeof EMPTY;
 
 /** Manage Medicine Records: create, read/search, update, delete (delete is admin only). */
@@ -25,6 +26,7 @@ export default function Medicines() {
     setForm(m ? {
       medicine_name: m.medicine_name, category: m.category, unit: m.unit,
       description: m.description ?? '', reorder_level: m.reorder_level ?? 20,
+      requires_prescription: !!m.requires_prescription,
     } : EMPTY);
   };
 
@@ -65,7 +67,7 @@ export default function Medicines() {
             <tbody>
               {data.map((m) => (
                 <tr key={m.medicine_id}>
-                  <td><strong>{m.medicine_name}</strong>{m.description && <div className="muted small">{m.description}</div>}</td>
+                  <td><strong>{m.medicine_name}</strong>{m.requires_prescription && <div><RxBadge small /></div>}{m.description && <div className="muted small">{m.description}</div>}</td>
                   <td>{m.category}</td><td>{m.unit}</td>
                   <td>{m.available_stock}{!!m.reserved_stock && <div className="muted small">{m.reserved_stock} reserved · {m.free_stock} free</div>}</td>
                   <td>{m.reorder_level}</td>
@@ -97,6 +99,10 @@ export default function Medicines() {
               <input type="number" min={0} value={form.reorder_level} onChange={(e) => setForm({ ...form, reorder_level: Number(e.target.value) })} required />
             </label>
             <label>Description<textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={2} /></label>
+            <label className="rx-check">
+              <input type="checkbox" checked={form.requires_prescription} onChange={(e) => setForm({ ...form, requires_prescription: e.target.checked })} />
+              <span><strong>Requires prescription</strong> — residents must upload a doctor's prescription, and staff must check it before approving and dispensing.</span>
+            </label>
             <div className="modal-actions">
               <button type="button" className="btn btn-outline" onClick={() => setForm(null)}>Cancel</button>
               <button className="btn">Save</button>

@@ -4,6 +4,9 @@ import { useAuth } from '../../auth';
 import { useApi } from '../../hooks';
 import { Badge, Card, Empty, Loading, Message, Modal } from '../../components/ui';
 import RequestTracker from '../../components/RequestTracker';
+import { PrescriptionViewer, requiresPrescription, RxBadge, RX_ICON } from '../../components/Prescription';
+import { prescriptionStatus } from '../../components/RequestDetailParts';
+import { Svg } from '../../components/RequestCards';
 import type { MedicineRequest } from '../../types';
 
 const itemsText = (r: MedicineRequest) => r.items.map((i) => `${i.medicine.medicine_name} ×${i.quantity}`).join(', ');
@@ -21,6 +24,9 @@ export default function Requests() {
   const [remarks, setRemarks] = useState('');
   const [viewingId, setViewingId] = useState<number | null>(null);
   const viewing = data?.find((r) => r.request_id === viewingId) ?? null;
+  const [rxChecked, setRxChecked] = useState(false);
+  const [viewRxId, setViewRxId] = useState<number | null>(null);
+  const openDetails = (r: MedicineRequest) => { setRxChecked(false); setMsg(null); setViewingId(r.request_id); };
 
   const act = async (fn: () => Promise<unknown>, success: string) => {
     setMsg(null);
@@ -38,8 +44,17 @@ export default function Requests() {
   const canReview = (r: MedicineRequest) =>
     r.status === 'pending' && (r.request_type === 'medicine' || user?.role === 'admin');
 
-  const reviewButtons = (r: MedicineRequest) => canReview(r) && <>
-    <button className="btn btn-sm" onClick={() => act(() => api.post(`/requests/${r.request_id}/approve`), `Request #${r.request_id} approved. SMS sent to the resident.`)}>Approve</button>{' '}
+  const approve = async (r: MedicineRequest) => {
+    const rx = requiresPrescription(r);
+    if (await act(() => api.post(`/requests/${r.request_id}/approve`, rx ? { prescription_verified: true } : {}),
+      `Request #${r.request_id} approved${rx ? ' (prescription checked)' : ''}. SMS sent to the resident.`)) setViewingId(null);
+  };
+
+  /** Prescription medicines: approving is only possible inside Details, after viewing and confirming the prescription. */
+  const reviewButtons = (r: MedicineRequest, inDetails = false) => canReview(r) && <>
+    {requiresPrescription(r) && !inDetails
+      ? <button className="btn btn-sm" onClick={() => openDetails(r)}>Check & approve</button>
+      : <button className="btn btn-sm" disabled={requiresPrescription(r) && (!rxChecked || !r.prescription)} onClick={() => approve(r)}>Approve</button>}{' '}
     <button className="btn btn-danger btn-sm" onClick={() => { setRejecting(r); setRemarks(''); }}>Reject</button>
   </>;
 
@@ -78,7 +93,12 @@ export default function Requests() {
                   <td className="nowrap">{formatDate(r.request_date, true)}</td>
                   <td>{r.resident?.name}<div className="muted small">{r.resident?.qr_code}</div></td>
                   <td><Badge value={r.request_type} /></td>
-                  <td>{itemsText(r)}</td>
+                  <td>
+                    {itemsText(r)}
+                    {requiresPrescription(r) && (
+                      <div className="rx-cell"><RxBadge small /> <span className={r.prescription_verified_at ? 'rx-ok small' : 'muted small'}>{r.prescription ? (r.prescription_verified_at ? 'checked' : 'uploaded') : 'not uploaded'}</span></div>
+                    )}
+                  </td>
                   <td>
                     <Badge value={r.status} />
                     {r.status === 'approved' && r.claim_by && <div className="muted small">claim by {formatDate(r.claim_by)}</div>}
@@ -89,7 +109,7 @@ export default function Requests() {
                     {r.remarks && <div className="muted small">Remarks: {r.remarks}</div>}
                   </td>
                   <td className="right nowrap">
-                    <button className="btn btn-outline btn-sm" onClick={() => setViewingId(r.request_id)}>Details</button>{' '}
+                    <button className="btn btn-outline btn-sm" onClick={() => openDetails(r)}>Details</button>{' '}
                     {reviewButtons(r)}
                   </td>
                 </tr>
@@ -110,13 +130,38 @@ export default function Requests() {
           {viewing.resident_note && (
             <div className="review-note"><span className="muted small">Resident's reason for request</span><p>{viewing.resident_note}</p></div>
           )}
+          {(requiresPrescription(viewing) || viewing.prescription) && (
+            <div className="rx-box">
+              <strong><Svg d={RX_ICON} size={18} width={2.4} /> Prescription</strong>
+              {viewing.prescription ? (
+                <div className="rx-review-row">
+                  <div className="rx-file-info">
+                    <strong>{viewing.prescription.file_name}</strong>
+                    <span className="small">{prescriptionStatus(viewing)}</span>
+                  </div>
+                  <button type="button" className="btn btn-outline btn-sm" onClick={() => setViewRxId(viewing.request_id)}>View</button>
+                </div>
+              ) : (
+                <p>No prescription was uploaded. Ask the resident to upload it in their request, or reject the request.</p>
+              )}
+              {canReview(viewing) && viewing.prescription && (
+                <label className="checkbox-row rx-check">
+                  <input type="checkbox" checked={rxChecked} onChange={(e) => setRxChecked(e.target.checked)} />
+                  <span>I checked the prescription: it is valid, signed by a licensed doctor, written for this resident, and matches the requested medicine and quantity.</span>
+                </label>
+              )}
+            </div>
+          )}
           <RequestTracker request={viewing} forResident={false} />
+          {msg?.type === 'error' && <Message>{msg.text}</Message>}
           <div className="modal-actions">
-            {reviewButtons(viewing)}
+            {reviewButtons(viewing, true)}
             <button className="btn btn-outline" onClick={() => setViewingId(null)}>Close</button>
           </div>
         </Modal>
       )}
+
+      {viewRxId && <PrescriptionViewer requestId={viewRxId} onClose={() => setViewRxId(null)} />}
 
       {rejecting && (
         <Modal title={`Reject request #${rejecting.request_id}`} onClose={() => setRejecting(null)}>

@@ -6,6 +6,7 @@ import { Badge, Empty, Loading, Message, Modal } from '../../components/ui';
 import { ICONS, quantityText, Svg, unitPlural } from '../../components/RequestCards';
 import type { Medicine } from '../../types';
 import { MAX_REQUEST_QUANTITY, quantityWarning } from '../../validation';
+import { PrescriptionUpload, PrescriptionViewer, RX_ICON, RxBadge, type PrescriptionFile } from '../../components/Prescription';
 
 type CartItem = { medicine: Medicine; quantity: number };
 
@@ -44,6 +45,9 @@ export default function ResidentMedicines() {
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState('');
   const [restockNote, setRestockNote] = useState('');
+  const [details, setDetails] = useState<Medicine | null>(null);    // medicine details sheet
+  const [prescription, setPrescription] = useState<PrescriptionFile | null>(null);
+  const [viewRx, setViewRx] = useState(false);
   const navigate = useNavigate();
 
   // Steps: browse medicines → "Medicine Request Form" (quantities + reason) → review → submit.
@@ -69,9 +73,13 @@ export default function ResidentMedicines() {
   const inCart = (m: Medicine) => cart.find((c) => c.medicine.medicine_id === m.medicine_id);
   const cartWarnings = cart.map((c) => quantityWarning(c.quantity, unitPlural(c.medicine.unit), { available: c.medicine.available_stock }));
   const cartValid = cart.length > 0 && cartWarnings.every((w) => !w);
+  // Medicines that need a doctor's prescription: the request must include a photo/PDF of it.
+  const rxItems = cart.filter((c) => c.medicine.requires_prescription);
+  const needsRx = rxItems.length > 0;
 
   const openAdd = (m: Medicine) => {
     setSheetError('');
+    setDetails(null);
     setAdding({ medicine: m, quantity: inCart(m)?.quantity ?? 1 });
   };
 
@@ -93,11 +101,13 @@ export default function ResidentMedicines() {
         request_type: 'medicine',
         note: note.trim() || null,
         items: cart.map((c) => ({ medicine_id: c.medicine.medicine_id, quantity: c.quantity })),
+        ...(needsRx && prescription ? { prescription: { name: prescription.name, data: prescription.data } } : {}),
       });
       setCart([]);
       setNote('');
+      setPrescription(null);
       setCartOpen(false);
-      navigate(`/requests/${res.data.request_id}`, { replace: true });
+      navigate(`/requests/${res.data.request_id}`, { replace: true, state: { submitted: true } });
     } catch (err) {
       setSheetError(errorMessage(err));
     } finally { setBusy(false); }
@@ -152,7 +162,7 @@ export default function ResidentMedicines() {
   );
 
   if ((step === 'form' || step === 'review') && cart.length > 0) {
-    const prescription = cart.filter((c) => /prescription/i.test(c.medicine.description ?? ''));
+    const rxMissing = needsRx && !prescription;
     return (
       <div className="page page-narrow">
         <header className="page-head hero-head form-hero">
@@ -174,6 +184,7 @@ export default function ResidentMedicines() {
                     <strong>{c.medicine.medicine_name}</strong>
                     <span className="muted">{c.medicine.category} · {c.medicine.unit}</span>
                     <span className={`badge badge-${c.medicine.status}`}>{quantityText(c.medicine.available_stock, c.medicine.unit)} available</span>
+                    {c.medicine.requires_prescription && <RxBadge small />}
                   </div>
                   {step === 'form' && cart.length > 1 && (
                     <button className="icon-btn" onClick={() => setCart(cart.filter((_, i) => i !== idx))} aria-label={`Remove ${c.medicine.medicine_name}`}>
@@ -205,16 +216,26 @@ export default function ResidentMedicines() {
               </label>
               <p className="field-hint right">{note.length}/500</p>
 
+              {needsRx && (
+                <div className="rx-section">
+                  <span className="rx-section-title"><Svg d={RX_ICON} size={18} width={2.4} /> Upload Prescription <span className="req-star">*</span></span>
+                  <p className="muted small">
+                    Required for {rxItems.map((c) => c.medicine.medicine_name).join(', ')}. Upload a clear photo of your doctor's prescription.
+                  </p>
+                  <PrescriptionUpload value={prescription} onChange={setPrescription} />
+                  <p className="rx-note"><Svg d={ICONS.info} size={16} /> The prescription will be reviewed by the pharmacy staff before your request can be approved.</p>
+                </div>
+              )}
+
               <div className="info-box info-warn">
                 <strong><Svg d={ICONS.info} size={18} /> Important reminder</strong>
                 <p>Medicines are not suitable for everyone. Follow a doctor's or health worker's advice on whether to use them and how to take them.</p>
-                {prescription.length > 0 && (
-                  <p><b>Bring your prescription for: {prescription.map((c) => c.medicine.medicine_name).join(', ')}.</b></p>
-                )}
+                {needsRx && <p><b>Bring the original prescription when you claim the medicine.</b></p>}
                 <p>You can request up to {MAX_REQUEST_QUANTITY} of each medicine per request.</p>
               </div>
 
-              <button className="btn btn-block btn-lg" disabled={!cartValid} onClick={() => goStep('review')}>Review Request</button>
+              {rxMissing && <p className="field-warning">Please upload your prescription to continue.</p>}
+              <button className="btn btn-block btn-lg" disabled={!cartValid || rxMissing} onClick={() => goStep('review')}>Review Request</button>
               <button className="btn btn-outline btn-block" onClick={() => goStep(null)}>+ Add another medicine</button>
             </>
           ) : (
@@ -223,19 +244,30 @@ export default function ResidentMedicines() {
                 <span className="muted small">Reason for request</span>
                 <p>{note.trim() || 'No reason given.'}</p>
               </div>
+              {needsRx && prescription && (
+                <div className="rx-review-row">
+                  <span className="rx-file-icon"><Svg d={RX_ICON} size={22} width={2.2} /></span>
+                  <div className="rx-file-info">
+                    <span className="muted small">Prescription</span>
+                    <strong>{prescription.name}</strong>
+                  </div>
+                  <button type="button" className="btn btn-outline btn-sm" onClick={() => setViewRx(true)}>View</button>
+                </div>
+              )}
               <div className="info-box info-ok">
                 <strong><Svg d={ICONS.calendar} size={18} /> What happens next</strong>
-                <p>The pharmacy staff will review your request. You will get an SMS once it is approved.</p>
+                <p>The pharmacy staff will review your request{needsRx ? ' and check your prescription' : ''}. You will get an SMS once it is approved.</p>
                 <p>Then claim your medicines at Botika ng Bayan, Bulan within 7 days. Bring your QR code / Patient ID.</p>
               </div>
               {sheetError && <Message>{sheetError}</Message>}
-              <button className="btn btn-block btn-lg" disabled={busy || !cartValid} onClick={submitRequest}>
+              <button className="btn btn-block btn-lg" disabled={busy || !cartValid || rxMissing} onClick={submitRequest}>
                 {busy ? 'Submitting…' : 'Confirm & Submit Request'}
               </button>
               <button className="btn btn-outline btn-block" disabled={busy} onClick={() => navigate(-1)}>Edit request</button>
             </>
           )}
         </section>
+        {viewRx && prescription && <PrescriptionViewer local={prescription} onClose={() => setViewRx(false)} />}
       </div>
     );
   }
@@ -277,15 +309,16 @@ export default function ResidentMedicines() {
               {shown.map((m) => {
                 const added = inCart(m);
                 return (
-                  <article key={m.medicine_id} className={`med-card ${added ? 'med-added' : ''}`}>
-                    <div className="med-top">
-                      <span className="med-icon"><Svg d={ICONS.pill} size={22} width={1.9} /></span>
-                      <div className="med-name">
+                  <article key={m.medicine_id} className={`med-card ${added ? 'med-added' : ''} ${m.requires_prescription ? 'med-rx' : ''}`}>
+                    <button type="button" className="med-top med-open" onClick={() => setDetails(m)} aria-label={`${m.medicine_name} details`}>
+                      <span className="med-icon"><Svg d={m.requires_prescription ? RX_ICON : ICONS.pill} size={22} width={1.9} /></span>
+                      <span className="med-name">
                         <strong>{m.medicine_name}</strong>
                         <span className="muted small">{m.category}</span>
-                      </div>
+                        {m.requires_prescription && <RxBadge small />}
+                      </span>
                       <Badge value={m.status} />
-                    </div>
+                    </button>
                     {m.description && <p className="muted small med-desc">{m.description}</p>}
                     <div className="med-bottom">
                       <span className="med-stock"><b>{m.available_stock}</b> {m.available_stock === 1 ? m.unit : unitPlural(m.unit)} available</span>
@@ -335,6 +368,36 @@ export default function ResidentMedicines() {
         </Modal>
       )}
 
+      {details && (
+        <Modal title="Medicine Details" onClose={() => setDetails(null)}>
+          <div className="sheet-med">
+            <span className="med-icon"><Svg d={details.requires_prescription ? RX_ICON : ICONS.pill} size={22} width={1.9} /></span>
+            <div>
+              <strong>{details.medicine_name}</strong>
+              <span className="muted small">{details.category} · {details.unit}</span>
+            </div>
+          </div>
+          {details.description && <p className="note-text">{details.description}</p>}
+          {details.requires_prescription && (
+            <div className="rx-box">
+              <strong><Svg d={RX_ICON} size={18} width={2.4} /> Prescription Required</strong>
+              <p>This medicine requires a valid prescription from a licensed doctor. Upload a photo of it with your request, and bring the original when you claim the medicine.</p>
+            </div>
+          )}
+          <div className="review-row"><span>Available stock</span><strong>{quantityText(details.available_stock, details.unit)}</strong></div>
+          <div className="modal-actions">
+            <button className="btn btn-outline" onClick={() => setDetails(null)}>Close</button>
+            {details.status === 'out_of_stock' ? (
+              <button className="btn" onClick={() => { const m = details; setDetails(null); setSheetError(''); setRestockNote(''); setRestockFor(m); setRestockQty(m.available_stock + 1); }}>Request restock</button>
+            ) : (
+              <button className="btn" onClick={() => openAdd(details)}>
+                {inCart(details) ? 'Change quantity' : details.requires_prescription ? 'Request with Prescription' : 'Add to request'}
+              </button>
+            )}
+          </div>
+        </Modal>
+      )}
+
       {adding && (
         <Modal title={inCart(adding.medicine) ? 'Change quantity' : 'Add to request'} onClose={() => setAdding(null)}>
           <div className="sheet-med">
@@ -349,6 +412,9 @@ export default function ResidentMedicines() {
               onChange={(v) => setAdding({ ...adding, quantity: v })} />
           </label>
           {addWarning && <p className="field-warning">{addWarning}</p>}
+          {adding.medicine.requires_prescription && (
+            <p className="rx-note"><Svg d={RX_ICON} size={16} width={2.4} /> You will upload your prescription in the request form.</p>
+          )}
           <div className="modal-actions">
             <button className="btn btn-outline" onClick={() => setAdding(null)}>Cancel</button>
             <button className="btn" disabled={!!addWarning} onClick={confirmAdd}>{inCart(adding.medicine) ? 'Update' : 'Add to request'}</button>

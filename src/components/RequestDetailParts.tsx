@@ -1,7 +1,9 @@
+import { useState, type ReactNode } from 'react';
 import { formatDate } from '../api';
 import type { MedicineRequest } from '../types';
 import { statusSummary } from './RequestTracker';
 import { dateTime, ICONS, quantityText, STATUS_COLOR_KEY, statusKey, StatusPill, Svg } from './RequestCards';
+import { PrescriptionViewer, requiresPrescription, RX_ICON, RxBadge } from './Prescription';
 
 /** "Pickup schedule" row: approval means the medicines are ready at Botika ng Bayan until the claim deadline. */
 export function pickupText(r: MedicineRequest): string {
@@ -20,8 +22,18 @@ export function notesText(r: MedicineRequest): string {
   return r.remarks || 'None';
 }
 
+/** Where the prescription check stands, e.g. "Checked by Ana Cruz". */
+export function prescriptionStatus(r: MedicineRequest): string {
+  if (!r.prescription) return 'Not uploaded';
+  if (r.prescription_verified_at) return `Checked by ${r.prescription_verifier?.name ?? 'the pharmacy staff'} · ${formatDate(r.prescription_verified_at)}`;
+  if (r.status === 'pending') return 'Waiting for the pharmacy staff to check it';
+  return 'Uploaded';
+}
+
 /** "Request Details" card: medicines, requested by, pickup schedule and notes. */
-export function RequestSummaryCard({ r }: { r: MedicineRequest }) {
+export function RequestSummaryCard({ r, prescriptionAction }: { r: MedicineRequest; prescriptionAction?: ReactNode }) {
+  const [viewRx, setViewRx] = useState(false);
+  const rx = requiresPrescription(r) || !!r.prescription;
   return (
     <section className="detail-card">
       <div className={`detail-card-head k-${STATUS_COLOR_KEY[statusKey(r)]}`}>
@@ -40,6 +52,7 @@ export function RequestSummaryCard({ r }: { r: MedicineRequest }) {
             <span>
               <strong>{i.medicine.medicine_name}</strong>
               <span className="muted small">{quantityText(i.quantity, i.medicine.unit)}</span>
+              {i.medicine.requires_prescription && r.request_type === 'medicine' && <RxBadge small />}
             </span>
           </li>
         ))}
@@ -48,8 +61,24 @@ export function RequestSummaryCard({ r }: { r: MedicineRequest }) {
         <div><dt><Svg d={ICONS.user} size={18} /> Requested by</dt><dd>{r.resident?.name ?? '—'}</dd></div>
         <div><dt><Svg d={ICONS.calendar} size={18} /> Pickup schedule</dt><dd>{pickupText(r)}</dd></div>
         <div><dt><Svg d={ICONS.note} size={18} /> Reason for request</dt><dd className="note-text">{r.resident_note || 'None'}</dd></div>
+        {rx && (
+          <div>
+            <dt><Svg d={RX_ICON} size={18} width={2.2} /> Prescription</dt>
+            <dd className="rx-dd">
+              <span>
+                {r.prescription && <strong className="rx-name">{r.prescription.file_name}</strong>}
+                <span className={r.prescription_verified_at ? 'rx-ok' : 'muted small'}>{prescriptionStatus(r)}</span>
+              </span>
+              <span className="rx-dd-actions">
+                {r.prescription && <button type="button" className="btn btn-outline btn-sm" onClick={() => setViewRx(true)}>View</button>}
+                {prescriptionAction}
+              </span>
+            </dd>
+          </div>
+        )}
         <div><dt><Svg d={ICONS.info} size={18} /> Pharmacy notes</dt><dd>{notesText(r)}</dd></div>
       </dl>
+      {viewRx && <PrescriptionViewer requestId={r.request_id} onClose={() => setViewRx(false)} />}
     </section>
   );
 }
