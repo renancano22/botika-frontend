@@ -114,7 +114,7 @@ a { color: var(--primary); }
 }
 .drawer-logout:hover { background: rgba(254, 202, 202, 0.12); }
 .content { flex: 1; padding: 24px 28px; min-width: 0; width: 100%; max-width: 1336px; margin: 0 auto; }
-.page { display: flex; flex-direction: column; gap: 18px; max-width: 1280px; }
+.page { display: flex; flex-direction: column; gap: 18px; width: 100%; max-width: 1280px; margin: 0 auto; } /* centered on wide screens */
 .page-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
 /* Gradient welcome banner used on dashboards and resident pages */
 .hero-head {
