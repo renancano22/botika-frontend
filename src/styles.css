@@ -855,3 +855,16 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--p
 .countdown-urgent { background: #ffedd5; color: #c2410c; }
 .status-tabs { margin-bottom: 12px; }
 .tab-hint { margin: -4px 0 12px; }
+
+/* monthly limit (resident medicines page, dispense page) */
+.limit-box { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border-radius: 14px; background: #f0f9ff; border: 1px solid #bae6fd; margin-top: 12px; }
+.limit-box p { margin: 0; color: #334155; }
+.limit-head { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; font-size: 0.9rem; }
+.limit-head strong { color: #075985; }
+.limit-bar { display: flex; height: 8px; border-radius: 999px; background: #e0f2fe; overflow: hidden; }
+.limit-claimed { background: #0b7a63; }
+.limit-aside { background: #7dd3fc; }
+.limit-full { background: #fff7ed; border-color: #fed7aa; }
+.limit-full .limit-head strong { color: #9a3412; }
+.cart-row { flex-wrap: wrap; }
+.walkin-warning { flex-basis: 100%; margin: 0 !important; }

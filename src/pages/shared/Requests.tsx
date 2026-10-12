@@ -20,6 +20,7 @@ const PRESCRIPTION_REASONS = [
 ];
 const MEDICINE_REASONS = [
   'Not enough stock of the requested medicine right now.',
+  'You have reached the monthly limit of 100 medicines. Please request again next month.',
   'The requested quantity is more than what can be given per request.',
   'You already have an active request for this medicine.',
   'This medicine was given to you recently. Please request again when your supply runs out.',

@@ -152,6 +152,21 @@ export interface SmsNotification {
   resident?: Pick<Resident, 'resident_id' | 'name' | 'contact_no'>;
 }
 
+/** Monthly limit of a resident: total medicines they can receive per calendar month. */
+export interface MonthlyUsage {
+  limit: number;
+  /** received (dispensed) this month */
+  claimed: number;
+  /** in approved requests not yet claimed */
+  set_aside: number;
+  /** in requests waiting for review */
+  pending: number;
+  remaining: number;
+  month: string;
+  /** date the limit starts again (1st of next month) */
+  resets_on: string;
+}
+
 export type ForecastMethod = 'moving_average' | 'linear_regression' | 'exponential_smoothing';
 
 /** One medicine on the Demand Forecasting page. */
