@@ -35,7 +35,8 @@ api.interceptors.response.use(
 export function errorMessage(err: unknown): string {
   const e = err as AxiosError<{ message?: string; errors?: Record<string, string[]> }>;
   const data = e.response?.data;
-  if (data?.errors) return Object.values(data.errors).flat().join(' ');
+  // open_request_id is extra data (which request to edit), not a message.
+  if (data?.errors) return Object.entries(data.errors).filter(([k]) => k !== 'open_request_id').flatMap(([, v]) => v).join(' ');
   if (data?.message) return data.message;
   if (e.code === 'ERR_NETWORK') return 'Cannot reach the server. Is the backend running?';
   return 'Something went wrong. Please try again.';

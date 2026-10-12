@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import { api, errorMessage } from '../../api';
 import { useApi, useGoBack } from '../../hooks';
@@ -8,6 +8,8 @@ import { ICONS, Svg } from '../../components/RequestCards';
 import { RequestSummaryCard, StatusBox } from '../../components/RequestDetailParts';
 import { PrescriptionUpload, type PrescriptionFile } from '../../components/Prescription';
 import type { MedicineRequest } from '../../types';
+import { MAX_REQUEST_QUANTITY, quantityWarning } from '../../validation';
+import { unitPlural } from '../../components/RequestCards';
 
 /** Resident: one request with its tracking timeline (opened from My Requests). */
 export default function RequestDetail() {
@@ -21,7 +23,17 @@ export default function RequestDetail() {
   const [newRx, setNewRx] = useState<PrescriptionFile | null>(null);
   const [replacingRx, setReplacingRx] = useState(false);
   // Opened right after submitting from the request form.
-  const justSubmitted = (useLocation().state as { submitted?: boolean } | null)?.submitted === true;
+  const navState = useLocation().state as { submitted?: boolean; edit?: boolean } | null;
+  const justSubmitted = navState?.submitted === true;
+  // Opened from "Already in your request" on the medicines page: start editing right away.
+  const autoEdited = useRef(false);
+  useEffect(() => {
+    if (navState?.edit && r?.status === 'pending' && !autoEdited.current) {
+      autoEdited.current = true;
+      setEditing(structuredClone(r));
+    }
+  }, [navState, r]);
+  const editWarnings = editing?.items.map((i) => quantityWarning(i.quantity, unitPlural(i.medicine.unit))) ?? [];
 
   const replacePrescription = async () => {
     if (!r || !newRx) return;
@@ -97,7 +109,7 @@ export default function RequestDetail() {
         <StatusBox r={r} />
 
         <div className="detail-actions">
-          {r.status === 'pending' && <button className="btn btn-outline btn-block" disabled={busy} onClick={() => setEditing(structuredClone(r))}>Update Request</button>}
+          {r.status === 'pending' && <button className="btn btn-outline btn-block" disabled={busy} onClick={() => { setMsg(null); setEditing(structuredClone(r)); }}>Update Request</button>}
           {(r.status === 'pending' || r.status === 'approved') && (
             <button className="btn btn-outline-danger btn-block" disabled={busy} onClick={() => setConfirming(true)}>
               <Svg d={ICONS.trash} size={18} /> Cancel Request
@@ -137,20 +149,23 @@ export default function RequestDetail() {
 
       {editing && (
         <Modal title={`Update request #${editing.request_id}`} onClose={() => setEditing(null)}>
+          <p className="muted small">Change how many you need. Up to {MAX_REQUEST_QUANTITY} per medicine.</p>
           {editing.items.map((item, idx) => (
             <div className="cart-row" key={item.medicine_id}>
-              <div><strong>{item.medicine.medicine_name}</strong></div>
-              <input type="number" min={1} value={item.quantity} onChange={(e) => {
-                const items = editing.items.map((x, i) => (i === idx ? { ...x, quantity: Number(e.target.value) } : x));
+              <div><strong>{item.medicine.medicine_name}</strong><div className="muted small">{unitPlural(item.medicine.unit)}</div></div>
+              <input type="number" min={1} max={MAX_REQUEST_QUANTITY} value={Number.isNaN(item.quantity) ? '' : item.quantity} onChange={(e) => {
+                const items = editing.items.map((x, i) => (i === idx ? { ...x, quantity: e.target.value === '' ? NaN : Number(e.target.value) } : x));
                 setEditing({ ...editing, items });
-              }} />
+              }} aria-label={`Quantity of ${item.medicine.medicine_name}`} />
               <button className="btn-ghost" disabled={editing.items.length === 1}
                 onClick={() => setEditing({ ...editing, items: editing.items.filter((_, i) => i !== idx) })} aria-label="Remove">✕</button>
+              {editWarnings[idx] && <p className="field-warning walkin-warning">{editWarnings[idx]}</p>}
             </div>
           ))}
+          {msg?.type === 'error' && <Message>{msg.text}</Message>}
           <div className="modal-actions">
             <button className="btn btn-outline" onClick={() => setEditing(null)}>Close</button>
-            <button className="btn" disabled={busy} onClick={saveEdit}>Save changes</button>
+            <button className="btn" disabled={busy || editWarnings.some(Boolean)} onClick={saveEdit}>Save changes</button>
           </div>
         </Modal>
       )}

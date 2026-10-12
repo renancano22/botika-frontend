@@ -34,12 +34,17 @@ export default function ResidentMedicines() {
   const { data: categories } = useApi<string[]>('/medicines/categories');
   // Monthly limit: total medicines a resident can receive per month (online requests and walk-ins).
   const { data: monthly, reload: reloadMonthly } = useApi<MonthlyUsage>('/monthly-limit');
-  // The resident's open restock requests (pending, or approved and waiting for stock): one per medicine at a time.
-  const { data: myRestocks, reload: reloadRestocks } = useApi<MedicineRequest[]>('/requests', { type: 'restock' }, 30000);
+  // The resident's open requests (pending, or approved and not finished yet): one per medicine at a time.
+  //  - restock: they wait for the SMS;  - medicine: they edit that request instead of making a new one.
+  const { data: myRequests, reload: reloadMine } = useApi<MedicineRequest[]>('/requests', undefined, 30000);
   const openRestock = new Map<number, number>(); // medicine_id → request_id
-  (myRestocks ?? []).filter((r) => r.status === 'pending' || r.status === 'approved')
-    .forEach((r) => r.items.forEach((i) => { if (!openRestock.has(i.medicine_id)) openRestock.set(i.medicine_id, r.request_id); }));
+  const openMedicineReq = new Map<number, { requestId: number; status: string }>();
+  (myRequests ?? []).filter((r) => r.status === 'pending' || r.status === 'approved').forEach((r) => r.items.forEach((i) => {
+    if (r.request_type === 'restock' && !openRestock.has(i.medicine_id)) openRestock.set(i.medicine_id, r.request_id);
+    if (r.request_type === 'medicine' && !openMedicineReq.has(i.medicine_id)) openMedicineReq.set(i.medicine_id, { requestId: r.request_id, status: r.status });
+  }));
   const [alreadyRequested, setAlreadyRequested] = useState<{ medicine: Medicine; requestId: number } | null>(null);
+  const [inRequest, setInRequest] = useState<{ medicine: Medicine; requestId: number; status: string } | null>(null);
   const shown = (data ?? []).filter((m) => availability === 'all'
     || (availability === 'out_of_stock' ? m.status === 'out_of_stock' : m.status !== 'out_of_stock'));
   const listTitle = `${availability === 'in_stock' ? 'Available' : availability === 'out_of_stock' ? 'Out of Stock' : 'All'} ${category || 'Medicines'}`;
@@ -93,6 +98,9 @@ export default function ResidentMedicines() {
   const openAdd = (m: Medicine) => {
     setSheetError('');
     setDetails(null);
+    // Already in one of the resident's open requests: go to that request instead of making a new one.
+    const open = openMedicineReq.get(m.medicine_id);
+    if (open && !inCart(m)) { setInRequest({ medicine: m, ...open }); return; }
     setAdding({ medicine: m, quantity: inCart(m)?.quantity ?? 1 });
   };
 
@@ -120,6 +128,7 @@ export default function ResidentMedicines() {
       setNote('');
       setPrescription(null);
       reloadMonthly(true);
+      reloadMine(true);
       setCartOpen(false);
       navigate(`/requests/${res.data.request_id}`, { replace: true, state: { submitted: true } });
     } catch (err) {
@@ -145,7 +154,7 @@ export default function ResidentMedicines() {
     try {
       await api.post('/requests', { request_type: 'restock', note: restockNote.trim() || null, items: [{ medicine_id: restockFor.medicine_id, quantity: restockQty }] });
       setRestockFor(null);
-      reloadRestocks(true);
+      reloadMine(true);
       setToast('Restock request sent. You will get an SMS once the medicine is available.');
     } catch (err) {
       setSheetError(errorMessage(err));
@@ -378,9 +387,15 @@ export default function ResidentMedicines() {
                           <button className="btn btn-outline btn-sm" onClick={() => startRestock(m)}>Request restock</button>
                         ))}
                         {m.status !== 'out_of_stock' && (
-                          <button className={`btn btn-sm ${added ? 'btn-added' : ''}`} onClick={() => openAdd(m)}>
-                            {added ? <><Svg d={ICONS.check} size={16} width={2.6} /> Added ({added.quantity})</> : '+ Add'}
-                          </button>
+                          openMedicineReq.has(m.medicine_id) && !added ? (
+                            <button className="btn btn-sm btn-added" onClick={() => openAdd(m)} title="Already in one of your requests">
+                              <Svg d={ICONS.note} size={16} width={2.2} /> In request #{openMedicineReq.get(m.medicine_id)?.requestId}
+                            </button>
+                          ) : (
+                            <button className={`btn btn-sm ${added ? 'btn-added' : ''}`} onClick={() => openAdd(m)}>
+                              {added ? <><Svg d={ICONS.check} size={16} width={2.6} /> Added ({added.quantity})</> : '+ Add'}
+                            </button>
+                          )
                         )}
                       </div>
                     </div>
@@ -441,7 +456,9 @@ export default function ResidentMedicines() {
               <button className="btn" onClick={() => startRestock(details)}>{openRestock.has(details.medicine_id) ? 'Restock requested' : 'Request restock'}</button>
             ) : (
               <button className="btn" onClick={() => openAdd(details)}>
-                {inCart(details) ? 'Change quantity' : details.requires_prescription ? 'Request with Prescription' : 'Add to request'}
+                {inCart(details) ? 'Change quantity'
+                  : openMedicineReq.has(details.medicine_id) ? `In request #${openMedicineReq.get(details.medicine_id)?.requestId}`
+                    : details.requires_prescription ? 'Request with Prescription' : 'Add to request'}
               </button>
             )}
           </div>
@@ -468,6 +485,35 @@ export default function ResidentMedicines() {
           <div className="modal-actions">
             <button className="btn btn-outline" onClick={() => setAdding(null)}>Cancel</button>
             <button className="btn" disabled={!!addWarning} onClick={confirmAdd}>{inCart(adding.medicine) ? 'Update' : 'Add to request'}</button>
+          </div>
+        </Modal>
+      )}
+
+      {inRequest && (
+        <Modal title="Already in your request" onClose={() => setInRequest(null)}>
+          <div className="sheet-med">
+            <span className="med-icon"><Svg d={ICONS.pill} size={22} width={1.9} /></span>
+            <div>
+              <strong>{inRequest.medicine.medicine_name}</strong>
+              <span className="muted small">Request #{inRequest.requestId} · {inRequest.status === 'pending' ? 'Under review' : 'Ready for pickup'}</span>
+            </div>
+          </div>
+          {inRequest.status === 'pending' ? (
+            <p>
+              You already requested <b>{inRequest.medicine.medicine_name}</b> in request #{inRequest.requestId}, which is still under review.
+              To change the quantity, edit that request instead of making a new one, so the same medicine stays in one request.
+            </p>
+          ) : (
+            <p>
+              <b>{inRequest.medicine.medicine_name}</b> is already approved for you in request #{inRequest.requestId} and is ready for pickup.
+              Please claim it at Botika ng Bayan first. If you need a different quantity, you can cancel that request and send a new one.
+            </p>
+          )}
+          <div className="modal-actions">
+            <button className="btn btn-outline" onClick={() => setInRequest(null)}>Close</button>
+            <button className="btn" onClick={() => navigate(`/requests/${inRequest.requestId}`, { state: { edit: inRequest.status === 'pending' } })}>
+              {inRequest.status === 'pending' ? `Edit request #${inRequest.requestId}` : `View request #${inRequest.requestId}`}
+            </button>
           </div>
         </Modal>
       )}
