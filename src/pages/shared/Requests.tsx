@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { api, errorMessage, formatDate } from '../../api';
 import { useAuth } from '../../auth';
 import { useApi } from '../../hooks';
@@ -6,7 +7,7 @@ import { Badge, Card, Empty, Loading, Message, Modal } from '../../components/ui
 import RequestTracker from '../../components/RequestTracker';
 import { PrescriptionViewer, requiresPrescription, RxBadge, RX_ICON } from '../../components/Prescription';
 import { prescriptionStatus } from '../../components/RequestDetailParts';
-import { Svg } from '../../components/RequestCards';
+import { PickupCountdown, Svg } from '../../components/RequestCards';
 import type { MedicineRequest } from '../../types';
 
 const itemsText = (r: MedicineRequest) => r.items.map((i) => `${i.medicine.medicine_name} ×${i.quantity}`).join(', ');
@@ -38,14 +39,38 @@ const reasonsFor = (r: MedicineRequest) => (r.request_type === 'restock'
   ? RESTOCK_REASONS
   : [...(requiresPrescription(r) ? PRESCRIPTION_REASONS : []), ...MEDICINE_REASONS]);
 
-const STATUSES = ['', 'pending', 'approved', 'rejected', 'dispensed', 'fulfilled', 'cancelled', 'expired'];
+type RequestType = 'medicine' | 'restock' | '';
+
+/** Status tabs for each request type (value '' = all statuses). */
+function statusTabs(type: RequestType): [string, string][] {
+  if (type === 'medicine') {
+    return [['pending', 'Pending'], ['approved', 'Ready for pickup'], ['dispensed', 'Completed'], ['rejected', 'Rejected'],
+      ['expired', 'Expired (not claimed)'], ['cancelled', 'Cancelled'], ['', 'All']];
+  }
+  if (type === 'restock') {
+    return [['pending', 'Pending'], ['approved', 'Waiting for stock'], ['fulfilled', 'Fulfilled'], ['rejected', 'Rejected'], ['cancelled', 'Cancelled'], ['', 'All']];
+  }
+  return [['pending', 'Pending'], ['approved', 'Approved'], ['dispensed', 'Completed'], ['fulfilled', 'Fulfilled'], ['rejected', 'Rejected'],
+    ['expired', 'Expired'], ['cancelled', 'Cancelled'], ['', 'All']];
+}
 
 /** Staff/admin: review medicine and restock requests. (Residents use My Requests.) */
 export default function Requests() {
   const { user } = useAuth();
-  const [type, setType] = useState<'medicine' | 'restock' | ''>('medicine');
-  const [status, setStatus] = useState('pending');
-  const { data, error, loading, reload } = useApi<MedicineRequest[]>('/requests', { type, status }, 30000);
+  // The type and status are kept in the address (e.g. /requests?status=approved from the dashboard).
+  const [params, setParams] = useSearchParams();
+  const rawType = params.get('type') ?? 'medicine';
+  const apiType: RequestType = rawType === 'medicine' || rawType === 'restock' ? rawType : '';
+  const rawStatus = params.get('status') ?? 'pending';
+  const apiStatus = rawStatus === 'all' ? '' : rawStatus;
+  const setFilter = (next: { type?: RequestType; status?: string }) => {
+    const t = next.type ?? apiType;
+    const st = next.status ?? apiStatus;
+    setParams({ type: t || 'all', status: st || 'all' }, { replace: true });
+  };
+  const { data, error, loading, reload: reloadList } = useApi<MedicineRequest[]>('/requests', { type: apiType, status: apiStatus }, 30000);
+  const counts = useApi<Record<string, number>>('/requests/counts', { type: apiType }, 30000);
+  const reload = (silent = false) => { reloadList(silent); counts.reload(true); };
   const [msg, setMsg] = useState<{ type: 'error' | 'success'; text: string } | null>(null);
   const [rejecting, setRejecting] = useState<MedicineRequest | null>(null);
   const [reason, setReason] = useState('');            // a reason from the list, or OTHER
@@ -102,16 +127,24 @@ export default function Requests() {
 
       <Card actions={
         <div className="filters">
-          <select value={type} onChange={(e) => setType(e.target.value as typeof type)}>
+          <select value={apiType} onChange={(e) => setFilter({ type: e.target.value as RequestType, status: 'pending' })} aria-label="Request type">
             <option value="">All types</option>
             <option value="medicine">Medicine requests</option>
             <option value="restock">Restock requests</option>
           </select>
-          <select value={status} onChange={(e) => setStatus(e.target.value)}>
-            {STATUSES.map((s) => <option key={s} value={s}>{s ? s[0].toUpperCase() + s.slice(1) : 'All statuses'}</option>)}
-          </select>
         </div>
       }>
+        <div className="chips status-tabs" role="tablist" aria-label="Status">
+          {statusTabs(apiType).map(([value, label]) => (
+            <button key={value || 'all'} role="tab" aria-selected={apiStatus === value} className={`chip ${apiStatus === value ? 'active' : ''}`}
+              onClick={() => setFilter({ status: value })}>
+              {label}<span className="chip-count">{counts.data?.[value || 'all'] ?? 0}</span>
+            </button>
+          ))}
+        </div>
+        {apiStatus === 'approved' && apiType !== 'restock' && (
+          <p className="muted small tab-hint">Approved medicine requests waiting to be claimed. The medicines are set aside for these residents until the deadline; after that the request is cancelled automatically.</p>
+        )}
         {loading && !data ? <Loading /> : !data?.length ? <Empty>No requests found.</Empty> : (
           <table>
             <thead>
@@ -122,7 +155,11 @@ export default function Requests() {
                 <tr key={r.request_id}>
                   <td>{r.request_id}</td>
                   <td className="nowrap">{formatDate(r.request_date, true)}</td>
-                  <td>{r.resident?.name}<div className="muted small">{r.resident?.qr_code}</div></td>
+                  <td>
+                    {r.resident?.name}
+                    <div className="muted small">{r.resident?.qr_code}</div>
+                    {r.status === 'approved' && r.resident?.contact_no && <div className="muted small">{r.resident.contact_no}</div>}
+                  </td>
                   <td><Badge value={r.request_type} /></td>
                   <td>
                     {itemsText(r)}
@@ -132,8 +169,10 @@ export default function Requests() {
                   </td>
                   <td>
                     <Badge value={r.status} />
-                    {r.status === 'approved' && r.claim_by && <div className="muted small">claim by {formatDate(r.claim_by)}</div>}
-                    {r.status !== 'approved' && r.reviewer && <div className="muted small">by {r.reviewer.name}</div>}
+                    {r.status === 'approved' && r.claim_by && (
+                      <div className="muted small">Ready for pickup · claim by {formatDate(r.claim_by)} <PickupCountdown claimBy={r.claim_by} /></div>
+                    )}
+                    {r.reviewer && <div className="muted small">{r.status === 'approved' ? 'Approved by' : 'by'} {r.reviewer.name}</div>}
                   </td>
                   <td>
                     {r.resident_note && <div className="note-text">“{r.resident_note}”</div>}

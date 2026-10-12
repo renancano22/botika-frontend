@@ -6,11 +6,13 @@ import { useApi } from '../../hooks';
 import { Badge, Card, Empty, Loading, Message, StatCard } from '../../components/ui';
 import type { Alerts, MedicineRequest } from '../../types';
 import { ExpiryBanner, expiryText } from '../../components/ExpiryAlerts';
+import { PickupCountdown } from '../../components/RequestCards';
 
 interface OpsDashboard {
   counts: Record<string, number>;
   alerts: Alerts;
   recent_requests: MedicineRequest[];
+  ready_for_pickup: MedicineRequest[];
   monthly_dispensing: { month: string; quantity: number }[];
   top_medicines?: { medicine_name: string; total: number }[];
 }
@@ -44,7 +46,7 @@ export default function OperationsDashboard() {
 
       <div className="stats">
         <StatCard label="Pending medicine requests" value={c.pending_requests} tone={c.pending_requests ? 'warn' : 'default'} />
-        <StatCard label="Approved, waiting to dispense" value={c.approved_to_dispense} />
+        <StatCard label="Ready for pickup (approved)" value={c.approved_to_dispense} />
         <StatCard label="Dispensed today" value={c.dispensed_today} tone="ok" />
         <StatCard label="Pending restock requests" value={c.pending_restock} tone={c.pending_restock ? 'warn' : 'default'} />
         <StatCard label="Low stock" value={c.low_stock} tone={c.low_stock ? 'warn' : 'default'} />
@@ -55,6 +57,8 @@ export default function OperationsDashboard() {
         <StatCard label="Registered residents" value={c.residents} />
         {isAdmin && <StatCard label="Active staff" value={c.staff ?? 0} />}
       </div>
+
+      <ReadyForPickup requests={data.ready_for_pickup ?? []} total={c.approved_to_dispense} />
 
       <div className="grid-2">
         <Card title="Medicines dispensed per month">
@@ -125,6 +129,34 @@ export default function OperationsDashboard() {
 
       {isAdmin && <PendingRequests requests={data.recent_requests} />}
     </div>
+  );
+}
+
+/** Approved medicine requests waiting to be claimed: whose they are, what, and until when. */
+function ReadyForPickup({ requests, total }: { requests: MedicineRequest[]; total: number }) {
+  return (
+    <Card title={`Ready for pickup (${total})`} actions={<Link to="/requests?status=approved">View all approved requests</Link>}>
+      {requests.length === 0 ? <Empty>No approved requests are waiting to be claimed.</Empty> : (
+        <table>
+          <thead><tr><th>#</th><th>Resident</th><th>Medicines</th><th>Approved</th><th>Claim by</th></tr></thead>
+          <tbody>
+            {requests.map((r) => (
+              <tr key={r.request_id}>
+                <td>{r.request_id}</td>
+                <td>
+                  <strong>{r.resident?.name}</strong>
+                  <div className="muted small">{r.resident?.qr_code}{r.resident?.contact_no ? ` · ${r.resident.contact_no}` : ''}</div>
+                </td>
+                <td>{r.items.map((i) => `${i.medicine.medicine_name} ×${i.quantity}`).join(', ')}</td>
+                <td className="nowrap">{formatDate(r.reviewed_at, true)}{r.reviewer && <div className="muted small">by {r.reviewer.name}</div>}</td>
+                <td className="nowrap">{formatDate(r.claim_by)}<div><PickupCountdown claimBy={r.claim_by} /></div></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+      {total > requests.length && <p className="muted small">Showing the {requests.length} with the nearest deadline. <Link to="/requests?status=approved">See all {total}</Link></p>}
+    </Card>
   );
 }
 

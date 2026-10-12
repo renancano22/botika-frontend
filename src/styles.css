@@ -849,3 +849,9 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--p
 .reject-preview p { margin: 4px 0 0; font-size: 0.88rem; }
 .fc-limited { display: flex; gap: 8px; align-items: flex-start; margin: 0; padding: 10px 12px; border-radius: 12px; background: #fff7ed; border: 1px solid #fed7aa; color: #9a3412; font-size: 0.86rem; }
 .fc-limited svg { flex-shrink: 0; margin-top: 2px; }
+
+/* pickup countdown + request status tabs */
+.countdown { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 0.74rem; font-weight: 700; background: #e0f2fe; color: #0369a1; white-space: nowrap; }
+.countdown-urgent { background: #ffedd5; color: #c2410c; }
+.status-tabs { margin-bottom: 12px; }
+.tab-hint { margin: -4px 0 12px; }

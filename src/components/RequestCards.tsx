@@ -116,3 +116,20 @@ export function RequestRow({ request: r }: { request: MedicineRequest }) {
     </Link>
   );
 }
+
+/** Days left to claim an approved request: "3 days left", "Due tomorrow", "Last day today". */
+export function pickupCountdown(claimBy: string | null | undefined): { text: string; urgent: boolean } | null {
+  if (!claimBy) return null;
+  const day = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const days = Math.round((day(new Date(claimBy)) - day(new Date())) / 86400000);
+  if (days < 0) return { text: 'Deadline passed', urgent: true };
+  if (days === 0) return { text: 'Last day today', urgent: true };
+  if (days === 1) return { text: 'Due tomorrow', urgent: true };
+  return { text: `${days} days left`, urgent: false };
+}
+
+export function PickupCountdown({ claimBy }: { claimBy: string | null | undefined }) {
+  const c = pickupCountdown(claimBy);
+  if (!c) return null;
+  return <span className={`countdown ${c.urgent ? 'countdown-urgent' : ''}`}>{c.text}</span>;
+}
