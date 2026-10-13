@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../auth';
 import { useApi } from '../../hooks';
 import { Empty, Loading, Message } from '../../components/ui';
-import { RequestRow, STATUS_LABEL, statusKey, Svg, type StatusKey } from '../../components/RequestCards';
+import { RequestRow, STATUS_COLOR_KEY, STATUS_LABEL, statusKey, Svg, type StatusKey } from '../../components/RequestCards';
+import StatusDropdown from '../../components/StatusDropdown';
 import type { MedicineRequest } from '../../types';
 
 const FILTERS: ('all' | StatusKey)[] = ['all', 'review', 'claim', 'stock', 'claimed', 'available', 'cancelled', 'expired', 'rejected'];
@@ -23,6 +24,11 @@ export default function MyRequests() {
     return (FILTERS as string[]).includes(s ?? '') ? (s as 'all' | StatusKey) : 'all';
   });
   const [search, setSearch] = useState('');
+  const [, setParams] = useSearchParams();
+  const changeFilter = (f: 'all' | StatusKey) => {
+    setFilter(f);
+    setParams(f === 'all' ? {} : { status: f }, { replace: true }); // keep the choice in the address (Back / refresh)
+  };
 
   const counts = useMemo(() => {
     const c: Record<string, number> = { all: data?.length ?? 0 };
@@ -46,22 +52,30 @@ export default function MyRequests() {
       </header>
       <Message>{error}</Message>
 
-      <div className="search-box">
-        <Svg d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14M21 21l-5-5" size={20} />
-        <input type="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search by medicine name or request number…" />
-      </div>
-
-      <div className="chips" role="tablist" aria-label="Filter by status">
-        {FILTERS.map((f) => (
-          <button key={f} role="tab" aria-selected={filter === f} className={`chip ${filter === f ? 'active' : ''}`} onClick={() => setFilter(f)}>
-            {f === 'all' ? 'All' : STATUS_LABEL[f]}
-            <span className="chip-count">{counts[f] ?? 0}</span>
-          </button>
-        ))}
+      <div className="req-toolbar">
+        <div className="search-box">
+          <Svg d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14M21 21l-5-5" size={20} />
+          <input type="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search by medicine name or request number…" />
+        </div>
+        <StatusDropdown
+          value={filter}
+          onChange={(v) => changeFilter(v as 'all' | StatusKey)}
+          options={FILTERS.map((f) => ({
+            value: f,
+            label: f === 'all' ? 'All requests' : STATUS_LABEL[f],
+            count: counts[f] ?? 0,
+            k: f === 'all' ? undefined : STATUS_COLOR_KEY[f],
+          }))}
+        />
       </div>
 
       <section>
-        <h2 className="section-title">My Requests</h2>
+        <div className="section-head">
+          <h2 className="section-title">My Requests</h2>
+          <span className="muted small">
+            {shown.length} {shown.length === 1 ? 'request' : 'requests'}{filter !== 'all' && <> · {STATUS_LABEL[filter]} <button type="button" className="link-button" onClick={() => changeFilter('all')}>Show all</button></>}
+          </span>
+        </div>
         {loading && !data ? <Loading /> : shown.length === 0 ? (
           <div className="card"><Empty>{data?.length ? 'No requests match your search or filter.' : 'You have no requests yet. Tap "+ New request" to request medicines.'}</Empty></div>
         ) : (

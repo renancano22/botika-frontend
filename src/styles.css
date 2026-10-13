@@ -931,3 +931,37 @@ html { scroll-behavior: auto; }
 @media (prefers-reduced-motion: reduce) {
   .page, .jump-flash { animation: none; }
 }
+
+/* ---------- My Requests: search + status dropdown */
+.req-toolbar { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 10px; align-items: stretch; }
+.req-toolbar .search-box { min-width: 0; }
+.status-dd { position: relative; }
+.status-dd-btn { width: 100%; height: 100%; min-height: 50px; display: flex; align-items: center; gap: 10px; padding: 6px 12px 6px 14px; border-radius: 14px;
+  border: 1px solid var(--border); background: #fff; box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05); font: inherit; color: var(--text); cursor: pointer; text-align: left; }
+.status-dd-btn:hover { border-color: color-mix(in srgb, var(--primary) 35%, white); }
+.status-dd-btn:focus-visible, .status-dd.open .status-dd-btn { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-soft); }
+.status-dd-label { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
+.status-dd-value { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; }
+.status-dd-value strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.95rem; }
+.status-dd-count { margin-left: auto; min-width: 26px; height: 24px; padding: 0 8px; border-radius: 999px; display: inline-grid; place-items: center;
+  font-size: 0.78rem; font-weight: 700; background: color-mix(in srgb, var(--k, #64748b) 12%, white); color: color-mix(in srgb, var(--k, #334155) 85%, black); }
+.status-dd-chevron { display: grid; color: var(--muted); transition: transform 0.15s; }
+.status-dd.open .status-dd-chevron { transform: rotate(180deg); }
+.status-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; background: var(--k, #94a3b8); }
+.status-dd-list { position: absolute; z-index: 60; top: calc(100% + 6px); right: 0; left: 0; min-width: 260px; margin: 0; padding: 6px; list-style: none;
+  background: #fff; border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 16px 36px rgba(15, 31, 27, 0.16); max-height: 360px; overflow-y: auto;
+  animation: dd-in 0.14s ease-out; }
+@keyframes dd-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+.status-dd-option { display: flex; align-items: center; gap: 10px; padding: 10px 10px; border-radius: 10px; cursor: pointer; font-size: 0.93rem; }
+.status-dd-option.active { background: var(--primary-50); }
+.status-dd-option[aria-selected='true'] { font-weight: 700; }
+.status-dd-option.is-empty .status-dd-name { color: var(--muted); }
+.status-dd-name { flex: 1; min-width: 0; }
+.status-dd-option .status-dd-count { margin-left: 0; }
+.status-dd-check { width: 18px; display: grid; place-items: center; color: var(--primary); }
+@media (max-width: 640px) {
+  .req-toolbar { grid-template-columns: minmax(0, 1fr); }
+  .status-dd-list { max-height: 60vh; }
+  .status-dd-option { padding: 12px 10px; }   /* bigger touch targets */
+}
+.page > section > .section-head { margin-bottom: 12px; flex-wrap: wrap; }
