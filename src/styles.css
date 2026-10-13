@@ -886,3 +886,9 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--p
 .act-more-icon { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; background: var(--primary-soft); color: var(--primary) !important; margin: 0 0 4px !important; }
 @media (max-width: 1100px) { .act-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 @media (max-width: 400px) { .act-grid { gap: 8px; } .act-tile { min-height: 96px; padding: 10px 4px; } .act-tile strong { font-size: 1.45rem; } .act-tile span { font-size: 0.66rem; } }
+/* admin/staff dashboard tiles (grouped) */
+.act-card h2 + .act-grid { margin-top: -4px; }
+.act-card .act-grid + h2 { margin-top: 6px; }
+.act-grid-ops { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+.act-tile.act-alert { background: color-mix(in srgb, var(--k) 6%, white); border-color: color-mix(in srgb, var(--k) 30%, white); }
+@media (max-width: 600px) { .act-grid-ops { grid-template-columns: repeat(3, minmax(0, 1fr)); } }

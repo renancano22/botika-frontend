@@ -11,8 +11,11 @@ const TX_LABEL: Record<StockTransaction['type'], string> = { stock_in: 'Stock-in
 /** Inventory: stock-in batches, stock-out, real-time stock and expiration monitoring. */
 export default function Inventory() {
   const [search, setSearch] = useState('');
+  // ?expiry=near_expiry / expired (from the dashboard tiles) opens the batches already filtered.
+  const [expiry, setExpiry] = useState(() => new URLSearchParams(window.location.search).get('expiry') ?? '');
   const { data, error, loading, reload } = useApi<InventoryBatch[]>('/inventory', { search }, 30000);
   const { data: medicines } = useApi<Medicine[]>('/medicines');
+  const batches = (data ?? []).filter((b) => !expiry || (b.expiry_status ?? 'ok') === expiry);
   const [stockIn, setStockIn] = useState<{ medicine_id: string; quantity: number; expiration_date: string } | null>(null);
   const [stockOut, setStockOut] = useState<{ batch: InventoryBatch; quantity: number; reason: string; details: string } | null>(null);
   const [txType, setTxType] = useState('');
@@ -57,12 +60,22 @@ export default function Inventory() {
       <Message type="success">{notice}</Message>
       <Message>{error}</Message>
 
-      <Card title="Stock batches" actions={<input className="search" placeholder="Search medicine…" value={search} onChange={(e) => setSearch(e.target.value)} />}>
-        {loading && !data ? <Loading /> : !data?.length ? <Empty>No stock yet. Record a stock-in.</Empty> : (
+      <Card title="Stock batches" actions={
+        <div className="filters">
+          <select value={expiry} onChange={(e) => setExpiry(e.target.value)} aria-label="Expiry status">
+            <option value="">All batches</option>
+            <option value="near_expiry">Expiring within 1 month</option>
+            <option value="expired">Expired</option>
+            <option value="ok">Not expiring soon</option>
+          </select>
+          <input className="search" placeholder="Search medicine…" value={search} onChange={(e) => setSearch(e.target.value)} />
+        </div>
+      }>
+        {loading && !data ? <Loading /> : !data?.length ? <Empty>No stock yet. Record a stock-in.</Empty> : !batches.length ? <Empty>No batches with this expiry status.</Empty> : (
           <table>
             <thead><tr><th>Batch #</th><th>Medicine</th><th>Quantity</th><th>Expiration date</th><th>Expiry status</th><th>Last updated</th><th></th></tr></thead>
             <tbody>
-              {data.map((b) => (
+              {batches.map((b) => (
                 <tr key={b.inventory_id} className={b.expiry_status === 'expired' ? 'row-danger' : b.expiry_status === 'near_expiry' ? 'row-warn' : ''}>
                   <td>{b.inventory_id}</td>
                   <td>{b.medicine.medicine_name}</td>

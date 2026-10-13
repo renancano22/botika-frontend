@@ -3,6 +3,7 @@ import { useApi } from '../../hooks';
 import { Card, Empty, Loading, Message } from '../../components/ui';
 import { NotificationItem } from '../../components/Notifications';
 import { ICONS, RequestRow, Svg } from '../../components/RequestCards';
+import ActivityTile from '../../components/ActivityTile';
 import type { MedicineRequest, MonthlyUsage, Resident, SmsNotification } from '../../types';
 
 interface ResidentDash {
@@ -11,18 +12,6 @@ interface ResidentDash {
   recent_requests: MedicineRequest[];
   recent_notifications: SmsNotification[];
   monthly?: MonthlyUsage;
-}
-
-/** One tile of "My activity": a number, a small unit and a label; tapping it opens what it counts. */
-function ActivityTile({ to, value, unit, label, k, hint }: { to: string; value: number | string; unit: string; label: string; k: string; hint?: string }) {
-  return (
-    <Link to={to} className={`act-tile k-${k}`}>
-      <strong>{value}</strong>
-      <small>{unit}</small>
-      <span>{label}</span>
-      {hint && <em>{hint}</em>}
-    </Link>
-  );
 }
 
 export default function ResidentDashboard() {

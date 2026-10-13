@@ -3,7 +3,8 @@ import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Too
 import { formatDate } from '../../api';
 import { useAuth } from '../../auth';
 import { useApi } from '../../hooks';
-import { Badge, Card, Empty, Loading, Message, StatCard } from '../../components/ui';
+import { Badge, Card, Empty, Loading, Message } from '../../components/ui';
+import ActivityTile from '../../components/ActivityTile';
 import type { Alerts, MedicineRequest } from '../../types';
 import { ExpiryBanner, expiryText } from '../../components/ExpiryAlerts';
 import { PickupCountdown } from '../../components/RequestCards';
@@ -17,6 +18,7 @@ interface OpsDashboard {
   top_medicines?: { medicine_name: string; total: number }[];
 }
 
+const plural = (n: number, one: string, many = `${one}s`) => (n === 1 ? one : many);
 const monthLabel = (m: string) => new Date(`${m}-01`).toLocaleDateString('en-PH', { month: 'short', year: '2-digit' });
 
 /** Dashboard for the administrator and pharmacy staff. Refreshes every 30 seconds. */
@@ -28,6 +30,7 @@ export default function OperationsDashboard() {
   if (loading && !data) return <Loading />;
   if (!data) return <Message>{error}</Message>;
   const c = data.counts;
+  const today = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD in local time
 
   return (
     <div className="page">
@@ -44,19 +47,31 @@ export default function OperationsDashboard() {
 
       <ExpiryBanner alerts={data.alerts} />
 
-      <div className="stats">
-        <StatCard label="Pending medicine requests" value={c.pending_requests} tone={c.pending_requests ? 'warn' : 'default'} />
-        <StatCard label="Ready for pickup (approved)" value={c.approved_to_dispense} />
-        <StatCard label="Dispensed today" value={c.dispensed_today} tone="ok" />
-        <StatCard label="Pending restock requests" value={c.pending_restock} tone={c.pending_restock ? 'warn' : 'default'} />
-        <StatCard label="Low stock" value={c.low_stock} tone={c.low_stock ? 'warn' : 'default'} />
-        <StatCard label="Out of stock" value={c.out_of_stock} tone={c.out_of_stock ? 'danger' : 'default'} />
-        <StatCard label="Expiring within 1 month" value={c.near_expiry} tone={c.near_expiry ? 'warn' : 'default'} />
-        <StatCard label="Expired batches" value={c.expired} tone={c.expired ? 'danger' : 'default'} hint={c.expired ? 'Remove from stock' : undefined} />
-        <StatCard label="Medicines" value={c.medicines} />
-        <StatCard label="Registered residents" value={c.residents} />
-        {isAdmin && <StatCard label="Active staff" value={c.staff ?? 0} />}
-      </div>
+      <section className="card act-card">
+        <h2>Requests &amp; dispensing</h2>
+        <div className="act-grid act-grid-ops">
+          <ActivityTile to="/requests?type=medicine&status=pending" k="review" value={c.pending_requests} unit={plural(c.pending_requests, 'request')} label="Pending requests" alert={c.pending_requests > 0} />
+          <ActivityTile to="/requests?type=medicine&status=approved" k="ready" value={c.approved_to_dispense} unit={plural(c.approved_to_dispense, 'request')} label="Ready for pickup" />
+          <ActivityTile to={`/dispensing?from=${today}&to=${today}`} k="completed" value={c.dispensed_today} unit="today" label="Dispensed today" />
+          <ActivityTile to="/requests?type=restock&status=pending" k="submitted" value={c.pending_restock} unit={plural(c.pending_restock, 'request')} label="Pending restock" alert={c.pending_restock > 0} />
+        </div>
+        <h2>Stock</h2>
+        <div className="act-grid act-grid-ops">
+          <ActivityTile to="/medicines?status=low_stock" k="reminder" value={c.low_stock} unit={plural(c.low_stock, 'medicine')} label="Low stock" alert={c.low_stock > 0} />
+          <ActivityTile to="/medicines?status=out_of_stock" k="rejected" value={c.out_of_stock} unit={plural(c.out_of_stock, 'medicine')} label="Out of stock" alert={c.out_of_stock > 0} />
+          <ActivityTile to="/inventory?expiry=near_expiry" k="expired" value={c.near_expiry} unit={plural(c.near_expiry, 'batch', 'batches')} label="Expiring in 1 month" alert={c.near_expiry > 0} />
+          <ActivityTile to="/inventory?expiry=expired" k="rejected" value={c.expired} unit={plural(c.expired, 'batch', 'batches')} label="Expired batches" alert={c.expired > 0}
+            hint={c.expired ? 'Remove from stock' : undefined} />
+          <ActivityTile to="/medicines" k="available" value={c.medicines} unit={plural(c.medicines, 'medicine')} label="All medicines" />
+        </div>
+        {isAdmin && <>
+          <h2>People</h2>
+          <div className="act-grid act-grid-ops">
+            <ActivityTile to="/users?role=resident" k="hours" value={c.residents} unit={plural(c.residents, 'resident')} label="Registered residents" />
+            <ActivityTile to="/users?role=staff" k="announcement" value={c.staff ?? 0} unit="active" label="Pharmacy staff" />
+          </div>
+        </>}
+      </section>
 
       <ReadyForPickup requests={data.ready_for_pickup ?? []} total={c.approved_to_dispense} />
 

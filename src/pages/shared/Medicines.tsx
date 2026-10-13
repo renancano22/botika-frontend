@@ -13,7 +13,10 @@ type Form = typeof EMPTY;
 export default function Medicines() {
   const { user } = useAuth();
   const [search, setSearch] = useState('');
+  // ?status=low_stock / out_of_stock (from the dashboard tiles) opens the list already filtered.
+  const [status, setStatus] = useState(() => new URLSearchParams(window.location.search).get('status') ?? '');
   const { data, error, loading, reload } = useApi<Medicine[]>('/medicines', { search });
+  const shown = (data ?? []).filter((m) => !status || m.status === status);
   const { data: categories } = useApi<string[]>('/medicines/categories');
   const [editing, setEditing] = useState<Medicine | null>(null);
   const [form, setForm] = useState<Form | null>(null);
@@ -60,12 +63,22 @@ export default function Medicines() {
       </header>
       <Message>{pageError || error}</Message>
 
-      <Card actions={<input className="search" placeholder="Search name or category…" value={search} onChange={(e) => setSearch(e.target.value)} />}>
-        {loading && !data ? <Loading /> : !data?.length ? <Empty>No medicines yet.</Empty> : (
+      <Card actions={
+        <div className="filters">
+          <select value={status} onChange={(e) => setStatus(e.target.value)} aria-label="Stock status">
+            <option value="">All stock levels</option>
+            <option value="available">Available</option>
+            <option value="low_stock">Low stock</option>
+            <option value="out_of_stock">Out of stock</option>
+          </select>
+          <input className="search" placeholder="Search name or category…" value={search} onChange={(e) => setSearch(e.target.value)} />
+        </div>
+      }>
+        {loading && !data ? <Loading /> : !data?.length ? <Empty>No medicines yet.</Empty> : !shown.length ? <Empty>No medicines with this stock level.</Empty> : (
           <table>
             <thead><tr><th>Medicine</th><th>Category</th><th>Unit</th><th>Available</th><th>Reorder level</th><th>Status</th><th></th></tr></thead>
             <tbody>
-              {data.map((m) => (
+              {shown.map((m) => (
                 <tr key={m.medicine_id}>
                   <td><strong>{m.medicine_name}</strong>{m.requires_prescription && <div><RxBadge small /></div>}{m.description && <div className="muted small">{m.description}</div>}</td>
                   <td>{m.category}</td><td>{m.unit}</td>

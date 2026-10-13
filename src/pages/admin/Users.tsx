@@ -11,7 +11,7 @@ type Form = { name: string; email: string; password: string; role: Role };
 /** Manage User Accounts: create, view, edit, deactivate (Fig. 4.4). */
 export default function Users() {
   const { user: me } = useAuth();
-  const [role, setRole] = useState('');
+  const [role, setRole] = useState(() => new URLSearchParams(window.location.search).get('role') ?? ''); // ?role=resident / staff from the dashboard
   const [search, setSearch] = useState('');
   const { data, error, loading, reload } = useApi<User[]>('/users', { role, search });
   const [editing, setEditing] = useState<User | null>(null);

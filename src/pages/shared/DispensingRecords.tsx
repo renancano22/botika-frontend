@@ -9,8 +9,9 @@ import type { Dispensing } from '../../types';
 export default function DispensingRecords() {
   const { user } = useAuth();
   const isResident = user?.role === 'resident';
-  const [from, setFrom] = useState('');
-  const [to, setTo] = useState('');
+  // ?from=YYYY-MM-DD&to=YYYY-MM-DD (e.g. "Dispensed today" on the dashboard) opens the records already filtered.
+  const [from, setFrom] = useState(() => new URLSearchParams(window.location.search).get('from') ?? '');
+  const [to, setTo] = useState(() => new URLSearchParams(window.location.search).get('to') ?? '');
   const { data, error, loading } = useApi<Dispensing[]>('/dispensing', { from, to }, 30000);
 
   return (
