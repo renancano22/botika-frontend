@@ -82,13 +82,13 @@ function PriorityBadge({ priority }: { priority: ForecastResult['priority'] }) {
 }
 
 /** Ranked list with medal numbers and bars (top barangays / top medicines). */
-function RankList({ items, empty }: { items: { name: string; total: number }[]; empty: string }) {
+function RankList({ items, empty, unit }: { items: { name: string; total: number }[]; empty: string; unit: string }) {
   if (!items.length) return <Empty>{empty}</Empty>;
   const max = Math.max(...items.map((i) => i.total), 1);
   return (
     <ol className="rank-list">
       {items.map((item, i) => (
-        <li key={item.name}>
+        <li key={item.name} title={`${item.name}: ${item.total} ${unit}`}>
           <span className={`rank-no ${i < 3 ? `rank-medal rank-${i + 1}` : ''}`}>{i + 1}</span>
           <span className="rank-name">{item.name}</span>
           <strong className="rank-total">{item.total}</strong>
@@ -264,12 +264,12 @@ export default function Forecasting() {
           <div className="fc-two">
             <section className="card fc-card">
               <div className="fc-card-head"><span className="fc-card-icon"><Svg d={ICON.trophy} size={20} /></span><h2>Barangay with Most Medicine Requests</h2></div>
-              <RankList items={data.top_barangays.map((b) => ({ name: b.barangay, total: b.total }))} empty="No approved medicine requests in this period yet." />
+              <RankList items={data.top_barangays.map((b) => ({ name: b.barangay, total: b.total }))} empty="No approved medicine requests in this period yet." unit="approved requests" />
               <p className="fc-note"><Svg d={ICONS.info} size={16} /> Based on approved medicine requests since {since}.</p>
             </section>
             <section className="card fc-card">
               <div className="fc-card-head"><span className="fc-card-icon"><Svg d={ICONS.pill} size={20} /></span><h2>Most Frequently Requested Medicines</h2></div>
-              <RankList items={data.top_medicines.map((m) => ({ name: m.medicine_name, total: m.total }))} empty="No medicine requests in this period yet." />
+              <RankList items={data.top_medicines.map((m) => ({ name: m.medicine_name, total: m.total }))} empty="No medicine requests in this period yet." unit="requests" />
               <p className="fc-note"><Svg d={ICONS.info} size={16} /> Based on medicine requests (approved and pending) since {since}.</p>
             </section>
           </div>

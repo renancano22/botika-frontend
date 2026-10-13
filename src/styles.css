@@ -892,3 +892,26 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--p
 .act-grid-ops { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
 .act-tile.act-alert { background: color-mix(in srgb, var(--k) 6%, white); border-color: color-mix(in srgb, var(--k) 30%, white); }
 @media (max-width: 600px) { .act-grid-ops { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+
+/* demand forecasting: hover feedback (cards lift, rows highlight) */
+.fc-stat { transition: box-shadow 0.15s, transform 0.12s, border-color 0.15s; }
+.fc-stat:hover { transform: translateY(-3px); box-shadow: 0 10px 22px color-mix(in srgb, var(--k) 18%, transparent); border-color: color-mix(in srgb, var(--k) 45%, white); }
+.fc-stat:hover > svg { color: var(--k); transform: translateX(3px); }
+.fc-stat > svg { transition: transform 0.15s, color 0.15s; }
+.fc-stat:hover .fc-stat-icon { transform: scale(1.06); }
+.fc-stat-icon { transition: transform 0.15s; }
+.fc-card { transition: box-shadow 0.18s, border-color 0.18s; }
+.fc-card:hover { box-shadow: var(--shadow-md); border-color: color-mix(in srgb, var(--primary) 18%, var(--border)); }
+.rank-list li { padding: 4px 6px; margin: 0 -6px; border-radius: 10px; transition: background 0.12s; cursor: default; }
+.rank-list li:hover { background: var(--primary-50); }
+.rank-list li:hover .rank-bar span { filter: brightness(1.08) saturate(1.2); }
+.fc-story > div { transition: transform 0.12s, box-shadow 0.15s; }
+.fc-story > div:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+.fc-table tbody tr { transition: background 0.12s; }
+.fc-table tbody tr.clickable:hover td { background: var(--primary-50); }
+.fc-table tbody tr.clickable:hover td:last-child svg { color: var(--primary); transform: translateX(3px); }
+.fc-table td:last-child svg { transition: transform 0.15s, color 0.15s; }
+.fc-method { transition: background 0.12s, border-color 0.12s; }
+.fc-method:hover { border-color: color-mix(in srgb, var(--primary) 20%, white); }
+.fc-howto summary:hover { text-decoration: underline; }
+@media (hover: none) { .fc-stat:hover, .fc-story > div:hover { transform: none; } }
