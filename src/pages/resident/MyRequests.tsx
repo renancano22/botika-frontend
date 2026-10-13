@@ -19,15 +19,16 @@ export default function MyRequests() {
   const { user } = useAuth();
   const { data, error, loading } = useApi<MedicineRequest[]>('/requests', undefined, 30000);
   // ?status=review / claim / claimed … opens the list already filtered (e.g. from the dashboard tiles).
-  const [filter, setFilter] = useState<'all' | StatusKey>(() => {
+  // '' = no status chosen yet (shows "Select status", lists everything); 'all' = "All requests" chosen.
+  const [filter, setFilter] = useState<'' | 'all' | StatusKey>(() => {
     const s = new URLSearchParams(window.location.search).get('status');
-    return (FILTERS as string[]).includes(s ?? '') ? (s as 'all' | StatusKey) : 'all';
+    return (FILTERS as string[]).includes(s ?? '') ? (s as 'all' | StatusKey) : '';
   });
   const [search, setSearch] = useState('');
   const [, setParams] = useSearchParams();
-  const changeFilter = (f: 'all' | StatusKey) => {
+  const changeFilter = (f: '' | 'all' | StatusKey) => {
     setFilter(f);
-    setParams(f === 'all' ? {} : { status: f }, { replace: true }); // keep the choice in the address (Back / refresh)
+    setParams(f ? { status: f } : {}, { replace: true }); // keep the choice in the address (Back / refresh)
   };
 
   const counts = useMemo(() => {
@@ -38,7 +39,7 @@ export default function MyRequests() {
 
   const term = search.trim().toLowerCase().replace(/^(request\s*)?(no\.?|#)\s*(?=\d)/, ''); // "41", "#41", "No. 41", "Request No. 41"
   const shown = (data ?? []).filter((r) =>
-    (filter === 'all' || statusKey(r) === filter)
+    (filter === '' || filter === 'all' || statusKey(r) === filter)
     && (!term || String(r.request_id) === term || r.items.some((i) => i.medicine.medicine_name.toLowerCase().includes(term))));
 
   return (
@@ -73,7 +74,7 @@ export default function MyRequests() {
         <div className="section-head">
           <h2 className="section-title">My Requests</h2>
           <span className="muted small">
-            {shown.length} {shown.length === 1 ? 'request' : 'requests'}{filter !== 'all' && <> · {STATUS_LABEL[filter]} <button type="button" className="link-button" onClick={() => changeFilter('all')}>Show all</button></>}
+            {shown.length} {shown.length === 1 ? 'request' : 'requests'}{filter !== '' && filter !== 'all' && <> · {STATUS_LABEL[filter]} <button type="button" className="link-button" onClick={() => changeFilter('')}>Show all</button></>}
           </span>
         </div>
         {loading && !data ? <Loading /> : shown.length === 0 ? (

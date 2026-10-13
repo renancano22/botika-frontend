@@ -1107,3 +1107,7 @@ html { scroll-behavior: auto; }
   .rp-result-head { padding: 0; }
   .rp-table tbody tr:nth-child(even) td { background: none; }
 }
+
+/* status dropdown: no "STATUS" label inside; placeholder until a status is chosen */
+.status-dd-btn { padding-left: 16px; }
+.status-dd-placeholder { color: var(--muted); font-weight: 500; font-size: 0.95rem; }

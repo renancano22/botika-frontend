@@ -7,14 +7,15 @@ export interface StatusOption { value: string; label: string; count: number; k?:
  * Status filter as one dropdown: the button shows the chosen status and its count;
  * the list shows every status with a coloured dot and its count. Works with mouse, touch and keyboard.
  */
-export default function StatusDropdown({ options, value, onChange, label = 'Status' }: {
-  options: StatusOption[]; value: string; onChange: (value: string) => void; label?: string;
+export default function StatusDropdown({ options, value, onChange, label = 'Status', placeholder = 'Select status' }: {
+  options: StatusOption[]; value: string; onChange: (value: string) => void; label?: string; placeholder?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
   const box = useRef<HTMLDivElement>(null);
   const listId = useId();
-  const selected = options.find((o) => o.value === value) ?? options[0];
+  // Nothing chosen yet → the box shows the placeholder ("Select status"); afterwards only the chosen status.
+  const selected = options.find((o) => o.value === value) ?? null;
 
   // Close when tapping outside.
   useEffect(() => {
@@ -43,13 +44,17 @@ export default function StatusDropdown({ options, value, onChange, label = 'Stat
   return (
     <div className={`status-dd ${open ? 'open' : ''}`} ref={box}>
       <button type="button" className="status-dd-btn" onClick={() => (open ? setOpen(false) : openList())} onKeyDown={onKey}
-        aria-haspopup="listbox" aria-expanded={open} aria-controls={listId} aria-label={`${label}: ${selected.label}, ${selected.count}`}>
-        <span className="status-dd-label">{label}</span>
-        <span className={`status-dd-value ${selected.k ? `k-${selected.k}` : ''}`}>
-          {selected.k && <i className="status-dot" aria-hidden="true" />}
-          <strong>{selected.label}</strong>
-          <span className="status-dd-count">{selected.count}</span>
-        </span>
+        aria-haspopup="listbox" aria-expanded={open} aria-controls={listId}
+        aria-label={selected ? `${label}: ${selected.label}, ${selected.count}` : `${label}: ${placeholder}`}>
+        {selected ? (
+          <span className={`status-dd-value ${selected.k ? `k-${selected.k}` : ''}`}>
+            {selected.k && <i className="status-dot" aria-hidden="true" />}
+            <strong>{selected.label}</strong>
+            <span className="status-dd-count">{selected.count}</span>
+          </span>
+        ) : (
+          <span className="status-dd-value status-dd-placeholder">{placeholder}</span>
+        )}
         <span className="status-dd-chevron" aria-hidden="true"><Svg d="M6 9l6 6 6-6" size={18} width={2.4} /></span>
       </button>
       {open && (
