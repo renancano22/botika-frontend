@@ -965,3 +965,10 @@ html { scroll-behavior: auto; }
   .status-dd-option { padding: 12px 10px; }   /* bigger touch targets */
 }
 .page > section > .section-head { margin-bottom: 12px; flex-wrap: wrap; }
+
+/* "Request No. 41": label in a lighter weight, the number bold */
+.req-no { display: inline-flex; align-items: baseline; gap: 5px; white-space: nowrap; }
+.req-no-label { font-weight: 600; color: #3d4d49; letter-spacing: 0.01em; }
+.req-no-num { font-weight: 800; color: var(--text); font-variant-numeric: tabular-nums; }
+.req-row-top .req-no { font-size: 1rem; }
+.detail-id.req-no { font-size: 1.15rem; }

@@ -104,7 +104,7 @@ export default function Requests() {
   const approve = async (r: MedicineRequest) => {
     const rx = requiresPrescription(r);
     if (await act(() => api.post(`/requests/${r.request_id}/approve`, rx ? { prescription_verified: true } : {}),
-      `Request #${r.request_id} approved${rx ? ' (prescription checked)' : ''}. SMS sent to the resident.`)) setViewingId(null);
+      `Request No. ${r.request_id} approved${rx ? ' (prescription checked)' : ''}. SMS sent to the resident.`)) setViewingId(null);
   };
 
   /** Prescription medicines: approving is only possible inside Details, after viewing and confirming the prescription. */
@@ -149,7 +149,7 @@ export default function Requests() {
         {loading && !data ? <Loading /> : !data?.length ? <Empty>No requests found.</Empty> : (
           <table>
             <thead>
-              <tr><th>#</th><th>Date</th><th>Resident</th><th>Type</th><th>Medicines</th><th>Status</th><th>Resident's note / Remarks</th><th></th></tr>
+              <tr><th>No.</th><th>Date</th><th>Resident</th><th>Type</th><th>Medicines</th><th>Status</th><th>Resident's note / Remarks</th><th></th></tr>
             </thead>
             <tbody>
               {data.map((r) => (
@@ -191,7 +191,7 @@ export default function Requests() {
       </Card>
 
       {viewing && (
-        <Modal title={`Request #${viewing.request_id}`} onClose={() => setViewingId(null)}>
+        <Modal title={`Request No. ${viewing.request_id}`} onClose={() => setViewingId(null)}>
           <div className="resident-info req-detail-info">
             <div><small className="muted">Resident</small><strong>{viewing.resident?.name}</strong></div>
             <div><small className="muted">Patient ID</small><strong>{viewing.resident?.qr_code}</strong></div>
@@ -235,7 +235,7 @@ export default function Requests() {
       {viewRxId && <PrescriptionViewer requestId={viewRxId} onClose={() => setViewRxId(null)} />}
 
       {rejecting && (
-        <Modal title={`Reject request #${rejecting.request_id}`} onClose={() => setRejecting(null)}>
+        <Modal title={`Reject request No. ${rejecting.request_id}`} onClose={() => setRejecting(null)}>
           <label>Reason (sent to the resident by SMS)
             <select className="select-pill" value={reason} onChange={(e) => { setReason(e.target.value); setRejectError(''); }} autoFocus>
               <option value="" disabled>Choose a reason…</option>
@@ -253,7 +253,7 @@ export default function Requests() {
           {remarks && (
             <div className="reject-preview">
               <small>The resident will receive:</small>
-              <p>BulanBotikaCare: Your {rejecting.request_type === 'restock' ? 'restock' : 'medicine'} request #{rejecting.request_id} was not approved. Reason: {remarks}</p>
+              <p>BulanBotikaCare: Your {rejecting.request_type === 'restock' ? 'restock' : 'medicine'} request No. {rejecting.request_id} was not approved. Reason: {remarks}</p>
             </div>
           )}
           {rejectError && <Message>{rejectError}</Message>}
@@ -262,7 +262,7 @@ export default function Requests() {
             <button className="btn btn-danger" disabled={!remarks} onClick={async () => {
               try {
                 await api.post(`/requests/${rejecting.request_id}/reject`, { remarks });
-                setMsg({ type: 'success', text: `Request #${rejecting.request_id} rejected. SMS sent to the resident.` });
+                setMsg({ type: 'success', text: `Request No. ${rejecting.request_id} rejected. SMS sent to the resident.` });
                 setRejecting(null);
                 setViewingId(null);
                 reload(true);

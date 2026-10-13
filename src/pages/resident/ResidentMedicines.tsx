@@ -393,7 +393,7 @@ export default function ResidentMedicines() {
                         {m.status !== 'out_of_stock' && (
                           openMedicineReq.has(m.medicine_id) && !added ? (
                             <button className="btn btn-sm btn-added" onClick={() => openAdd(m)} title="Already in one of your requests">
-                              <Svg d={ICONS.note} size={16} width={2.2} /> In request #{openMedicineReq.get(m.medicine_id)?.requestId}
+                              <Svg d={ICONS.note} size={16} width={2.2} /> In request No. {openMedicineReq.get(m.medicine_id)?.requestId}
                             </button>
                           ) : (
                             <button className={`btn btn-sm ${added ? 'btn-added' : ''}`} onClick={() => openAdd(m)}>
@@ -461,7 +461,7 @@ export default function ResidentMedicines() {
             ) : (
               <button className="btn" onClick={() => openAdd(details)}>
                 {inCart(details) ? 'Change quantity'
-                  : openMedicineReq.has(details.medicine_id) ? `In request #${openMedicineReq.get(details.medicine_id)?.requestId}`
+                  : openMedicineReq.has(details.medicine_id) ? `In request No. ${openMedicineReq.get(details.medicine_id)?.requestId}`
                     : details.requires_prescription ? 'Request with Prescription' : 'Add to request'}
               </button>
             )}
@@ -499,24 +499,24 @@ export default function ResidentMedicines() {
             <span className="med-icon"><Svg d={ICONS.pill} size={22} width={1.9} /></span>
             <div>
               <strong>{inRequest.medicine.medicine_name}</strong>
-              <span className="muted small">Request #{inRequest.requestId} · {inRequest.status === 'pending' ? 'Under review' : 'Ready for pickup'}</span>
+              <span className="muted small">Request No. {inRequest.requestId} · {inRequest.status === 'pending' ? 'Under review' : 'Ready for pickup'}</span>
             </div>
           </div>
           {inRequest.status === 'pending' ? (
             <p>
-              You already requested <b>{inRequest.medicine.medicine_name}</b> in request #{inRequest.requestId}, which is still under review.
+              You already requested <b>{inRequest.medicine.medicine_name}</b> in request No. {inRequest.requestId}, which is still under review.
               To change the quantity, edit that request instead of making a new one, so the same medicine stays in one request.
             </p>
           ) : (
             <p>
-              <b>{inRequest.medicine.medicine_name}</b> is already approved for you in request #{inRequest.requestId} and is ready for pickup.
+              <b>{inRequest.medicine.medicine_name}</b> is already approved for you in request No. {inRequest.requestId} and is ready for pickup.
               Please claim it at Botika ng Bayan first. If you need a different quantity, you can cancel that request and send a new one.
             </p>
           )}
           <div className="modal-actions">
             <button className="btn btn-outline" onClick={() => setInRequest(null)}>Close</button>
             <button className="btn" onClick={() => navigate(`/requests/${inRequest.requestId}`, { state: { edit: inRequest.status === 'pending' } })}>
-              {inRequest.status === 'pending' ? `Edit request #${inRequest.requestId}` : `View request #${inRequest.requestId}`}
+              {inRequest.status === 'pending' ? `Edit request No. ${inRequest.requestId}` : `View request No. ${inRequest.requestId}`}
             </button>
           </div>
         </Modal>
@@ -527,7 +527,7 @@ export default function ResidentMedicines() {
           <div className="info-box info-ok">
             <strong><Svg d={ICONS.check} size={18} width={2.4} /> You already submitted a restock request</strong>
             <p>
-              You already asked for a restock of <b>{alreadyRequested.medicine.medicine_name}</b> (request #{alreadyRequested.requestId}).
+              You already asked for a restock of <b>{alreadyRequested.medicine.medicine_name}</b> (request No. {alreadyRequested.requestId}).
               We will notify you by SMS when the medicine is available.
             </p>
             <small>You can still request a restock of other medicines.</small>

@@ -69,7 +69,7 @@ export default function Dispense() {
     try {
       await api.post('/dispensing', { request_id: r.request_id, qr_code: found.resident.qr_code, prescription_checked: requiresPrescription(r) ? rxChecked : false });
       setConfirming(null);
-      await afterDispense(`Request #${r.request_id} dispensed. Inventory updated and SMS sent.`);
+      await afterDispense(`Request No. ${r.request_id} dispensed. Inventory updated and SMS sent.`);
     } catch (err) {
       setConfirming(null);
       setMsg({ type: 'error', text: errorMessage(err) });
@@ -158,7 +158,7 @@ export default function Dispense() {
             <Card title="2a. Approved requests to dispense">
               {found.approved_requests.length === 0 ? <Empty>No approved requests for this resident.</Empty> : (
                 <table>
-                  <thead><tr><th>#</th><th>Medicines</th><th>Approved</th><th></th></tr></thead>
+                  <thead><tr><th>No.</th><th>Medicines</th><th>Approved</th><th></th></tr></thead>
                   <tbody>
                     {found.approved_requests.map((r) => (
                       <tr key={r.request_id}>
@@ -238,7 +238,7 @@ export default function Dispense() {
       )}
 
       {confirming && (
-        <Modal title={`Dispense request #${confirming.request_id}`} onClose={() => !busy && setConfirming(null)}>
+        <Modal title={`Dispense request No. ${confirming.request_id}`} onClose={() => !busy && setConfirming(null)}>
           <p className="req-items">{confirming.items.map((i) => `${i.medicine.medicine_name} ×${i.quantity}`).join(', ')}</p>
           <div className="rx-box">
             <strong><Svg d={RX_ICON} size={18} width={2.4} /> Prescription medicine</strong>

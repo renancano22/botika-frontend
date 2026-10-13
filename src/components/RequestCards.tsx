@@ -31,6 +31,19 @@ export function Svg({ d, size = 20, width = 2 }: { d: string; size?: number; wid
   );
 }
 
+/** "Request No. 41" — the label in a lighter weight, the number in bold. */
+export function RequestNo({ id, className = '' }: { id: number; className?: string }) {
+  return (
+    <span className={`req-no ${className}`}>
+      <span className="req-no-label">Request No.</span>
+      <span className="req-no-num">{id}</span>
+    </span>
+  );
+}
+
+/** Plain text form, e.g. for titles and messages: "Request No. 41". */
+export const requestNoText = (id: number) => `Request No. ${id}`;
+
 export type StatusKey = 'review' | 'claim' | 'stock' | 'claimed' | 'available' | 'cancelled' | 'expired' | 'rejected';
 
 /** The status a resident sees, e.g. an approved medicine request is "Ready to claim". */
@@ -101,7 +114,7 @@ export function RequestRow({ request: r }: { request: MedicineRequest }) {
       </span>
       <span className="req-row-main">
         <span className="req-row-top">
-          <strong>Request #{r.request_id}</strong>
+          <RequestNo id={r.request_id} />
           <StatusPill request={r} />
         </span>
         <span className="req-row-date">{dateTime(r.request_date)}{r.request_type === 'restock' ? ' • Restock' : ''}</span>

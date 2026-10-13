@@ -2,7 +2,7 @@ import { useState, type ReactNode } from 'react';
 import { formatDate } from '../api';
 import type { MedicineRequest } from '../types';
 import { statusSummary } from './RequestTracker';
-import { dateTime, ICONS, quantityText, STATUS_COLOR_KEY, statusKey, StatusPill, Svg } from './RequestCards';
+import { dateTime, ICONS, quantityText, RequestNo, STATUS_COLOR_KEY, statusKey, StatusPill, Svg } from './RequestCards';
 import { PrescriptionViewer, requiresPrescription, RX_ICON, RxBadge } from './Prescription';
 
 /** "Pickup schedule" row: approval means the medicines are ready at Botika ng Bayan until the claim deadline. */
@@ -38,7 +38,7 @@ export function RequestSummaryCard({ r, prescriptionAction }: { r: MedicineReque
     <section className="detail-card">
       <div className={`detail-card-head k-${STATUS_COLOR_KEY[statusKey(r)]}`}>
         <div>
-          <strong className="detail-id">Request #{r.request_id}</strong>
+          <RequestNo id={r.request_id} className="detail-id" />
           <span className="muted small">{dateTime(r.request_date)}{r.request_type === 'restock' ? ' • Restock' : ''}</span>
         </div>
         <StatusPill request={r} />

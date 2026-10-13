@@ -153,7 +153,7 @@ function ReadyForPickup({ requests, total }: { requests: MedicineRequest[]; tota
     <Card title={`Ready for pickup (${total})`} actions={<Link to="/requests?status=approved">View all approved requests</Link>}>
       {requests.length === 0 ? <Empty>No approved requests are waiting to be claimed.</Empty> : (
         <table>
-          <thead><tr><th>#</th><th>Resident</th><th>Medicines</th><th>Approved</th><th>Claim by</th></tr></thead>
+          <thead><tr><th>No.</th><th>Resident</th><th>Medicines</th><th>Approved</th><th>Claim by</th></tr></thead>
           <tbody>
             {requests.map((r) => (
               <tr key={r.request_id}>
@@ -180,7 +180,7 @@ function PendingRequests({ requests }: { requests: MedicineRequest[] }) {
     <Card title="Pending requests" actions={<Link to="/requests">Review requests</Link>}>
       {requests.length === 0 ? <Empty>No pending requests.</Empty> : (
         <table>
-          <thead><tr><th>#</th><th>Type</th><th>Resident</th><th>Medicines</th><th>Date</th></tr></thead>
+          <thead><tr><th>No.</th><th>Type</th><th>Resident</th><th>Medicines</th><th>Date</th></tr></thead>
           <tbody>
             {requests.map((r) => (
               <tr key={r.request_id}>

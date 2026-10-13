@@ -27,7 +27,7 @@ export default function DispensingRecords() {
         {loading && !data ? <Loading /> : !data?.length ? <Empty>No dispensing records.</Empty> : (
           <table>
             <thead>
-              <tr><th>#</th><th>Date & time</th>{!isResident && <th>Resident (Patient ID)</th>}<th>Medicines</th><th>Request #</th><th>Dispensed by</th></tr>
+              <tr><th>No.</th><th>Date & time</th>{!isResident && <th>Resident (Patient ID)</th>}<th>Medicines</th><th>Request No.</th><th>Dispensed by</th></tr>
             </thead>
             <tbody>
               {data.map((d) => (

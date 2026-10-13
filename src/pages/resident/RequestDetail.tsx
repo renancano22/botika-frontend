@@ -90,7 +90,7 @@ export default function RequestDetail() {
             <span className="submitted-icon"><Svg d={ICONS.check} size={30} width={2.8} /></span>
             <div>
               <strong>Request Submitted!</strong>
-              <p>Your request #{r.request_id} has been sent to Botika ng Bayan. {r.prescription ? 'The pharmacy staff will check your prescription and review your request.' : 'The pharmacy staff will review it.'} You will get an SMS once it is approved.</p>
+              <p>Your request No. {r.request_id} has been sent to Botika ng Bayan. {r.prescription ? 'The pharmacy staff will check your prescription and review your request.' : 'The pharmacy staff will review it.'} You will get an SMS once it is approved.</p>
             </div>
           </div>
         )}
@@ -148,7 +148,7 @@ export default function RequestDetail() {
       )}
 
       {editing && (
-        <Modal title={`Update request #${editing.request_id}`} onClose={() => setEditing(null)}>
+        <Modal title={`Update request No. ${editing.request_id}`} onClose={() => setEditing(null)}>
           <p className="muted small">Change how many you need. Up to {MAX_REQUEST_QUANTITY} per medicine.</p>
           {editing.items.map((item, idx) => (
             <div className="cart-row" key={item.medicine_id}>

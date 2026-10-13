@@ -36,7 +36,7 @@ export default function MyRequests() {
     return c;
   }, [data]);
 
-  const term = search.trim().toLowerCase().replace(/^#/, '');
+  const term = search.trim().toLowerCase().replace(/^(request\s*)?(no\.?|#)\s*(?=\d)/, ''); // "41", "#41", "No. 41", "Request No. 41"
   const shown = (data ?? []).filter((r) =>
     (filter === 'all' || statusKey(r) === filter)
     && (!term || String(r.request_id) === term || r.items.some((i) => i.medicine.medicine_name.toLowerCase().includes(term))));
