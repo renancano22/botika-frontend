@@ -17,7 +17,11 @@ function greeting(): string {
 export default function MyRequests() {
   const { user } = useAuth();
   const { data, error, loading } = useApi<MedicineRequest[]>('/requests', undefined, 30000);
-  const [filter, setFilter] = useState<'all' | StatusKey>('all');
+  // ?status=review / claim / claimed … opens the list already filtered (e.g. from the dashboard tiles).
+  const [filter, setFilter] = useState<'all' | StatusKey>(() => {
+    const s = new URLSearchParams(window.location.search).get('status');
+    return (FILTERS as string[]).includes(s ?? '') ? (s as 'all' | StatusKey) : 'all';
+  });
   const [search, setSearch] = useState('');
 
   const counts = useMemo(() => {

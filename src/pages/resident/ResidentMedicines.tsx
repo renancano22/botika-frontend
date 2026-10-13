@@ -29,7 +29,10 @@ function QtyStepper({ value, onChange, min = 1, max }: { value: number; onChange
 export default function ResidentMedicines() {
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('');
-  const [availability, setAvailability] = useState<'all' | 'in_stock' | 'out_of_stock'>('all');
+  const [availability, setAvailability] = useState<'all' | 'in_stock' | 'out_of_stock'>(() => {
+    const a = new URLSearchParams(window.location.search).get('availability'); // e.g. from the dashboard tiles
+    return a === 'in_stock' || a === 'out_of_stock' ? a : 'all';
+  });
   const { data, error, loading } = useApi<Medicine[]>('/medicines', { search, category }, 30000);
   const { data: categories } = useApi<string[]>('/medicines/categories');
   // Monthly limit: total medicines a resident can receive per month (online requests and walk-ins).

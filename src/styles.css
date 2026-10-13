@@ -868,3 +868,21 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--p
 .limit-full .limit-head strong { color: #9a3412; }
 .cart-row { flex-wrap: wrap; }
 .walkin-warning { flex-basis: 100%; margin: 0 !important; }
+
+/* resident dashboard: "My activity" tiles (tap to open what they count) */
+.act-card { display: flex; flex-direction: column; gap: 14px; }
+.act-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; }
+.act-tile { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; text-align: center; min-height: 108px; padding: 12px 8px;
+  border-radius: 14px; background: #fff; border: 1px solid var(--border); box-shadow: 0 2px 8px rgba(16, 40, 34, 0.06); text-decoration: none; color: var(--text);
+  transition: transform 0.12s, box-shadow 0.15s, border-color 0.15s; }
+.act-tile:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); border-color: color-mix(in srgb, var(--k, var(--primary)) 40%, white); }
+.act-tile:focus-visible { outline: 3px solid color-mix(in srgb, var(--k, var(--primary)) 40%, white); outline-offset: 2px; }
+.act-tile strong { font-size: 1.7rem; font-weight: 800; line-height: 1.1; color: var(--k, var(--primary)); }
+.act-tile small { font-size: 0.72rem; color: var(--muted); }
+.act-tile span { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: #33443f; margin-top: 4px; }
+.act-tile em { font-style: normal; font-size: 0.7rem; color: color-mix(in srgb, var(--k) 80%, black); }
+.act-more { border-style: dashed; box-shadow: none; background: var(--primary-50); }
+.act-more span { text-transform: none; letter-spacing: 0; font-weight: 600; color: var(--primary); }
+.act-more-icon { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; background: var(--primary-soft); color: var(--primary) !important; margin: 0 0 4px !important; }
+@media (max-width: 1100px) { .act-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 400px) { .act-grid { gap: 8px; } .act-tile { min-height: 96px; padding: 10px 4px; } .act-tile strong { font-size: 1.45rem; } .act-tile span { font-size: 0.66rem; } }
