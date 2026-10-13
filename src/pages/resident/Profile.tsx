@@ -191,7 +191,6 @@ export default function Profile() {
         <div className="profile-who">
           <h2>{user.name}</h2>
           <p className="muted">Patient ID <b>{resident.qr_code}</b> · Registered {formatDate(resident.created_at)}</p>
-          <p className="muted small">Tap your picture to change or remove it.</p>
         </div>
       </section>
       <Message type={photoMsg?.type}>{photoMsg?.text}</Message>
