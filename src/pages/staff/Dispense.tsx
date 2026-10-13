@@ -8,6 +8,7 @@ import { Svg, unitPlural } from '../../components/RequestCards';
 import type { Dispensing, Medicine, MedicineRequest, MonthlyUsage, Resident } from '../../types';
 import { MAX_REQUEST_QUANTITY, quantityWarning } from '../../validation';
 import QrScanner from './QrScanner';
+import { jumpTo, jumpWhenReady } from '../../scroll';
 
 interface Lookup {
   resident: Resident;
@@ -40,6 +41,7 @@ export default function Dispense() {
     try {
       const res = await api.get<Lookup>('/residents/lookup', { params: { code: value } });
       setFound(res.data);
+      jumpWhenReady('dispense-resident'); // go straight to the verified resident and their requests
       setWalkIn([]);
     } catch (err) {
       setFound(null);
@@ -58,6 +60,7 @@ export default function Dispense() {
     reloadMedicines(true);
     if (found) await lookup(found.resident.qr_code);
     setMsg({ type: 'success', text });
+    requestAnimationFrame(() => jumpTo('dispense-msg')); // show the result right away
   };
 
   const dispenseRequest = async (r: MedicineRequest) => {
@@ -120,10 +123,11 @@ export default function Dispense() {
         {scanning && <QrScanner onScan={lookup} />}
       </Card>
 
-      {msg && <Message type={msg.type}>{msg.text}</Message>}
+      <div id="dispense-msg">{msg && <Message type={msg.type}>{msg.text}</Message>}</div>
 
       {found && (
         <>
+          <div id="dispense-resident" />
           <Card title="Resident verified ✓">
             <div className="resident-info">
               <div><small className="muted">Name</small><strong>{found.resident.name}</strong></div>

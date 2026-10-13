@@ -7,6 +7,7 @@ import { ICONS, quantityText, Svg, unitPlural } from '../../components/RequestCa
 import type { Medicine, MedicineRequest, MonthlyUsage } from '../../types';
 import { MAX_REQUEST_QUANTITY, quantityWarning } from '../../validation';
 import { PrescriptionUpload, PrescriptionViewer, RX_ICON, RxBadge, type PrescriptionFile } from '../../components/Prescription';
+import { jumpToTop } from '../../scroll';
 
 type CartItem = { medicine: Medicine; quantity: number };
 
@@ -74,7 +75,7 @@ export default function ResidentMedicines() {
     setSheetError('');
     setCartOpen(false);
     setParams(s ? { step: s } : {});
-    window.scrollTo({ top: 0 });
+    jumpToTop();
   };
   useEffect(() => {
     if (step && cart.length === 0) setParams({}, { replace: true }); // e.g. after refreshing the page

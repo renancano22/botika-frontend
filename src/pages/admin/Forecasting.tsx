@@ -5,6 +5,7 @@ import { useApi } from '../../hooks';
 import { Empty, Loading, Message, Modal } from '../../components/ui';
 import { ICONS, quantityText, Svg, unitPlural } from '../../components/RequestCards';
 import type { ForecastMethod, ForecastReport, ForecastResult } from '../../types';
+import { jumpTo } from '../../scroll';
 
 const METHODS: { key: ForecastMethod; label: string; hint: string }[] = [
   { key: 'moving_average', label: 'Moving Average', hint: 'Average of the last 3 months' },
@@ -174,7 +175,8 @@ export default function Forecasting() {
 
   const go = (filter: TableFilter | null, ref: RefObject<HTMLElement>) => {
     if (filter) { setTableFilter(filter); setMedicineId(null); }
-    ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    // Wait one frame so the new filter is shown, then jump straight there (no long scroll).
+    requestAnimationFrame(() => jumpTo(ref.current));
   };
 
   const generate = async () => {
