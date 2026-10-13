@@ -78,14 +78,14 @@ export default function DispensingRecords() {
         </div>
         <div className="dr-fields">
           <label className="dr-field">
-            <span>From date</span>
+            <span>From</span>
             <span className="dr-input">
               <Svg d={CALENDAR} size={18} />
               <input type="date" value={from} max={to || undefined} onChange={(e) => setRange(e.target.value, to)} aria-label="From date" />
             </span>
           </label>
           <label className="dr-field">
-            <span>To date</span>
+            <span>To</span>
             <span className="dr-input">
               <Svg d={CALENDAR} size={18} />
               <input type="date" value={to} min={from || undefined} onChange={(e) => setRange(from, e.target.value)} aria-label="To date" />
@@ -99,9 +99,10 @@ export default function DispensingRecords() {
                 placeholder={isResident ? 'Medicine or request no.' : 'Resident, Patient ID, medicine or request no.'} />
             </span>
           </label>
-          {filtered && (
-            <button type="button" className="btn btn-outline dr-clear" onClick={() => { setSearch(''); setRange('', ''); }}>Clear filters</button>
-          )}
+          {/* Always shown so it is easy to find; inactive when there is nothing to clear. */}
+          <button type="button" className="btn btn-outline dr-clear" disabled={!filtered} onClick={() => { setSearch(''); setRange('', ''); }}>
+            Clear filters
+          </button>
         </div>
         {badRange && <p className="field-warning">The "From" date is after the "To" date, so the dates were swapped.</p>}
       </section>
