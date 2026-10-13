@@ -1161,3 +1161,56 @@ html { scroll-behavior: auto; }
 @media (max-width: 700px) {
   .dr-clear { grid-column: 1 / -1; justify-self: stretch; width: 100%; height: 36px; font-size: 0.85rem; padding: 0 12px; }
 }
+
+/* ---------- My Profile: picture menu + QR code on demand */
+.pf-photo { position: relative; flex-shrink: 0; }
+.pf-photo-btn { position: relative; display: block; padding: 0; border: none; background: none; border-radius: 50%; cursor: pointer; }
+.pf-photo-btn .avatar { box-shadow: 0 0 0 4px #fff, 0 0 0 5px var(--border); transition: filter 0.15s; }
+.pf-photo-btn:hover .avatar { filter: brightness(0.92); }
+.pf-photo-btn:focus-visible { outline: 3px solid var(--primary-soft); outline-offset: 4px; }
+.pf-photo-badge { position: absolute; right: 0; bottom: 2px; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--primary); color: #fff; border: 3px solid #fff; box-shadow: var(--shadow-sm); }
+.pf-photo-busy { position: absolute; inset: 0; border-radius: 50%; display: grid; place-items: center; background: rgba(15, 31, 27, 0.55); color: #fff; font-size: 0.78rem; font-weight: 700; }
+.pf-menu { position: absolute; z-index: 60; top: calc(100% + 10px); left: 0; min-width: 240px; padding: 6px; background: #fff; border: 1px solid var(--border);
+  border-radius: 14px; box-shadow: 0 16px 36px rgba(15, 31, 27, 0.16); animation: dd-in 0.14s ease-out; }
+.pf-menu button { width: 100%; display: flex; align-items: center; gap: 10px; padding: 11px 12px; border: none; background: none; border-radius: 10px;
+  font: inherit; font-size: 0.93rem; font-weight: 600; color: var(--text); text-align: left; cursor: pointer; }
+.pf-menu button:hover:not(:disabled) { background: var(--primary-50); }
+.pf-menu button svg { color: var(--primary); flex-shrink: 0; }
+.pf-menu .pf-menu-danger { color: #be123c; }
+.pf-menu .pf-menu-danger svg { color: #be123c; }
+.pf-menu .pf-menu-danger:hover:not(:disabled) { background: #fff1f2; }
+.pf-menu button:disabled { opacity: 0.45; cursor: default; }
+.profile-who p { margin: 2px 0; }
+
+.pf-grid { align-items: start; }
+.pf-qr-card { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px; padding: 24px 20px; }
+.pf-qr-card h2 { font-size: 1.1rem; }
+.pf-qr-card p { margin: 0; max-width: 380px; font-size: 0.9rem; }
+.pf-qr-icon { width: 68px; height: 68px; border-radius: 18px; display: grid; place-items: center; background: var(--primary-soft); color: var(--primary); margin-bottom: 4px; }
+.pf-qr-id { padding: 4px 14px; border-radius: 999px; background: var(--primary-50); border: 1px dashed color-mix(in srgb, var(--primary) 35%, white);
+  font-weight: 800; letter-spacing: 0.06em; color: var(--primary-dark); }
+.pf-qr-btn { margin-top: 8px; display: inline-flex; align-items: center; gap: 8px; }
+.pf-qr-modal { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 4px; }
+.pf-qr-frame { padding: 14px; border-radius: 18px; background: #fff; border: 1px solid var(--border); box-shadow: var(--shadow-sm); margin-bottom: 8px; }
+.pf-qr-frame svg { display: block; width: min(240px, 62vw); height: auto; }
+.pf-qr-modal .patient-id { margin-bottom: 0; }
+.pf-qr-modal p { margin: 2px 0; }
+.pf-qr-hint { margin-top: 8px !important; padding: 10px 12px; border-radius: 12px; background: var(--primary-50); color: var(--primary-dark); font-size: 0.88rem; font-weight: 600; }
+.pf-qr-modal .modal-actions { width: 100%; margin-top: 12px; }
+.pf-qr-modal .modal-actions .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+.pf-qr-print { text-align: center; }
+@media print {
+  .modal-backdrop { display: none !important; }
+  .pf-qr-print { display: block; padding-top: 24px; }
+}
+@media (max-width: 600px) {
+  .profile-head { gap: 14px; padding: 16px; }
+  .pf-photo-btn .avatar { width: 80px !important; height: 80px !important; }
+  .pf-menu { min-width: 0; width: calc(100vw - 56px); max-width: 300px; }
+  .pf-menu button { padding: 13px 12px; }
+  .pf-qr-card { padding: 20px 16px; }
+  .pf-qr-btn { width: 100%; justify-content: center; }
+  .pf-qr-modal .modal-actions .btn { flex: 1; }
+}
+.card.profile-head { overflow: visible; position: relative; z-index: 5; } /* let the picture menu show outside the card */

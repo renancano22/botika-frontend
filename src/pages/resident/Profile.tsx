@@ -3,7 +3,8 @@ import { QRCodeSVG } from 'qrcode.react';
 import { api, errorMessage, formatDate } from '../../api';
 import { useAuth } from '../../auth';
 import { useApi } from '../../hooks';
-import { Avatar, Card, Loading, Message, PasswordInput } from '../../components/ui';
+import { Avatar, Card, Loading, Message, Modal, PasswordInput } from '../../components/ui';
+import { Svg } from '../../components/RequestCards';
 import type { User } from '../../types';
 import { FIELD } from '../../validation';
 
@@ -14,6 +15,14 @@ interface ProfileData {
 }
 
 type Msg = { type: 'error' | 'success'; text: string } | null;
+
+const ICON = {
+  camera: 'M4 8h3l2-3h6l2 3h3v11H4zM12 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8',
+  upload: 'M12 16V4M7 9l5-5 5 5M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3',
+  trash: 'M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6',
+  qr: 'M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2v2h-2zM18 14h2v2h-2zM14 18h2v2h-2zM18 18h2v2h-2zM6.5 6.5h1v1h-1zM16.5 6.5h1v1h-1zM6.5 16.5h1v1h-1z',
+  print: 'M7 9V3h10v6M7 17H4v-7h16v7h-3M7 14h10v7H7z',
+};
 
 /** Shrinks and crops the chosen picture to a 256×256 JPEG so it uploads fast and stays small. */
 function resizePhoto(file: File, size = 256): Promise<string> {
@@ -51,6 +60,25 @@ export default function Profile() {
   const [pwMsg, setPwMsg] = useState<Msg>(null);
   const [busy, setBusy] = useState<'' | 'info' | 'photo' | 'password'>('');
   const fileInput = useRef<HTMLInputElement>(null);
+  const [photoMenu, setPhotoMenu] = useState(false);       // small menu under the profile picture
+  const [confirmRemove, setConfirmRemove] = useState(false);
+  const [showQr, setShowQr] = useState(false);
+  const photoBox = useRef<HTMLDivElement>(null);
+
+  // Close the picture menu when tapping elsewhere or pressing Esc.
+  useEffect(() => {
+    if (!photoMenu) return;
+    const close = (e: MouseEvent | TouchEvent) => { if (!photoBox.current?.contains(e.target as Node)) setPhotoMenu(false); };
+    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') setPhotoMenu(false); };
+    document.addEventListener('mousedown', close);
+    document.addEventListener('touchstart', close);
+    document.addEventListener('keydown', esc);
+    return () => {
+      document.removeEventListener('mousedown', close);
+      document.removeEventListener('touchstart', close);
+      document.removeEventListener('keydown', esc);
+    };
+  }, [photoMenu]);
 
   // Fill the form when the profile loads.
   useEffect(() => {
@@ -99,12 +127,14 @@ export default function Profile() {
   };
 
   const removePhoto = async () => {
-    if (!confirm('Remove your profile picture?')) return;
     setBusy('photo');
     setPhotoMsg(null);
     try {
       saved((await api.delete<ProfileData>('/profile/photo')).data);
+      setConfirmRemove(false);
+      setPhotoMsg({ type: 'success', text: 'Profile picture removed.' });
     } catch (err) {
+      setConfirmRemove(false);
       setPhotoMsg({ type: 'error', text: errorMessage(err) });
     } finally { setBusy(''); }
   };
@@ -138,35 +168,52 @@ export default function Profile() {
       </header>
 
       <section className="card profile-head no-print">
-        <Avatar name={user.name} photo={resident.photo} size={96} />
+        <div className="pf-photo" ref={photoBox}>
+          <button type="button" className="pf-photo-btn" onClick={() => setPhotoMenu((o) => !o)} disabled={busy === 'photo'}
+            aria-haspopup="menu" aria-expanded={photoMenu} aria-label="Profile picture options" title="Change or remove your profile picture">
+            <Avatar name={user.name} photo={resident.photo} size={96} />
+            <span className="pf-photo-badge" aria-hidden="true"><Svg d={ICON.camera} size={16} width={2.2} /></span>
+            {busy === 'photo' && <span className="pf-photo-busy">Saving…</span>}
+          </button>
+          {photoMenu && (
+            <div className="pf-menu" role="menu">
+              <button type="button" role="menuitem" onClick={() => { setPhotoMenu(false); fileInput.current?.click(); }}>
+                <Svg d={ICON.upload} size={18} /> {resident.photo ? 'Change Profile Picture' : 'Add Profile Picture'}
+              </button>
+              <button type="button" role="menuitem" className="pf-menu-danger" disabled={!resident.photo}
+                onClick={() => { setPhotoMenu(false); setConfirmRemove(true); }}>
+                <Svg d={ICON.trash} size={18} /> Remove Profile Picture
+              </button>
+            </div>
+          )}
+          <input ref={fileInput} type="file" accept="image/*" hidden onChange={choosePhoto} />
+        </div>
         <div className="profile-who">
           <h2>{user.name}</h2>
-          <p className="muted">Patient ID {resident.qr_code} · Registered {formatDate(resident.created_at)}</p>
-          <div className="actions">
-            <button className="btn btn-outline btn-sm" onClick={() => fileInput.current?.click()} disabled={busy === 'photo'}>
-              {busy === 'photo' ? 'Saving…' : resident.photo ? 'Change picture' : 'Add profile picture'}
-            </button>
-            {resident.photo && (
-              <button className="btn btn-outline btn-sm" onClick={removePhoto} disabled={busy === 'photo'}>Remove</button>
-            )}
-          </div>
-          <input ref={fileInput} type="file" accept="image/*" hidden onChange={choosePhoto} />
+          <p className="muted">Patient ID <b>{resident.qr_code}</b> · Registered {formatDate(resident.created_at)}</p>
+          <p className="muted small">Tap your picture to change or remove it.</p>
         </div>
       </section>
       <Message type={photoMsg?.type}>{photoMsg?.text}</Message>
 
-      <div className="grid-2">
-        <Card title="My QR code / Patient ID">
-          <div className="qr-card">
-            <QRCodeSVG value={resident.qr_code} size={160} marginSize={2} />
-            <div>
-              <div className="patient-id">{resident.qr_code}</div>
-              <p className="muted">Show this QR code at Botika ng Bayan when you claim your medicines.</p>
-              <p className="muted small">{user.name} · {resident.address}</p>
-              <button className="btn btn-outline" onClick={() => window.print()}>Print</button>
-            </div>
-          </div>
-        </Card>
+      <div className="grid-2 pf-grid">
+        <section className="card pf-qr-card no-print">
+          <div className="pf-qr-icon"><Svg d={ICON.qr} size={34} width={1.8} /></div>
+          <h2>My QR Code / Patient ID</h2>
+          <div className="pf-qr-id">{resident.qr_code}</div>
+          <p className="muted">Your personal QR code is used to verify your identity when claiming medicines at Botika ng Bayan.</p>
+          <button type="button" className="btn btn-lg pf-qr-btn" onClick={() => setShowQr(true)}>
+            <Svg d={ICON.qr} size={18} width={2} /> View My QR Code
+          </button>
+        </section>
+
+        {/* Printed copy (only on paper): QR code, Patient ID, name and address. */}
+        <div className="print-only pf-qr-print">
+          <QRCodeSVG value={resident.qr_code} size={200} marginSize={2} />
+          <div className="patient-id">{resident.qr_code}</div>
+          <p>{user.name} · {resident.address}</p>
+          <p>Show this QR code to the pharmacy staff when claiming your medicines.</p>
+        </div>
 
         <div className="no-print">
           <Card title="My information">
@@ -216,6 +263,39 @@ export default function Profile() {
           </form>
         </Card>
       </div>
+
+      {showQr && (
+        <Modal title="My QR Code" onClose={() => setShowQr(false)}>
+          <div className="pf-qr-modal">
+            <div className="pf-qr-frame">
+              <QRCodeSVG value={resident.qr_code} size={240} marginSize={2} level="M" />
+            </div>
+            <small className="muted">Patient ID</small>
+            <div className="patient-id">{resident.qr_code}</div>
+            <p className="muted small">{user.name}</p>
+            <p className="pf-qr-hint">Show this QR code to the pharmacy staff when claiming your medicines.</p>
+            <div className="modal-actions">
+              <button className="btn btn-outline" onClick={() => window.print()}><Svg d={ICON.print} size={18} /> Print</button>
+              <button className="btn" onClick={() => setShowQr(false)}>Close</button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {confirmRemove && (
+        <div className="modal-backdrop" onMouseDown={() => busy !== 'photo' && setConfirmRemove(false)}>
+          <div className="modal confirm-modal" role="dialog" aria-label="Remove profile picture" onMouseDown={(e) => e.stopPropagation()}>
+            <button className="btn-ghost confirm-close" onClick={() => setConfirmRemove(false)} aria-label="Close">✕</button>
+            <span className="confirm-icon"><Svg d={ICON.trash} size={30} /></span>
+            <h2>Remove Profile Picture?</h2>
+            <p>Your picture will be removed and the default avatar will be shown instead.</p>
+            <div className="confirm-actions">
+              <button className="btn btn-outline" onClick={() => setConfirmRemove(false)} disabled={busy === 'photo'}>Cancel</button>
+              <button className="btn btn-danger" onClick={removePhoto} disabled={busy === 'photo'}>{busy === 'photo' ? 'Removing…' : 'Remove'}</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
