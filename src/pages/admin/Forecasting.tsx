@@ -340,7 +340,7 @@ export default function Forecasting() {
                         <YAxis allowDecimals={false} fontSize={12} tickLine={false} axisLine={false} width={52}
                           label={{ value: `Quantity (${unitLabel})`, angle: -90, position: 'insideLeft', style: { fontSize: 12, fill: '#5f6f6b', textAnchor: 'middle' } }} />
                         <Tooltip content={<ChartTip unit={unitLabel} forecastKeys={data.forecast_keys} currentMonth={data.current_month} />} />
-                        <Line dataKey="actual" name="Given out (actual)" stroke="#0b7a63" strokeWidth={2.5} dot={{ r: 4, fill: '#0b7a63' }} activeDot={{ r: 6 }} isAnimationActive={false} />
+                        <Line dataKey="actual" name="Given out (actual)" stroke="#228b39" strokeWidth={2.5} dot={{ r: 4, fill: '#228b39' }} activeDot={{ r: 6 }} isAnimationActive={false} />
                         <Line dataKey="forecast" name="Expected (forecast)" stroke="#2563eb" strokeWidth={2.5} strokeDasharray="6 5" dot={{ r: 4, fill: '#2563eb' }} activeDot={{ r: 6 }} isAnimationActive={false}>
                           <LabelList dataKey="forecastLabel" position="top" fontSize={12} fontWeight={700} fill="#1e3a8a" />
                         </Line>

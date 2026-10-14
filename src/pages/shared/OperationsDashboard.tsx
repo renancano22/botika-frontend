@@ -83,7 +83,7 @@ export default function OperationsDashboard() {
               <XAxis dataKey="label" fontSize={12} />
               <YAxis fontSize={12} allowDecimals={false} />
               <Tooltip />
-              <Line type="monotone" dataKey="quantity" name="Quantity" stroke="#0f766e" strokeWidth={2} />
+              <Line type="monotone" dataKey="quantity" name="Quantity" stroke="#228b39" strokeWidth={2} />
             </LineChart>
           </ResponsiveContainer>
         </Card>
@@ -96,7 +96,7 @@ export default function OperationsDashboard() {
                   <XAxis type="number" fontSize={12} allowDecimals={false} />
                   <YAxis type="category" dataKey="medicine_name" width={140} fontSize={12} />
                   <Tooltip />
-                  <Bar dataKey="total" name="Quantity" fill="#0f766e" />
+                  <Bar dataKey="total" name="Quantity" fill="#228b39" />
                 </BarChart>
               </ResponsiveContainer>
             ) : <Empty>No dispensing in the last 30 days.</Empty>}
