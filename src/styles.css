@@ -846,6 +846,7 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--p
 .fc-howto li > i { flex-shrink: 0; margin-top: 7px; display: inline-block; }
 .lg-area { width: 18px; height: 12px; border-radius: 3px; background: #dbe7fd; border: 1px dashed #94a3b8; margin-top: 4px !important; }
 .lg-tip { width: 10px; height: 10px; border-radius: 50%; background: #f5b301; }
+.lg-norec { width: 18px; height: 12px; border-radius: 3px; background: #eef1f0; border: 1px solid #d5dcda; margin-top: 4px !important; }
 @media (max-width: 640px) {
   .fc-story { grid-template-columns: minmax(0, 1fr); }
 }
@@ -1221,3 +1222,20 @@ html { scroll-behavior: auto; }
   .pf-qr-modal .modal-actions .btn { flex: 1; }
 }
 .card.profile-head { overflow: visible; position: relative; z-index: 5; } /* let the picture menu show outside the card */
+
+/* ---------- forecasting: provisional results, unavailable methods, calculation */
+.trend-prov, .fc-prov { background: #ffedd5; color: #9a3412; }
+.fc-prov { display: inline-block; font-style: normal; font-size: 0.68rem; font-weight: 700; padding: 1px 8px; border-radius: 999px; vertical-align: middle; }
+.fc-method.is-disabled { cursor: not-allowed; opacity: 1; }
+.fc-method.is-disabled strong { color: var(--muted); }
+.fc-method.is-disabled:hover { background: transparent; border-color: transparent; }
+.fc-method .fc-method-need { color: #9a3412; }
+.fc-limited > div { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.fc-limited p { margin: 0; }
+.fc-limited ul { margin: 2px 0; padding-left: 18px; }
+.fc-calc { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border-radius: 12px; background: #f6f9f7; border: 1px solid var(--border); font-size: 0.88rem; color: #33443f; }
+.fc-calc p { margin: 0; line-height: 1.5; }
+.fc-calc-title { display: flex; align-items: center; gap: 6px; color: var(--primary-dark); }
+.fc-calc-formula { display: flex; flex-wrap: wrap; gap: 6px; }
+.fc-calc-formula span { padding: 2px 9px; border-radius: 8px; background: #fff; border: 1px solid var(--border); font-size: 0.84rem; }
+.fc-calc-result span { background: #eef4ff; border-color: #c7d7fe; color: #1e3a8a; }

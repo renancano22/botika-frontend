@@ -169,6 +169,41 @@ export interface MonthlyUsage {
 
 export type ForecastMethod = 'moving_average' | 'linear_regression' | 'exponential_smoothing';
 
+/** The numbers behind one method's forecast (only the fields of that method are set). */
+export interface ForecastCalculation {
+  /** moving average: months averaged (up to 3), their quantities and the average */
+  window?: number;
+  months?: string[];
+  values?: number[];
+  average?: number;
+  /** linear regression: change per month, line at the first month, direction, part of the line below 0 */
+  slope?: number;
+  intercept?: number;
+  trend?: 'up' | 'down' | 'flat';
+  below_zero?: boolean;
+  /** exponential smoothing: alpha, the smoothed level after each month and the final level */
+  alpha?: number;
+  steps?: { month: string; actual: number; level: number }[];
+  level?: number;
+}
+
+/** One method's forecast; null in its place = not enough months of records for that method. */
+export interface ForecastMethodResult {
+  predicted_demand: number;
+  monthly: number[];
+  mae: number | null;
+  calculation: ForecastCalculation;
+}
+
+export interface ForecastMethodInfo {
+  /** false = the method cannot forecast with the months of records available */
+  available: boolean;
+  /** true = based on fewer months than recommended (or on this month only, not finished yet) */
+  provisional: boolean;
+  min_months: number;
+  recommended_months: number;
+}
+
 /** One medicine on the Demand Forecasting page. */
 export interface ForecastResult {
   medicine_id: number;
@@ -180,7 +215,7 @@ export interface ForecastResult {
   history: Record<string, number>;
   /** forecast of the chosen method per coming month */
   forecast: Record<string, number>;
-  methods: Record<ForecastMethod, { predicted_demand: number; monthly: number[]; mae: number | null }>;
+  methods: Record<ForecastMethod, ForecastMethodResult | null>;
   /** most accurate method for this medicine (lowest back-tested error) */
   best_method: ForecastMethod;
   /** total for the whole forecast period, chosen method */
@@ -197,16 +232,27 @@ export interface ForecastReport {
   history_months: number;
   horizon: number;
   method: ForecastMethod;
+  /** method asked for (it is replaced by the default when it cannot forecast yet) */
+  requested_method: ForecastMethod | null;
   best_method: ForecastMethod;
   method_error: Record<ForecastMethod, number | null>;
+  methods_info: Record<ForecastMethod, ForecastMethodInfo>;
   history_keys: string[];
   forecast_keys: string[];
   /** this month ('2026-10'); it is the last of history_keys and is counted so far */
   current_month: string;
   /** first month with dispensing records (null = none yet) */
   data_start: string | null;
-  /** how many months of records the methods learned from */
+  /** date of the very first dispensing record (null = none yet) */
+  first_record_date: string | null;
+  /** today ('2026-10-14') */
+  today: string;
+  /** months since records began in the chosen period (this month included) */
   months_with_data: number;
+  /** months the methods learned from: complete months, or only this month so far (partial) when there is none yet */
+  basis: { months: string[]; complete_months: number; partial: boolean };
+  /** all medicines together: quantity per basis month and each method's calculation */
+  overall: { series: Record<string, number>; methods: Record<ForecastMethod, ForecastMethodResult | null> };
   summary: { medicines_analyzed: number; potential_stockouts: number; restock_recommendations: number };
   top_barangays: { barangay: string; total: number }[];
   top_medicines: { medicine_id: number; medicine_name: string; unit: string; total: number; quantity: number }[];
