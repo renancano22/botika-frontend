@@ -40,7 +40,7 @@ function buildSteps(r: MedicineRequest, forResident: boolean): Step[] {
         : [submitted, review, approved, {
           ...ready, state: 'current', tag: 'Current',
           text: forResident
-            ? `Your medicines are ready. Bring your QR code / Patient ID and claim them on or before ${formatDate(r.claim_by)}, or the request will be cancelled automatically.`
+            ? `Your medicines are ready. Bring your QR code / Resident ID and claim them on or before ${formatDate(r.claim_by)}, or the request will be cancelled automatically.`
             : `Waiting for the resident to claim the medicines on or before ${formatDate(r.claim_by)}.`,
         }, completed];
     case 'dispensed':

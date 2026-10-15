@@ -3,7 +3,7 @@ import { Html5Qrcode } from 'html5-qrcode';
 
 /**
  * Camera QR scanner (laptop webcam or phone camera).
- * Calls onScan once with the decoded Patient ID, then the parent closes the scanner.
+ * Calls onScan once with the decoded Resident ID, then the parent closes the scanner.
  *
  * The scanner draws into its own <div> that React does not manage, and every mount
  * gets a fresh one. This avoids the "removeChild" error and the duplicated camera
@@ -40,7 +40,7 @@ export default function QrScanner({ onScan }: { onScan: (text: string) => void }
       )
       .then(() => true)
       .catch(() => {
-        if (!cancelled) setError('Cannot open the camera. Allow camera access in the browser, or type the Patient ID instead.');
+        if (!cancelled) setError('Cannot open the camera. Allow camera access in the browser, or type the Resident ID instead.');
         return false;
       });
 

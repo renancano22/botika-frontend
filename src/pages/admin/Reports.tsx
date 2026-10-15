@@ -70,7 +70,7 @@ function cellText(v: string | number | null): string {
   return v.replace(/_/g, ' ');
 }
 
-const heading = (key: string) => key.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+const heading = (key: string) => key.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()).replace(/\bId\b/g, 'ID');
 
 function toCsv(rows: ReportData['rows']): string {
   if (!rows.length) return '';

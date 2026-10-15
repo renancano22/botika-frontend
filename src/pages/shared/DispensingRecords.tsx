@@ -96,7 +96,7 @@ export default function DispensingRecords() {
             <span className="dr-input">
               <Svg d={SEARCH} size={18} />
               <input type="search" value={search} onChange={(e) => setSearch(e.target.value)}
-                placeholder={isResident ? 'Medicine or request no.' : 'Resident, Patient ID, medicine or request no.'} />
+                placeholder={isResident ? 'Medicine or request no.' : 'Name, Resident ID, medicine or request no.'} />
             </span>
           </label>
           {/* Always shown so it is easy to find; inactive when there is nothing to clear. */}

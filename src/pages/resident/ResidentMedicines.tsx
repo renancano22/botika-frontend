@@ -298,7 +298,7 @@ export default function ResidentMedicines() {
               <div className="info-box info-ok">
                 <strong><Svg d={ICONS.calendar} size={18} /> What happens next</strong>
                 <p>The pharmacy staff will review your request{needsRx ? ' and check your prescription' : ''}. You will get an SMS once it is approved.</p>
-                <p>Then claim your medicines at Botika ng Bayan, Bulan within 7 days. Bring your QR code / Patient ID.</p>
+                <p>Then claim your medicines at Botika ng Bayan, Bulan within 7 days. Bring your QR code / Resident ID.</p>
               </div>
               {sheetError && <Message>{sheetError}</Message>}
               <button className="btn btn-block btn-lg" disabled={busy || !cartValid || rxMissing} onClick={submitRequest}>

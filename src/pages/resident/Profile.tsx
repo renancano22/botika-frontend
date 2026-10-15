@@ -458,7 +458,7 @@ export default function Profile() {
             )}
           </section>
 
-          <p className="fb-fixed-note muted small">Your Patient ID and registration date cannot be changed.</p>
+          <p className="fb-fixed-note muted small">Your Resident ID and registration date cannot be changed.</p>
 
           <div className="fb-actions">
             <button className="btn btn-lg" disabled={saving || preparingPhoto}><Svg d={ICON.save} size={18} /> {saving ? 'Saving…' : 'Save Changes'}</button>
@@ -556,7 +556,7 @@ export default function Profile() {
         </div>
       </div>
 
-      {/* Printed copy (only on paper): QR code, Patient ID, name and address. */}
+      {/* Printed copy (only on paper): QR code, Resident ID, name and address. */}
       <div className="print-only pf-qr-print">
         <QRCodeSVG value={resident.qr_code} size={200} marginSize={2} />
         <div className="patient-id">{resident.qr_code}</div>
@@ -600,7 +600,7 @@ export default function Profile() {
             <div className="pf-qr-frame">
               <QRCodeSVG value={resident.qr_code} size={240} marginSize={2} level="M" />
             </div>
-            <small className="muted">Patient ID</small>
+            <small className="muted">Resident ID</small>
             <div className="patient-id">{resident.qr_code}</div>
             <p className="muted small">{user.name}</p>
             <p className="pf-qr-hint">Show this QR code to the pharmacy staff when claiming your medicines.</p>

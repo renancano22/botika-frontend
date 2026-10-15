@@ -56,12 +56,12 @@ export default function Users() {
             <option value="staff">Pharmacy staff</option>
             <option value="resident">Residents</option>
           </select>
-          <input className="search" placeholder="Search name, email, mobile or Patient ID…" value={search} onChange={(e) => setSearch(e.target.value)} />
+          <input className="search" placeholder="Search name, email, mobile or Resident ID…" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
       }>
         {loading && !data ? <Loading /> : !data?.length ? <Empty>No users found.</Empty> : (
           <table>
-            <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Patient ID / Mobile</th><th>Status</th><th>Created</th><th></th></tr></thead>
+            <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Resident ID / Mobile</th><th>Status</th><th>Created</th><th></th></tr></thead>
             <tbody>
               {data.map((u) => (
                 <tr key={u.user_id} className={u.is_active ? '' : 'row-muted'}>

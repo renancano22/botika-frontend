@@ -17,7 +17,7 @@ interface Lookup {
   monthly?: MonthlyUsage;
 }
 
-/** QR Code / Patient ID verification and medicine dispensing. */
+/** QR Code / Resident ID verification and medicine dispensing. */
 export default function Dispense() {
   const [code, setCode] = useState('');
   const [scanning, setScanning] = useState(false);
@@ -33,7 +33,7 @@ export default function Dispense() {
   const [viewRxId, setViewRxId] = useState<number | null>(null);
 
   const lookup = useCallback(async (raw: string) => {
-    const value = raw.trim().toUpperCase(); // Patient IDs look like BBC-000001
+    const value = raw.trim().toUpperCase(); // Resident IDs look like BBC-000001
     if (!value) return;
     setScanning(false);
     setCode(value);
@@ -49,7 +49,7 @@ export default function Dispense() {
       setMsg({
         type: 'error',
         text: notFound
-          ? `No resident found with Patient ID "${value}". Check the ID on the resident's dashboard (My QR code / Patient ID).`
+          ? `No resident found with Resident ID "${value}". Check the Resident ID on the resident's My Profile page or QR code.`
           : errorMessage(err),
       });
     }
@@ -110,13 +110,13 @@ export default function Dispense() {
       <header className="page-head">
         <div>
           <h1>Dispense Medicine</h1>
-          <p className="muted">Scan the resident's QR code or type the Patient ID to verify identity before dispensing.</p>
+          <p className="muted">Scan the resident's QR code or type the Resident ID to verify identity before dispensing.</p>
         </div>
       </header>
 
       <Card title="1. Verify resident">
         <form className="lookup" onSubmit={(e) => { e.preventDefault(); lookup(code); }}>
-          <input value={code} onChange={(e) => setCode(e.target.value)} placeholder="Patient ID, e.g. BBC-000001" />
+          <input value={code} onChange={(e) => setCode(e.target.value)} placeholder="Resident ID, e.g. BBC-000001" />
           <button className="btn">Verify</button>
           <button type="button" className="btn btn-outline" onClick={() => setScanning(!scanning)}>{scanning ? 'Stop camera' : 'Scan QR code'}</button>
         </form>
@@ -131,7 +131,7 @@ export default function Dispense() {
           <Card title="Resident verified ✓">
             <div className="resident-info">
               <div><small className="muted">Name</small><strong>{found.resident.name}</strong></div>
-              <div><small className="muted">Patient ID</small><strong>{found.resident.qr_code}</strong></div>
+              <div><small className="muted">Resident ID</small><strong>{found.resident.qr_code}</strong></div>
               <div><small className="muted">Address</small><strong>{found.resident.address}</strong></div>
               <div><small className="muted">Mobile</small><strong>{found.resident.contact_no}</strong></div>
             </div>

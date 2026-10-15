@@ -194,7 +194,7 @@ export default function Requests() {
         <Modal title={`Request No. ${viewing.request_id}`} onClose={() => setViewingId(null)}>
           <div className="resident-info req-detail-info">
             <div><small className="muted">Resident</small><strong>{viewing.resident?.name}</strong></div>
-            <div><small className="muted">Patient ID</small><strong>{viewing.resident?.qr_code}</strong></div>
+            <div><small className="muted">Resident ID</small><strong>{viewing.resident?.qr_code}</strong></div>
             <div><small className="muted">Type</small><strong>{viewing.request_type === 'restock' ? 'Restock request' : 'Medicine request'}</strong></div>
           </div>
           <p className="req-items">{itemsText(viewing)}</p>
