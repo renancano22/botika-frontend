@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent, type ReactNode } from 'react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
-import { api, errorMessage, formatDate } from '../../api';
+import { api, errorMessage } from '../../api';
 import { useAuth } from '../../auth';
 import { useApi } from '../../hooks';
 import { Avatar, Loading, Message, Modal, PasswordInput } from '../../components/ui';
@@ -80,6 +80,16 @@ function resizePhoto(file: File, size = 256): Promise<string> {
   });
 }
 
+const MONTHS = ['Jan.', 'Feb.', 'Mar.', 'Apr.', 'May', 'Jun.', 'Jul.', 'Aug.', 'Sep.', 'Oct.', 'Nov.', 'Dec.'];
+/** Registration date as "Oct. 5, 2026". */
+const regDate = (v: string) => {
+  const d = new Date(v);
+  return Number.isNaN(d.getTime()) ? '—' : `${MONTHS[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+};
+
+/** One action in the profile picture menu (View / Change / Delete). */
+interface PhotoAction { key: string; icon: string; label: string; onClick: () => void; danger?: boolean; disabled?: boolean }
+
 /** "0917 123 4567" / "+63 917…" → "09171234567" (same as the server), to tell whether the number changed. */
 const normalizePhone = (v: string) => {
   const d = v.replace(/\D/g, '');
@@ -116,6 +126,10 @@ export default function Profile() {
   const [pwOpen, setPwOpen] = useState(false);           // Change Password: closed by default
   const [photoMenu, setPhotoMenu] = useState(false);     // camera button menu
   const photoBox = useRef<HTMLDivElement>(null);
+  const viewFileInput = useRef<HTMLInputElement>(null);
+  const [newPhoto, setNewPhoto] = useState<string | null>(null);  // My Profile: chosen picture waiting for "Save Picture"
+  const [confirmDelete, setConfirmDelete] = useState(false);       // My Profile: "Delete profile picture?"
+  const [photoSaving, setPhotoSaving] = useState(false);
 
   // Opening Edit Profile (or after loading) starts from the saved information; password fields always start blank.
   useEffect(() => {
@@ -214,6 +228,66 @@ export default function Profile() {
     } finally { setPreparingPhoto(false); }
   };
 
+  /** My Profile → Change Profile Picture: the picture is shown for confirmation before it is saved. */
+  const chooseNewPhoto = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setPreparingPhoto(true);
+    setNotice(null);
+    try {
+      setNewPhoto(await resizePhoto(file));
+    } catch (err) {
+      setNotice({ type: 'error', text: err instanceof Error ? err.message : 'This picture could not be used.' });
+    } finally { setPreparingPhoto(false); }
+  };
+
+  /** Saves (new picture) or deletes the profile picture after the resident confirms. */
+  const savePhoto = async (action: 'change' | 'delete') => {
+    if (savingRef.current) return;
+    savingRef.current = true;
+    setPhotoSaving(true);
+    try {
+      const res = action === 'change'
+        ? (await api.post<ProfileData>('/profile/photo', { photo: newPhoto })).data
+        : (await api.delete<ProfileData>('/profile/photo')).data;
+      setData(res);
+      setUser(res.user); // updates the picture in the top bar and menu
+      setNotice({ type: 'success', text: action === 'change' ? 'Your profile picture has been updated.' : 'Your profile picture has been deleted.' });
+    } catch (err) {
+      setNotice({ type: 'error', text: `${action === 'change' ? 'Your picture was not changed.' : 'Your picture was not deleted.'} ${errorMessage(err)}` });
+    } finally {
+      setNewPhoto(null);
+      setConfirmDelete(false);
+      savingRef.current = false;
+      setPhotoSaving(false);
+    }
+  };
+
+  /** Profile picture with a camera button; tapping either opens View / Change / Delete. */
+  const photoControl = (src: string | null | undefined, name: string, actions: PhotoAction[], disabled = false) => (
+    <div className="fb-avatar-wrap" ref={photoBox}>
+      <button type="button" className="fb-avatar" onClick={() => setPhotoMenu((o) => !o)} disabled={disabled}
+        aria-haspopup="menu" aria-expanded={photoMenu} aria-label="Profile picture options" title="Profile picture options">
+        <Avatar name={name} photo={src} size={128} />
+      </button>
+      <button type="button" className="fb-camera" onClick={() => setPhotoMenu((o) => !o)} disabled={disabled}
+        aria-haspopup="menu" aria-expanded={photoMenu} aria-label="Profile picture options" title="Profile picture options">
+        <Svg d={ICON.camera} size={19} width={2.2} />
+      </button>
+      {photoMenu && (
+        <div className="pf-menu fb-photo-menu" role="menu">
+          {actions.map((a) => (
+            <button key={a.key} type="button" role="menuitem" className={a.danger ? 'pf-menu-danger' : ''} disabled={a.disabled}
+              onClick={() => { setPhotoMenu(false); a.onClick(); }}>
+              <Svg d={a.icon} size={18} /> {a.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
   const showFormError = (text: string) => {
     setFormMsg({ type: 'error', text });
     requestAnimationFrame(() => jumpTo(formTop.current, { highlight: false }));
@@ -302,7 +376,6 @@ export default function Profile() {
           </button>
           <div>
             <h1>Edit Profile</h1>
-            <p className="muted">Nothing is saved until you tap Save Changes and confirm.</p>
           </div>
         </header>
 
@@ -311,40 +384,20 @@ export default function Profile() {
         <form onSubmit={submit} className="fb-form">
           {/* Profile picture on a BulanBotikaCare banner, with a camera button to change it */}
           <section className="card fb-sec fb-photo-sec">
-            <div className="fb-avatar-wrap" ref={photoBox}>
-              <button type="button" className="fb-avatar" onClick={() => setPreview(true)} aria-label="View profile picture" title="View profile picture">
-                <Avatar name={form.name || user.name} photo={editPhoto} size={128} />
-              </button>
-              <button type="button" className="fb-camera" onClick={() => setPhotoMenu((o) => !o)} disabled={preparingPhoto || saving}
-                aria-haspopup="menu" aria-expanded={photoMenu} aria-label="Change profile picture" title="Change profile picture">
-                <Svg d={ICON.camera} size={19} width={2.2} />
-              </button>
-              {photoMenu && (
-                <div className="pf-menu fb-photo-menu" role="menu">
-                  <button type="button" role="menuitem" onClick={() => { setPhotoMenu(false); setPreview(true); }}>
-                    <Svg d={ICON.eye} size={18} /> View Profile Picture
-                  </button>
-                  <button type="button" role="menuitem" onClick={() => { setPhotoMenu(false); fileInput.current?.click(); }}>
-                    <Svg d={ICON.upload} size={18} /> {editPhoto ? 'Upload New Picture' : 'Upload Picture'}
-                  </button>
-                  {photo.kind !== 'keep' && (
-                    <button type="button" role="menuitem" onClick={() => { setPhotoMenu(false); setPhoto({ kind: 'keep' }); }}>
-                      <Svg d={ICON.undo} size={18} /> Keep Current Picture
-                    </button>
-                  )}
-                  {photo.kind === 'keep' && (
-                    <button type="button" role="menuitem" className="pf-menu-danger" disabled={!resident.photo}
-                      onClick={() => { setPhotoMenu(false); setPhoto({ kind: 'remove' }); }}>
-                      <Svg d={ICON.trash} size={18} /> Remove Picture
-                    </button>
-                  )}
-                </div>
-              )}
-              <input ref={fileInput} type="file" accept="image/*" hidden onChange={choosePhoto} />
-            </div>
+            {photoControl(editPhoto, form.name || user.name, [
+              { key: 'view', icon: ICON.eye, label: 'View Profile Picture', onClick: () => setPreview(true) },
+              { key: 'change', icon: ICON.camera, label: 'Change Profile Picture', onClick: () => fileInput.current?.click() },
+              ...(photo.kind !== 'keep'
+                ? [{ key: 'keep', icon: ICON.undo, label: 'Keep Current Picture', onClick: () => setPhoto({ kind: 'keep' }) }]
+                : []),
+              { key: 'delete', icon: ICON.trash, label: 'Delete Profile Picture', danger: true, disabled: !resident.photo || photo.kind === 'remove',
+                onClick: () => setPhoto({ kind: 'remove' }) },
+            ], preparingPhoto || saving)}
+            <input ref={fileInput} type="file" accept="image/*" hidden onChange={choosePhoto} />
             <div className="fb-who">
               <strong>{form.name.trim() || user.name}</strong>
-              <small>Registered {formatDate(user.created_at)}</small>
+              <small className="fb-rid">Resident ID: {resident.qr_code}</small>
+              <small>Registered {regDate(user.created_at)}</small>
             </div>
             {photoStatus && <p className="fb-photo-status is-pending">{photoStatus}</p>}
           </section>
@@ -453,21 +506,24 @@ export default function Profile() {
         </Link>
         <div>
           <h1>My Profile</h1>
-          <p className="muted">Your personal and account information at Botika ng Bayan.</p>
         </div>
       </header>
       <div className="no-print"><Message type={notice?.type}>{notice?.text}</Message></div>
 
       <div className="fb-form fb-view no-print">
         <section className="card fb-sec fb-photo-sec">
-          <div className="fb-avatar-wrap">
-            <button type="button" className="fb-avatar" onClick={() => setPreview(true)} aria-label="View profile picture" title="View profile picture">
-              <Avatar name={user.name} photo={resident.photo} size={128} />
-            </button>
-          </div>
+          {photoControl(resident.photo, user.name, [
+            { key: 'view', icon: ICON.eye, label: 'View Profile Picture', onClick: () => setPreview(true) },
+            { key: 'change', icon: ICON.camera, label: 'Change Profile Picture', onClick: () => viewFileInput.current?.click() },
+            { key: 'delete', icon: ICON.trash, label: 'Delete Profile Picture', danger: true, disabled: !resident.photo, onClick: () => setConfirmDelete(true) },
+          ], preparingPhoto || photoSaving)}
+          {/* gallery or camera (the phone offers both for image/*) */}
+          <input ref={viewFileInput} type="file" accept="image/*" hidden onChange={chooseNewPhoto} />
+          {preparingPhoto && <p className="fb-photo-status">Preparing picture…</p>}
           <div className="fb-who">
             <strong>{user.name}</strong>
-            <small>Registered {formatDate(user.created_at)}</small>
+            <small className="fb-rid">Resident ID: {resident.qr_code}</small>
+            <small>Registered {regDate(user.created_at)}</small>
           </div>
           <button type="button" className="btn pf-qr-btn fb-qr-btn" onClick={() => setShowQr(true)}>
             <Svg d={ICON.qr} size={18} width={2} /> View My QR Code
@@ -509,6 +565,34 @@ export default function Profile() {
       </div>
 
       {preview && previewModal(resident.photo)}
+
+      {newPhoto && (
+        <div className="modal-backdrop" onMouseDown={() => !savingRef.current && setNewPhoto(null)}>
+          <div className="modal confirm-modal pf-confirm" role="dialog" aria-modal="true" aria-labelledby="pf-photo-title" onMouseDown={(e) => e.stopPropagation()}>
+            <img className="pf-new-photo" src={newPhoto} alt="New profile picture" />
+            <h2 id="pf-photo-title">Change profile picture?</h2>
+            <p>This picture will replace your current profile picture.</p>
+            <div className="confirm-actions">
+              <button type="button" className="btn btn-outline" onClick={() => setNewPhoto(null)} disabled={photoSaving}>Cancel</button>
+              <button type="button" className="btn" onClick={() => savePhoto('change')} disabled={photoSaving}>{photoSaving ? 'Saving…' : 'Save Picture'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {confirmDelete && (
+        <div className="modal-backdrop" onMouseDown={() => !savingRef.current && setConfirmDelete(false)}>
+          <div className="modal confirm-modal pf-confirm" role="dialog" aria-modal="true" aria-labelledby="pf-del-title" onMouseDown={(e) => e.stopPropagation()}>
+            <span className="confirm-icon"><Svg d={ICON.trash} size={28} /></span>
+            <h2 id="pf-del-title">Delete profile picture?</h2>
+            <p>Your picture will be removed and the default profile avatar will be shown instead.</p>
+            <div className="confirm-actions">
+              <button type="button" className="btn btn-outline" onClick={() => setConfirmDelete(false)} disabled={photoSaving}>Cancel</button>
+              <button type="button" className="btn btn-danger" onClick={() => savePhoto('delete')} disabled={photoSaving}>{photoSaving ? 'Deleting…' : 'Delete'}</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showQr && (
         <Modal title="My QR Code" onClose={() => setShowQr(false)}>
