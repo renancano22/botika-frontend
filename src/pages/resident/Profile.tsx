@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type ChangeEvent, type FormEvent, type ReactNode } from 'react';
+import { Link } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
 import { api, errorMessage, formatDate } from '../../api';
 import { useAuth } from '../../auth';
@@ -7,6 +8,7 @@ import { Avatar, Card, Loading, Message, Modal, PasswordInput } from '../../comp
 import { Svg } from '../../components/RequestCards';
 import type { User } from '../../types';
 import { FIELD } from '../../validation';
+import { jumpTo } from '../../scroll';
 
 interface ProfileData {
   user: User;
@@ -22,7 +24,26 @@ const ICON = {
   trash: 'M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6',
   qr: 'M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2v2h-2zM18 14h2v2h-2zM14 18h2v2h-2zM18 18h2v2h-2zM6.5 6.5h1v1h-1zM16.5 6.5h1v1h-1zM6.5 16.5h1v1h-1z',
   print: 'M7 9V3h10v6M7 17H4v-7h16v7h-3M7 14h10v7H7z',
+  back: 'M15 18l-6-6 6-6',
+  edit: 'M4 20h4L19 9l-4-4L4 16zM14 6l4 4',
+  user: 'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8',
+  id: 'M3 5h18v14H3zM7 9h4M7 13h6M15 9h3v6h-3z',
+  mail: 'M3 6h18v12H3zM3 7l9 6 9-6',
+  phone: 'M7 3h10v18H7zM11 18h2',
+  pin: 'M12 21s-7-6.5-7-12a7 7 0 0 1 14 0c0 5.5-7 12-7 12zM12 11a2 2 0 1 0 0-4 2 2 0 0 0 0 4',
+  home: 'M3 11l9-7 9 7M5 10v10h14V10',
+  calendar: 'M4 6h16v14H4zM4 10h16M8 3v4M16 3v4',
 };
+
+/** One line of the personal and account information: icon, label and value. */
+function InfoRow({ icon, label, children }: { icon: string; label: string; children: ReactNode }) {
+  return (
+    <div className="pf-info-row">
+      <span className="pf-info-icon"><Svg d={icon} size={18} /></span>
+      <div><dt>{label}</dt><dd>{children}</dd></div>
+    </div>
+  );
+}
 
 /** Shrinks and crops the chosen picture to a 256×256 JPEG so it uploads fast and stays small. */
 function resizePhoto(file: File, size = 256): Promise<string> {
@@ -63,7 +84,9 @@ export default function Profile() {
   const [photoMenu, setPhotoMenu] = useState(false);       // small menu under the profile picture
   const [confirmRemove, setConfirmRemove] = useState(false);
   const [showQr, setShowQr] = useState(false);
+  const [editing, setEditing] = useState(false);        // personal information: view or edit
   const photoBox = useRef<HTMLDivElement>(null);
+  const infoCard = useRef<HTMLDivElement>(null);
 
   // Close the picture menu when tapping elsewhere or pressing Esc.
   useEffect(() => {
@@ -80,17 +103,28 @@ export default function Profile() {
     };
   }, [photoMenu]);
 
+  const fillForm = (d: ProfileData) => setForm({
+    name: d.user.name,
+    contact_no: d.user.resident?.contact_no ?? '',
+    email: d.user.email ?? '',
+    barangay: d.barangay ?? '',
+    address_line: d.address_line,
+  });
+
   // Fill the form when the profile loads.
-  useEffect(() => {
-    if (!data) return;
-    setForm({
-      name: data.user.name,
-      contact_no: data.user.resident?.contact_no ?? '',
-      email: data.user.email ?? '',
-      barangay: data.barangay ?? '',
-      address_line: data.address_line,
-    });
-  }, [data]);
+  useEffect(() => { if (data) fillForm(data); }, [data]);
+
+  const startEdit = () => {
+    if (data) fillForm(data);
+    setInfoMsg(null);
+    setEditing(true);
+    requestAnimationFrame(() => jumpTo(infoCard.current, { highlight: false }));
+  };
+  const cancelEdit = () => {
+    if (data) fillForm(data); // discard unsaved changes
+    setInfoMsg(null);
+    setEditing(false);
+  };
 
   const saved = (res: ProfileData) => {
     setData(res);
@@ -105,7 +139,8 @@ export default function Profile() {
     setInfoMsg(null);
     try {
       saved((await api.put<ProfileData>('/profile', form)).data);
-      setInfoMsg({ type: 'success', text: 'Your information has been saved.' });
+      setEditing(false);
+      setInfoMsg({ type: 'success', text: 'Your profile has been updated.' });
     } catch (err) {
       setInfoMsg({ type: 'error', text: errorMessage(err) });
     } finally { setBusy(''); }
@@ -163,8 +198,12 @@ export default function Profile() {
 
   return (
     <div className="page">
-      <header className="page-head no-print">
-        <h1>My Profile</h1>
+      <header className="page-head pf-head no-print">
+        <Link to="/dashboard" className="pf-back"><Svg d={ICON.back} size={18} width={2.4} /> Back to Dashboard</Link>
+        <div>
+          <h1>My Profile</h1>
+          <p className="muted">Your personal and account information at Botika ng Bayan.</p>
+        </div>
       </header>
 
       <section className="card profile-head no-print">
@@ -190,12 +229,60 @@ export default function Profile() {
         </div>
         <div className="profile-who">
           <h2>{user.name}</h2>
-          <p className="muted">Patient ID <b>{resident.qr_code}</b> · Registered {formatDate(resident.created_at)}</p>
+          <p className="muted">Patient ID <b>{resident.qr_code}</b> · Member since {formatDate(user.created_at)}</p>
+          {!editing && (
+            <div className="actions">
+              <button type="button" className="btn btn-outline pf-edit-btn" onClick={startEdit}><Svg d={ICON.edit} size={17} /> Edit Profile</button>
+            </div>
+          )}
         </div>
       </section>
       <Message type={photoMsg?.type}>{photoMsg?.text}</Message>
 
       <div className="grid-2 pf-grid">
+        <div className="no-print" ref={infoCard}>
+          <Card title={editing ? 'Edit Profile' : 'Personal & Account Information'}>
+            <Message type={infoMsg?.type}>{infoMsg?.text}</Message>
+            {!editing ? (
+              <dl className="pf-info">
+                <InfoRow icon={ICON.user} label="Full name">{user.name}</InfoRow>
+                <InfoRow icon={ICON.id} label="Patient ID"><span className="pf-info-id">{resident.qr_code}</span></InfoRow>
+                <InfoRow icon={ICON.mail} label="Email address">{user.email || <span className="muted">Not added</span>}</InfoRow>
+                <InfoRow icon={ICON.phone} label="Contact number">{resident.contact_no}</InfoRow>
+                <InfoRow icon={ICON.pin} label="Barangay">{data.barangay ? `${data.barangay}, Bulan, Sorsogon` : <span className="muted">Not set</span>}</InfoRow>
+                <InfoRow icon={ICON.home} label="House no. / Street / Purok">{data.address_line || <span className="muted">Not added</span>}</InfoRow>
+                <InfoRow icon={ICON.calendar} label="Account created">{formatDate(user.created_at)}</InfoRow>
+              </dl>
+            ) : (
+              <form onSubmit={saveInfo}>
+                <label>Full name
+                  <input value={form.name} onChange={set('name')} autoComplete="name" required maxLength={100} {...FIELD.name} />
+                </label>
+                <label>Mobile number (for log in and SMS updates)
+                  <input type="tel" inputMode="tel" value={form.contact_no} onChange={set('contact_no')} placeholder="09XXXXXXXXX" required maxLength={16} {...FIELD.mobile} />
+                </label>
+                <label>Gmail address (optional)
+                  <input type="email" value={form.email} onChange={set('email')} placeholder="name@gmail.com" autoComplete="email" maxLength={255} {...FIELD.gmail} />
+                </label>
+                <label>Barangay (Bulan, Sorsogon)
+                  <select value={form.barangay} onChange={set('barangay')} required>
+                    <option value="">{barangays ? 'Select your barangay…' : 'Loading barangays…'}</option>
+                    {barangays?.map((b) => <option key={b} value={b}>{b}</option>)}
+                  </select>
+                </label>
+                <label>House no. / Street / Purok (optional)
+                  <input value={form.address_line} onChange={set('address_line')} maxLength={120} placeholder="e.g. Purok 3, Rizal St." />
+                </label>
+                <p className="field-hint">Your Patient ID and account creation date cannot be changed.</p>
+                <div className="pf-form-actions">
+                  <button type="button" className="btn btn-outline" onClick={cancelEdit} disabled={busy === 'info'}>Cancel</button>
+                  <button className="btn" disabled={busy === 'info'}>{busy === 'info' ? 'Saving…' : 'Save changes'}</button>
+                </div>
+              </form>
+            )}
+          </Card>
+        </div>
+
         <section className="card pf-qr-card no-print">
           <div className="pf-qr-icon"><Svg d={ICON.qr} size={34} width={1.8} /></div>
           <h2>My QR Code / Patient ID</h2>
@@ -212,33 +299,6 @@ export default function Profile() {
           <div className="patient-id">{resident.qr_code}</div>
           <p>{user.name} · {resident.address}</p>
           <p>Show this QR code to the pharmacy staff when claiming your medicines.</p>
-        </div>
-
-        <div className="no-print">
-          <Card title="My information">
-            <form onSubmit={saveInfo}>
-              <Message type={infoMsg?.type}>{infoMsg?.text}</Message>
-              <label>Full name
-                <input value={form.name} onChange={set('name')} autoComplete="name" required maxLength={100} {...FIELD.name} />
-              </label>
-              <label>Mobile number (for log in and SMS updates)
-                <input type="tel" inputMode="tel" value={form.contact_no} onChange={set('contact_no')} placeholder="09XXXXXXXXX" required maxLength={16} {...FIELD.mobile} />
-              </label>
-              <label>Gmail address (optional)
-                <input type="email" value={form.email} onChange={set('email')} placeholder="name@gmail.com" autoComplete="email" maxLength={255} {...FIELD.gmail} />
-              </label>
-              <label>Barangay (Bulan, Sorsogon)
-                <select value={form.barangay} onChange={set('barangay')} required>
-                  <option value="">{barangays ? 'Select your barangay…' : 'Loading barangays…'}</option>
-                  {barangays?.map((b) => <option key={b} value={b}>{b}</option>)}
-                </select>
-              </label>
-              <label>House no. / Street / Purok (optional)
-                <input value={form.address_line} onChange={set('address_line')} maxLength={120} placeholder="e.g. Purok 3, Rizal St." />
-              </label>
-              <button className="btn" disabled={busy === 'info'}>{busy === 'info' ? 'Saving…' : 'Save changes'}</button>
-            </form>
-          </Card>
         </div>
       </div>
 

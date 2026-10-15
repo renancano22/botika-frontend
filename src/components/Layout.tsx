@@ -141,7 +141,8 @@ export default function Layout() {
         {user.role === 'resident' && (
           <div className="topbar-actions">
             <NotificationBell />
-            <Link to="/profile" className="topbar-profile" aria-label="My profile" title="My profile">
+            <Link to="/profile" className={`topbar-profile ${location.pathname === '/profile' ? 'is-current' : ''}`} aria-label="Open my profile" title="My profile"
+              aria-current={location.pathname === '/profile' ? 'page' : undefined}>
               <Avatar name={user.name} photo={user.resident?.photo} size={36} />
             </Link>
           </div>
@@ -151,11 +152,24 @@ export default function Layout() {
       <div className={`drawer-overlay ${open ? 'is-open' : ''}`} onClick={() => setOpen(false)} aria-hidden="true" />
       <aside id="side-menu" className={`drawer ${open ? 'is-open' : ''}`} aria-hidden={!open} aria-label="Main menu">
         <div className="drawer-head">
-          <Avatar name={user.name} photo={user.resident?.photo} size={38} />
-          <div className="drawer-user">
-            <strong>{user.name}</strong>
-            <small>{ROLE_LABEL[user.role]}</small>
-          </div>
+          {user.role === 'resident' ? (
+            // Residents: the picture and name open My Profile.
+            <Link to="/profile" className="drawer-profile" tabIndex={open ? 0 : -1} aria-label="Open my profile" title="My profile">
+              <Avatar name={user.name} photo={user.resident?.photo} size={38} />
+              <span className="drawer-user">
+                <strong>{user.name}</strong>
+                <small>View my profile</small>
+              </span>
+            </Link>
+          ) : (
+            <>
+              <Avatar name={user.name} photo={user.resident?.photo} size={38} />
+              <div className="drawer-user">
+                <strong>{user.name}</strong>
+                <small>{ROLE_LABEL[user.role]}</small>
+              </div>
+            </>
+          )}
           <button className="drawer-close" onClick={() => setOpen(false)} aria-label="Close menu" tabIndex={open ? 0 : -1}>✕</button>
         </div>
 
