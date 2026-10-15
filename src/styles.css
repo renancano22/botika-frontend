@@ -1350,15 +1350,10 @@ button.pf-back { background: none; border: none; font: inherit; cursor: pointer;
 .fb-sum b { color: var(--text); font-weight: 600; overflow-wrap: anywhere; }
 .fb-pw-closed { margin: 10px 0 0; font-size: 0.88rem; color: var(--muted); }
 .fb-pw-sec .pf-pw-rules { margin-top: 2px; }
-/* profile picture on a BulanBotikaCare banner (there is no cover photo in the system) */
-.card.fb-photo-sec { overflow: visible; position: relative; z-index: 5; }
-.fb-cover { margin-top: 12px; height: 132px; border-radius: 14px; display: flex; align-items: flex-start; justify-content: flex-end; gap: 8px; padding: 12px 14px; color: rgba(255, 255, 255, 0.92); font-weight: 800; font-size: 0.86rem; letter-spacing: 0.02em;
-  background: radial-gradient(circle at 18% 30%, rgba(255, 255, 255, 0.16) 0, rgba(255, 255, 255, 0) 38%), radial-gradient(circle at 85% 110%, rgba(134, 204, 147, 0.45) 0, rgba(134, 204, 147, 0) 45%), linear-gradient(120deg, #143f1c, #1c6a2c 55%, #228b39); }
-.fb-cover .brand-mark { width: 26px; height: 26px; font-size: 0.85rem; border-radius: 8px; }
-.fb-cover span:last-child { line-height: 26px; }
-.fb-avatar-wrap { position: relative; width: 156px; margin: -78px auto 0; }
+/* profile picture centred at the top (no banner / cover photo) */
+.fb-avatar-wrap { position: relative; width: 136px; margin: 4px auto 0; }
 .fb-avatar { display: block; padding: 0; border: none; background: none; border-radius: 50%; cursor: zoom-in; }
-.fb-avatar .avatar { box-shadow: 0 0 0 4px #fff, 0 6px 18px rgba(20, 63, 28, 0.18); }
+.fb-avatar .avatar { box-shadow: 0 0 0 4px #fff, 0 0 0 5px var(--border), 0 6px 16px rgba(20, 63, 28, 0.12); }
 .fb-avatar .avatar-letter { font-size: 3.6rem; }
 .fb-avatar:hover .avatar { filter: brightness(0.94); }
 .fb-avatar:focus-visible { outline: 3px solid var(--primary-soft); outline-offset: 5px; }
@@ -1379,9 +1374,8 @@ button.pf-back { background: none; border: none; font: inherit; cursor: pointer;
   .fb-top p { font-size: 0.8rem; }
   .fb-top-back { width: 38px; height: 38px; }
   .pf-page .card.fb-sec { padding: 12px 14px; }
-  .fb-cover { height: 104px; }
-  .fb-avatar-wrap { width: 128px; margin-top: -64px; }
-  .fb-avatar .avatar { width: 120px !important; height: 120px !important; }
+  .fb-avatar-wrap { width: 120px; }
+  .fb-avatar .avatar { width: 112px !important; height: 112px !important; }
   .fb-avatar .avatar-letter { font-size: 3rem; }
   .fb-camera { width: 36px; height: 36px; right: 2px; bottom: 2px; }
   .fb-photo-menu { width: 260px; max-width: none; margin-left: -130px; }
@@ -1389,5 +1383,7 @@ button.pf-back { background: none; border: none; font: inherit; cursor: pointer;
 }
 /* My Profile uses the same cards as Edit Profile (read-only, one Edit Profile button at the bottom) */
 .fb-page { max-width: 720px; }
-.fb-photo-sec .fb-cover:first-child { margin-top: 0; }
 .fb-view .fb-who { padding-bottom: 4px; }
+.fb-photo-sec { padding-top: 22px; }
+.fb-qr-btn { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 14px auto 2px; min-width: 220px; }
+@media (max-width: 600px) { .fb-qr-btn { width: 100%; min-width: 0; } .fb-photo-sec { padding-top: 18px !important; } }

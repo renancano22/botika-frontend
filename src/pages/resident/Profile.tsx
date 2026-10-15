@@ -311,10 +311,9 @@ export default function Profile() {
         <form onSubmit={submit} className="fb-form">
           {/* Profile picture on a BulanBotikaCare banner, with a camera button to change it */}
           <section className="card fb-sec fb-photo-sec">
-            <div className="fb-cover" aria-hidden="true"><span className="brand-mark">✚</span><span>BulanBotikaCare</span></div>
             <div className="fb-avatar-wrap" ref={photoBox}>
               <button type="button" className="fb-avatar" onClick={() => setPreview(true)} aria-label="View profile picture" title="View profile picture">
-                <Avatar name={form.name || user.name} photo={editPhoto} size={148} />
+                <Avatar name={form.name || user.name} photo={editPhoto} size={128} />
               </button>
               <button type="button" className="fb-camera" onClick={() => setPhotoMenu((o) => !o)} disabled={preparingPhoto || saving}
                 aria-haspopup="menu" aria-expanded={photoMenu} aria-label="Change profile picture" title="Change profile picture">
@@ -345,7 +344,7 @@ export default function Profile() {
             </div>
             <div className="fb-who">
               <strong>{form.name.trim() || user.name}</strong>
-              <small>Patient ID {resident.qr_code} · Registered {formatDate(user.created_at)}</small>
+              <small>Registered {formatDate(user.created_at)}</small>
             </div>
             {photoStatus && <p className="fb-photo-status is-pending">{photoStatus}</p>}
           </section>
@@ -448,8 +447,10 @@ export default function Profile() {
   // ------------------------------------------------------------------ My Profile
   return (
     <div className="page pf-page fb-page">
-      <header className="page-head pf-head no-print">
-        <Link to="/dashboard" className="pf-back"><Svg d={ICON.back} size={18} width={2.4} /> Back to Dashboard</Link>
+      <header className="fb-top no-print">
+        <Link to="/dashboard" className="fb-top-back" aria-label="Back to Dashboard" title="Back to Dashboard">
+          <Svg d={ICON.back} size={22} width={2.4} />
+        </Link>
         <div>
           <h1>My Profile</h1>
           <p className="muted">Your personal and account information at Botika ng Bayan.</p>
@@ -459,16 +460,18 @@ export default function Profile() {
 
       <div className="fb-form fb-view no-print">
         <section className="card fb-sec fb-photo-sec">
-          <div className="fb-cover" aria-hidden="true"><span className="brand-mark">✚</span><span>BulanBotikaCare</span></div>
           <div className="fb-avatar-wrap">
             <button type="button" className="fb-avatar" onClick={() => setPreview(true)} aria-label="View profile picture" title="View profile picture">
-              <Avatar name={user.name} photo={resident.photo} size={148} />
+              <Avatar name={user.name} photo={resident.photo} size={128} />
             </button>
           </div>
           <div className="fb-who">
             <strong>{user.name}</strong>
-            <small>Patient ID {resident.qr_code} · Registered {formatDate(user.created_at)}</small>
+            <small>Registered {formatDate(user.created_at)}</small>
           </div>
+          <button type="button" className="btn pf-qr-btn fb-qr-btn" onClick={() => setShowQr(true)}>
+            <Svg d={ICON.qr} size={18} width={2} /> View My QR Code
+          </button>
         </section>
 
         <section className="card fb-sec">
@@ -490,16 +493,6 @@ export default function Profile() {
             <SummaryRow icon={ICON.pin} label="Barangay">{data.barangay ? `${data.barangay}, Bulan, Sorsogon` : <span className="muted">Not set</span>}</SummaryRow>
             <SummaryRow icon={ICON.home} label="House no. / Street / Purok">{data.address_line || <span className="muted">Not added</span>}</SummaryRow>
           </div>
-        </section>
-
-        <section className="card pf-qr-card">
-          <div className="pf-qr-icon"><Svg d={ICON.qr} size={34} width={1.8} /></div>
-          <h2>My QR Code / Patient ID</h2>
-          <div className="pf-qr-id">{resident.qr_code}</div>
-          <p className="muted">Your personal QR code is used to verify your identity when claiming medicines at Botika ng Bayan.</p>
-          <button type="button" className="btn btn-lg pf-qr-btn" onClick={() => setShowQr(true)}>
-            <Svg d={ICON.qr} size={18} width={2} /> View My QR Code
-          </button>
         </section>
 
         <div className="fb-actions">
