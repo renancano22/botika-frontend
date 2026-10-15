@@ -1265,11 +1265,6 @@ html { scroll-behavior: auto; }
 button.pf-back { background: none; border: none; font: inherit; cursor: pointer; }
 .pf-photo-btn { flex-shrink: 0; }
 .pf-id { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: 0.03em; color: var(--text, #10201b); }
-.pf-pw-card { display: flex; align-items: flex-start; gap: 14px; }
-.pf-pw-card h2 { margin-bottom: 2px; }
-.pf-pw-card p { margin: 0; }
-.pf-pw-icon { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; background: var(--primary-50); color: var(--primary); flex-shrink: 0; }
-.pf-pw-dots { font-size: 1.1rem; letter-spacing: 0.18em; color: #33443f; line-height: 1.4; }
 .pf-bottom { display: flex; justify-content: center; padding: 4px 0 8px; }
 .pf-bottom .pf-edit-btn { min-width: 240px; justify-content: center; }
 .pf-preview { display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; }
@@ -1313,7 +1308,6 @@ button.pf-back { background: none; border: none; font: inherit; cursor: pointer;
   .pf-qr-card { padding: 16px 14px; gap: 6px; }
   .pf-qr-icon { width: 52px; height: 52px; border-radius: 14px; }
   .pf-qr-btn { padding: 10px 14px; }
-  .pf-pw-icon { width: 38px; height: 38px; }
   .pf-bottom .pf-edit-btn { width: 100%; min-width: 0; }
   .pf-edit-form { gap: 12px; }
   .pf-edit-photo { gap: 12px; align-items: flex-start; }
@@ -1325,4 +1319,71 @@ button.pf-back { background: none; border: none; font: inherit; cursor: pointer;
   .pf-confirm { padding: 20px 16px calc(16px + env(safe-area-inset-bottom)); }
   .pf-confirm h2 { font-size: 1.12rem; }
   .pf-confirm-icon { width: 50px; height: 50px; }
+}
+
+/* ---------- Edit Profile (Facebook-style sections, BulanBotikaCare colours) */
+.fb-edit { max-width: 720px; }
+.fb-top { display: flex; align-items: center; gap: 10px; }
+.fb-top h1 { margin: 0; }
+.fb-top p { margin: 0; font-size: 0.88rem; }
+.fb-top-back { width: 42px; height: 42px; flex-shrink: 0; border-radius: 50%; border: 1px solid var(--border); background: #fff; color: var(--primary); display: grid; place-items: center; cursor: pointer; box-shadow: var(--shadow-sm); }
+.fb-top-back:hover { background: var(--primary-50); }
+.fb-form { display: flex; flex-direction: column; gap: 12px; }
+.fb-form .card { margin: 0; }
+.fb-sec { padding: 14px 16px; }
+.fb-sec-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.fb-sec-head h2 { display: flex; align-items: center; gap: 8px; font-size: 1.02rem; margin: 0; flex-wrap: wrap; }
+.fb-sec-icon { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: var(--primary-50); color: var(--primary); flex-shrink: 0; }
+.fb-sec-link { border: none; background: none; font: inherit; font-weight: 700; font-size: 0.92rem; color: var(--primary); cursor: pointer; padding: 6px 10px; margin: -6px -8px -6px 0; border-radius: 8px; white-space: nowrap; }
+.fb-sec-link:hover, .fb-sec-link:focus-visible { background: var(--primary-50); }
+.fb-sec-link:disabled { color: var(--muted); cursor: default; }
+.fb-edited { font-style: normal; font-size: 0.68rem; font-weight: 700; padding: 1px 8px; border-radius: 999px; background: #fef3c7; color: #92400e; }
+.fb-optional-pill { font-size: 0.68rem; font-weight: 700; padding: 1px 8px; border-radius: 999px; background: #eef2f1; color: var(--muted); }
+.fb-sec-summary { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+.fb-sec-body { margin-top: 12px; }
+.fb-sec-body label:last-child { margin-bottom: 4px; }
+.fb-sec.is-open { border-color: color-mix(in srgb, var(--primary) 35%, white); box-shadow: 0 0 0 3px var(--primary-50), var(--shadow-sm); }
+.fb-sum { display: flex; align-items: center; gap: 10px; color: var(--muted); }
+.fb-sum svg { flex-shrink: 0; }
+.fb-sum span { display: flex; flex-direction: column; min-width: 0; }
+.fb-sum small { font-size: 0.74rem; font-weight: 600; }
+.fb-sum b { color: var(--text); font-weight: 600; overflow-wrap: anywhere; }
+.fb-pw-closed { margin: 10px 0 0; font-size: 0.88rem; color: var(--muted); }
+.fb-pw-sec .pf-pw-rules { margin-top: 2px; }
+/* profile picture on a BulanBotikaCare banner (there is no cover photo in the system) */
+.card.fb-photo-sec { overflow: visible; position: relative; z-index: 5; }
+.fb-cover { margin-top: 12px; height: 132px; border-radius: 14px; display: flex; align-items: flex-start; justify-content: flex-end; gap: 8px; padding: 12px 14px; color: rgba(255, 255, 255, 0.92); font-weight: 800; font-size: 0.86rem; letter-spacing: 0.02em;
+  background: radial-gradient(circle at 18% 30%, rgba(255, 255, 255, 0.16) 0, rgba(255, 255, 255, 0) 38%), radial-gradient(circle at 85% 110%, rgba(134, 204, 147, 0.45) 0, rgba(134, 204, 147, 0) 45%), linear-gradient(120deg, #143f1c, #1c6a2c 55%, #228b39); }
+.fb-cover .brand-mark { width: 26px; height: 26px; font-size: 0.85rem; border-radius: 8px; }
+.fb-cover span:last-child { line-height: 26px; }
+.fb-avatar-wrap { position: relative; width: 156px; margin: -78px auto 0; }
+.fb-avatar { display: block; padding: 0; border: none; background: none; border-radius: 50%; cursor: zoom-in; }
+.fb-avatar .avatar { box-shadow: 0 0 0 4px #fff, 0 6px 18px rgba(20, 63, 28, 0.18); }
+.fb-avatar .avatar-letter { font-size: 3.6rem; }
+.fb-avatar:hover .avatar { filter: brightness(0.94); }
+.fb-avatar:focus-visible { outline: 3px solid var(--primary-soft); outline-offset: 5px; }
+.fb-camera { position: absolute; right: 6px; bottom: 6px; width: 40px; height: 40px; border-radius: 50%; border: 3px solid #fff; background: #e7f2ea; color: var(--primary-dark); display: grid; place-items: center; cursor: pointer; box-shadow: var(--shadow-sm); }
+.fb-camera:hover { background: var(--primary-soft); }
+.fb-camera:disabled { opacity: 0.6; cursor: default; }
+.fb-photo-menu { left: 50%; width: 260px; min-width: 0; margin-left: -130px; top: calc(100% + 6px); } /* centred without transform (the open animation uses transform) */
+.fb-who { text-align: center; margin-top: 10px; display: flex; flex-direction: column; gap: 2px; }
+.fb-who strong { font-size: 1.2rem; }
+.fb-who small { color: var(--muted); font-size: 0.82rem; }
+.fb-photo-status { margin: 8px auto 2px; text-align: center; font-size: 0.82rem; color: var(--muted); max-width: 420px; }
+.fb-photo-status.is-pending { color: #92400e; background: #fffbeb; border: 1px solid #fde68a; border-radius: 10px; padding: 6px 10px; font-weight: 600; }
+.fb-fixed-note { margin: 0; text-align: center; }
+.fb-actions { display: flex; flex-direction: column; gap: 8px; padding: 4px 0 10px; }
+.fb-actions .btn { width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+@media (max-width: 600px) {
+  .fb-top h1 { font-size: 1.3rem; }
+  .fb-top p { font-size: 0.8rem; }
+  .fb-top-back { width: 38px; height: 38px; }
+  .pf-page .card.fb-sec { padding: 12px 14px; }
+  .fb-cover { height: 104px; }
+  .fb-avatar-wrap { width: 128px; margin-top: -64px; }
+  .fb-avatar .avatar { width: 120px !important; height: 120px !important; }
+  .fb-avatar .avatar-letter { font-size: 3rem; }
+  .fb-camera { width: 36px; height: 36px; right: 2px; bottom: 2px; }
+  .fb-photo-menu { width: 260px; max-width: none; margin-left: -130px; }
+  .fb-who strong { font-size: 1.08rem; }
 }

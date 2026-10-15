@@ -38,11 +38,53 @@ const ICON = {
   pin: 'M12 21s-7-6.5-7-12a7 7 0 0 1 14 0c0 5.5-7 12-7 12zM12 11a2 2 0 1 0 0-4 2 2 0 0 0 0 4',
   home: 'M3 11l9-7 9 7M5 10v10h14V10',
   lock: 'M6 11h12v10H6zM8 11V7a4 4 0 0 1 8 0v4',
-  shield: 'M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6zM9 12l2 2 4-4',
   save: 'M5 3h11l3 3v15H5zM8 3v5h7V3M8 21v-7h8v7',
   check: 'M5 12l5 5L20 7',
   dot: 'M12 12h.01',
+  camera: 'M4 8h3l2-3h6l2 3h3v11H4zM12 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8',
+  eye: 'M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6',
+  user: 'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8',
+  key: 'M15 7a4 4 0 1 1-3.9 4.9L3 20v-3h3v-3h3l2.1-2.1A4 4 0 0 1 15 7zM16 9h.01',
 };
+
+type Section = 'basic' | 'contact' | 'address';
+const CLOSED: Record<Section, boolean> = { basic: false, contact: false, address: false };
+
+/** One line of a collapsed Edit Profile section: icon, label and value (like Facebook's "Details"). */
+function SummaryRow({ icon, label, children }: { icon: string; label: string; children: ReactNode }) {
+  return (
+    <div className="fb-sum">
+      <Svg d={icon} size={18} />
+      <span><small>{label}</small><b>{children}</b></span>
+    </div>
+  );
+}
+
+/**
+ * Facebook-style section of Edit Profile: a title with an "Edit" link on the right. Closed, it shows the
+ * values; open, it shows the fields. "Done" closes it only when its fields are valid.
+ */
+function EditSection({ title, icon, open, edited, onToggle, summary, children }: {
+  title: string; icon: string; open: boolean; edited: boolean; onToggle: () => void; summary: ReactNode; children: ReactNode;
+}) {
+  const box = useRef<HTMLElement>(null);
+  const toggle = () => {
+    if (open) {
+      const invalid = Array.from(box.current?.querySelectorAll<HTMLInputElement | HTMLSelectElement>('input, select') ?? []).find((el) => !el.checkValidity());
+      if (invalid) { invalid.reportValidity(); return; }
+    }
+    onToggle();
+  };
+  return (
+    <section ref={box} className={`card fb-sec ${open ? 'is-open' : ''}`}>
+      <div className="fb-sec-head">
+        <h2><span className="fb-sec-icon"><Svg d={icon} size={17} /></span>{title}{edited && <em className="fb-edited">Edited</em>}</h2>
+        <button type="button" className="fb-sec-link" onClick={toggle} aria-expanded={open}>{open ? 'Done' : 'Edit'}</button>
+      </div>
+      {open ? <div className="fb-sec-body">{children}</div> : <div className="fb-sec-summary">{summary}</div>}
+    </section>
+  );
+}
 
 /** Shrinks and crops the chosen picture to a 256×256 JPEG so it uploads fast and stays small. */
 function resizePhoto(file: File, size = 256): Promise<string> {
@@ -110,6 +152,10 @@ export default function Profile() {
   const [showQr, setShowQr] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
   const formTop = useRef<HTMLDivElement>(null);
+  const [openSec, setOpenSec] = useState(CLOSED);        // Edit Profile sections that are open
+  const [pwOpen, setPwOpen] = useState(false);           // Change Password: closed by default
+  const [photoMenu, setPhotoMenu] = useState(false);     // camera button menu
+  const photoBox = useRef<HTMLDivElement>(null);
 
   // Opening Edit Profile (or after loading) starts from the saved information; password fields always start blank.
   useEffect(() => {
@@ -124,7 +170,25 @@ export default function Profile() {
     setPw(EMPTY_PW);
     setPhoto({ kind: 'keep' });
     setFormMsg(null);
+    setOpenSec(CLOSED);
+    setPwOpen(false);
+    setPhotoMenu(false);
   }, [data, editing]);
+
+  // Close the picture menu when tapping elsewhere or pressing Esc.
+  useEffect(() => {
+    if (!photoMenu) return;
+    const close = (e: MouseEvent | TouchEvent) => { if (!photoBox.current?.contains(e.target as Node)) setPhotoMenu(false); };
+    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') setPhotoMenu(false); };
+    document.addEventListener('mousedown', close);
+    document.addEventListener('touchstart', close);
+    document.addEventListener('keydown', esc);
+    return () => {
+      document.removeEventListener('mousedown', close);
+      document.removeEventListener('touchstart', close);
+      document.removeEventListener('keydown', esc);
+    };
+  }, [photoMenu]);
 
   // Esc closes the confirmation dialog (not while saving).
   useEffect(() => {
@@ -156,6 +220,18 @@ export default function Profile() {
     if (photo.kind === 'remove') list.push('Profile picture (removed)');
     return list;
   }, [data, resident, form, photo]);
+
+  const edited = {
+    basic: changes.includes('Full name'),
+    contact: changes.includes('Mobile number') || changes.includes('Gmail address'),
+    address: changes.includes('Barangay') || changes.includes('House no. / Street / Purok'),
+  };
+  const toggleSec = (k: Section) => setOpenSec((o) => ({ ...o, [k]: !o[k] }));
+  /** Closing Change Password means "keep my current password": the fields are cleared. */
+  const togglePassword = () => {
+    if (pwOpen) setPw(EMPTY_PW);
+    setPwOpen(!pwOpen);
+  };
 
   const set = (k: keyof typeof form) => (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setForm({ ...form, [k]: e.target.value });
   const setPwField = (k: keyof typeof pw) => (e: ChangeEvent<HTMLInputElement>) => setPw({ ...pw, [k]: e.target.value });
@@ -238,100 +314,172 @@ export default function Profile() {
   const { user } = data;
   const editPhoto = photo.kind === 'new' ? photo.data : photo.kind === 'remove' ? null : resident.photo;
 
+  /** Enlarged profile picture (My Profile, and Edit Profile where it can be a new picture not saved yet). */
+  const previewModal = (src: string | null | undefined, note?: string) => (
+    <Modal title="Profile Picture" onClose={() => setPreview(false)}>
+      <div className="pf-preview">
+        {src
+          ? <img src={src} alt={`Profile picture of ${user.name}`} />
+          : (
+            <>
+              <Avatar name={user.name} size={160} />
+              <p className="muted small">No profile picture yet. You can add one in Edit Profile.</p>
+            </>
+          )}
+        <strong>{user.name}</strong>
+        {note && <p className="muted small">{note}</p>}
+        <div className="modal-actions">
+          <button type="button" className="btn" onClick={() => setPreview(false)}>Close</button>
+        </div>
+      </div>
+    </Modal>
+  );
+
   // ------------------------------------------------------------------ Edit Profile
   if (editing) {
+    const photoStatus = preparingPhoto ? 'Preparing picture…'
+      : photo.kind === 'new' ? 'New picture chosen — it will be saved when you confirm your changes.'
+        : photo.kind === 'remove' ? 'Picture will be removed when you confirm your changes.'
+          : editPhoto ? 'Tap your picture to view it, or the camera to change it.' : 'Tap the camera to add a profile picture.';
     return (
-      <div className="page pf-page pf-edit">
-        <header className="page-head pf-head">
-          <button type="button" className="pf-back" onClick={closeEdit}><Svg d={ICON.back} size={18} width={2.4} /> Back to My Profile</button>
+      <div className="page pf-page fb-edit">
+        <header className="fb-top">
+          <button type="button" className="fb-top-back" onClick={closeEdit} aria-label="Back to My Profile" title="Back to My Profile">
+            <Svg d={ICON.back} size={22} width={2.4} />
+          </button>
           <div>
             <h1>Edit Profile</h1>
-            <p className="muted">Update your information, then tap Save Changes. Nothing is saved until you confirm.</p>
+            <p className="muted">Nothing is saved until you tap Save Changes and confirm.</p>
           </div>
         </header>
 
         <div ref={formTop}><Message type={formMsg?.type}>{formMsg?.text}</Message></div>
 
-        <form onSubmit={submit} className="pf-edit-form">
-          <section className="card pf-edit-photo">
-            <Avatar name={form.name || user.name} photo={editPhoto} size={72} />
-            <div className="pf-edit-photo-body">
-              <strong>Profile Picture</strong>
-              <small className="muted">
-                {preparingPhoto ? 'Preparing picture…'
-                  : photo.kind === 'new' ? 'New picture chosen. It will be saved when you confirm your changes.'
-                    : photo.kind === 'remove' ? 'The picture will be removed when you confirm your changes.'
-                      : 'JPG or PNG. It is shown in the top bar and on your profile.'}
-              </small>
-              <div className="pf-edit-photo-actions">
-                <button type="button" className="btn btn-sm btn-outline" onClick={() => fileInput.current?.click()} disabled={preparingPhoto || saving}>
-                  <Svg d={ICON.upload} size={15} /> {editPhoto ? 'Change Picture' : 'Add Picture'}
-                </button>
-                {photo.kind !== 'keep' ? (
-                  <button type="button" className="btn btn-sm btn-ghost" onClick={() => setPhoto({ kind: 'keep' })} disabled={saving}>
-                    <Svg d={ICON.undo} size={15} /> Keep current picture
-                  </button>
-                ) : resident.photo && (
-                  <button type="button" className="btn btn-sm btn-outline-danger" onClick={() => setPhoto({ kind: 'remove' })} disabled={saving}>
-                    <Svg d={ICON.trash} size={15} /> Remove
-                  </button>
-                )}
-              </div>
+        <form onSubmit={submit} className="fb-form">
+          {/* Profile picture on a BulanBotikaCare banner, with a camera button to change it */}
+          <section className="card fb-sec fb-photo-sec">
+            <div className="fb-sec-head">
+              <h2><span className="fb-sec-icon"><Svg d={ICON.camera} size={17} /></span>Profile Picture{photo.kind !== 'keep' && <em className="fb-edited">Edited</em>}</h2>
+              <button type="button" className="fb-sec-link" onClick={() => setPhotoMenu((o) => !o)} aria-haspopup="menu" aria-expanded={photoMenu}>Edit</button>
             </div>
-            <input ref={fileInput} type="file" accept="image/*" hidden onChange={choosePhoto} />
+            <div className="fb-cover" aria-hidden="true"><span className="brand-mark">✚</span><span>BulanBotikaCare</span></div>
+            <div className="fb-avatar-wrap" ref={photoBox}>
+              <button type="button" className="fb-avatar" onClick={() => setPreview(true)} aria-label="View profile picture" title="View profile picture">
+                <Avatar name={form.name || user.name} photo={editPhoto} size={148} />
+              </button>
+              <button type="button" className="fb-camera" onClick={() => setPhotoMenu((o) => !o)} disabled={preparingPhoto || saving}
+                aria-haspopup="menu" aria-expanded={photoMenu} aria-label="Change profile picture" title="Change profile picture">
+                <Svg d={ICON.camera} size={19} width={2.2} />
+              </button>
+              {photoMenu && (
+                <div className="pf-menu fb-photo-menu" role="menu">
+                  <button type="button" role="menuitem" onClick={() => { setPhotoMenu(false); setPreview(true); }}>
+                    <Svg d={ICON.eye} size={18} /> View Profile Picture
+                  </button>
+                  <button type="button" role="menuitem" onClick={() => { setPhotoMenu(false); fileInput.current?.click(); }}>
+                    <Svg d={ICON.upload} size={18} /> {editPhoto ? 'Upload New Picture' : 'Upload Picture'}
+                  </button>
+                  {photo.kind !== 'keep' && (
+                    <button type="button" role="menuitem" onClick={() => { setPhotoMenu(false); setPhoto({ kind: 'keep' }); }}>
+                      <Svg d={ICON.undo} size={18} /> Keep Current Picture
+                    </button>
+                  )}
+                  {photo.kind === 'keep' && (
+                    <button type="button" role="menuitem" className="pf-menu-danger" disabled={!resident.photo}
+                      onClick={() => { setPhotoMenu(false); setPhoto({ kind: 'remove' }); }}>
+                      <Svg d={ICON.trash} size={18} /> Remove Picture
+                    </button>
+                  )}
+                </div>
+              )}
+              <input ref={fileInput} type="file" accept="image/*" hidden onChange={choosePhoto} />
+            </div>
+            <div className="fb-who">
+              <strong>{form.name.trim() || user.name}</strong>
+              <small>Patient ID {resident.qr_code} · Registered {formatDate(user.created_at)}</small>
+            </div>
+            <p className={`fb-photo-status ${photo.kind !== 'keep' ? 'is-pending' : ''}`}>{photoStatus}</p>
           </section>
 
-          <Card title="Personal Information">
-            <div className="pf-fields">
-              <label>Full Name
-                <input value={form.name} onChange={set('name')} autoComplete="name" required maxLength={100} {...FIELD.name} />
-              </label>
-              <label>Mobile Number
-                <input type="tel" inputMode="tel" value={form.contact_no} onChange={set('contact_no')} placeholder="09XXXXXXXXX" required maxLength={16} {...FIELD.mobile} />
-              </label>
-              <label><span>Gmail Address <span className="pf-optional">(optional)</span></span>
-                <input type="email" value={form.email} onChange={set('email')} placeholder="name@gmail.com" autoComplete="email" maxLength={255} {...FIELD.gmail} />
-              </label>
-              <label>Barangay
-                <select value={form.barangay} onChange={set('barangay')} required>
-                  <option value="">{barangays ? 'Select your barangay…' : 'Loading barangays…'}</option>
-                  {barangays?.map((b) => <option key={b} value={b}>{b}</option>)}
-                </select>
-              </label>
-              <label className="pf-field-wide"><span>House Number / Street / Purok <span className="pf-optional">(optional)</span></span>
-                <input value={form.address_line} onChange={set('address_line')} maxLength={120} placeholder="e.g. Purok 3, Rizal St." />
-              </label>
-            </div>
-            <p className="field-hint pf-fixed-note">Your Patient ID and registration date cannot be changed.</p>
-          </Card>
+          <EditSection title="Name" icon={ICON.user} open={openSec.basic} edited={edited.basic} onToggle={() => toggleSec('basic')}
+            summary={<SummaryRow icon={ICON.user} label="Full name">{form.name}</SummaryRow>}>
+            <label>Full Name
+              <input value={form.name} onChange={set('name')} autoComplete="name" required maxLength={100} {...FIELD.name} />
+            </label>
+          </EditSection>
 
-          <Card title="Change Password (optional)">
-            <p className="pf-pw-note"><Svg d={ICON.lock} size={16} /> Leave these fields blank to keep your current password.</p>
-            <div className="pf-fields">
-              <label className="pf-field-wide">Current Password
-                <PasswordInput value={pw.current_password} onChange={setPwField('current_password')} autoComplete="current-password" maxLength={100} />
-              </label>
-              <label>New Password
-                <PasswordInput value={pw.password} onChange={setPwField('password')} autoComplete="new-password" maxLength={100} />
-              </label>
-              <label>Confirm New Password
-                <PasswordInput value={pw.password_confirmation} onChange={setPwField('password_confirmation')} autoComplete="new-password" maxLength={100} />
-              </label>
-            </div>
-            <ul className={`pf-pw-rules ${pw.password || pw.password_confirmation ? 'is-active' : ''}`} aria-label="Password requirements">
-              {pwChecks.map((c) => (
-                <li key={c.text} className={c.ok ? 'ok' : ''}>
-                  <Svg d={c.ok ? ICON.check : ICON.dot} size={14} width={c.ok ? 3 : 6} /> {c.text}
-                </li>
-              ))}
-            </ul>
-          </Card>
+          <EditSection title="Contact Information" icon={ICON.phone} open={openSec.contact} edited={edited.contact} onToggle={() => toggleSec('contact')}
+            summary={(
+              <>
+                <SummaryRow icon={ICON.phone} label="Contact number">{form.contact_no}</SummaryRow>
+                <SummaryRow icon={ICON.mail} label="Email address">{form.email || <span className="muted">Not added</span>}</SummaryRow>
+              </>
+            )}>
+            <label><span>Contact Number <span className="pf-optional">(used for log in and SMS updates)</span></span>
+              <input type="tel" inputMode="tel" value={form.contact_no} onChange={set('contact_no')} placeholder="09XXXXXXXXX" required maxLength={16} {...FIELD.mobile} />
+            </label>
+            <label><span>Email Address <span className="pf-optional">(Gmail, optional)</span></span>
+              <input type="email" value={form.email} onChange={set('email')} placeholder="name@gmail.com" autoComplete="email" maxLength={255} {...FIELD.gmail} />
+            </label>
+          </EditSection>
 
-          <div className="pf-form-actions pf-edit-actions">
-            <button type="button" className="btn btn-outline" onClick={closeEdit} disabled={saving}>Cancel</button>
-            <button className="btn" disabled={saving || preparingPhoto}>{saving ? 'Saving…' : 'Save Changes'}</button>
+          <EditSection title="Address" icon={ICON.pin} open={openSec.address} edited={edited.address} onToggle={() => toggleSec('address')}
+            summary={(
+              <>
+                <SummaryRow icon={ICON.pin} label="Barangay">{form.barangay ? `${form.barangay}, Bulan, Sorsogon` : <span className="muted">Not set</span>}</SummaryRow>
+                <SummaryRow icon={ICON.home} label="House no. / Street / Purok">{form.address_line || <span className="muted">Not added</span>}</SummaryRow>
+              </>
+            )}>
+            <label>Barangay
+              <select value={form.barangay} onChange={set('barangay')} required>
+                <option value="">{barangays ? 'Select your barangay…' : 'Loading barangays…'}</option>
+                {barangays?.map((b) => <option key={b} value={b}>{b}</option>)}
+              </select>
+            </label>
+            <label><span>House Number / Street / Purok <span className="pf-optional">(optional)</span></span>
+              <input value={form.address_line} onChange={set('address_line')} maxLength={120} placeholder="e.g. Purok 3, Rizal St." />
+            </label>
+          </EditSection>
+
+          {/* Optional and closed by default; closing it keeps the current password (the fields are cleared). */}
+          <section className={`card fb-sec fb-pw-sec ${pwOpen ? 'is-open' : ''}`}>
+            <div className="fb-sec-head">
+              <h2><span className="fb-sec-icon"><Svg d={ICON.key} size={17} /></span>Change Password <span className="fb-optional-pill">Optional</span></h2>
+              <button type="button" className="fb-sec-link" onClick={togglePassword} aria-expanded={pwOpen}>{pwOpen ? "Don't change" : 'Change'}</button>
+            </div>
+            {!pwOpen ? (
+              <p className="fb-sec-summary fb-pw-closed">Leave this closed to keep your current password.</p>
+            ) : (
+              <div className="fb-sec-body">
+                <label>Current Password
+                  <PasswordInput value={pw.current_password} onChange={setPwField('current_password')} autoComplete="current-password" maxLength={100} autoFocus />
+                </label>
+                <label>New Password
+                  <PasswordInput value={pw.password} onChange={setPwField('password')} autoComplete="new-password" maxLength={100} />
+                </label>
+                <label>Confirm New Password
+                  <PasswordInput value={pw.password_confirmation} onChange={setPwField('password_confirmation')} autoComplete="new-password" maxLength={100} />
+                </label>
+                <ul className={`pf-pw-rules ${pw.password || pw.password_confirmation ? 'is-active' : ''}`} aria-label="Password requirements">
+                  {pwChecks.map((c) => (
+                    <li key={c.text} className={c.ok ? 'ok' : ''}>
+                      <Svg d={c.ok ? ICON.check : ICON.dot} size={14} width={c.ok ? 3 : 6} /> {c.text}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </section>
+
+          <p className="fb-fixed-note muted small">Your Patient ID and registration date cannot be changed.</p>
+
+          <div className="fb-actions">
+            <button className="btn btn-lg" disabled={saving || preparingPhoto}><Svg d={ICON.save} size={18} /> {saving ? 'Saving…' : 'Save Changes'}</button>
+            <button type="button" className="btn btn-outline btn-lg" onClick={closeEdit} disabled={saving}>Cancel</button>
           </div>
         </form>
+
+        {preview && previewModal(editPhoto, photo.kind === 'new' ? 'New picture — not saved yet.' : undefined)}
 
         {confirming && (
           <div className="modal-backdrop" onMouseDown={() => !savingRef.current && setConfirming(false)}>
@@ -407,15 +555,6 @@ export default function Profile() {
         </section>
       </div>
 
-      <section className="card pf-pw-card no-print">
-        <span className="pf-pw-icon"><Svg d={ICON.shield} size={22} /></span>
-        <div>
-          <h2>Password</h2>
-          <p className="pf-pw-dots" aria-label="Password hidden">••••••••</p>
-          <p className="muted small">Your password is securely protected. It is stored encrypted and is never shown to anyone. You can change it in Edit Profile.</p>
-        </div>
-      </section>
-
       {/* Printed copy (only on paper): QR code, Patient ID, name and address. */}
       <div className="print-only pf-qr-print">
         <QRCodeSVG value={resident.qr_code} size={200} marginSize={2} />
@@ -428,24 +567,7 @@ export default function Profile() {
         <button type="button" className="btn btn-lg pf-edit-btn" onClick={openEdit}><Svg d={ICON.edit} size={18} /> Edit Profile</button>
       </div>
 
-      {preview && (
-        <Modal title="Profile Picture" onClose={() => setPreview(false)}>
-          <div className="pf-preview">
-            {resident.photo
-              ? <img src={resident.photo} alt={`Profile picture of ${user.name}`} />
-              : (
-                <>
-                  <Avatar name={user.name} size={160} />
-                  <p className="muted small">No profile picture yet. You can add one in Edit Profile.</p>
-                </>
-              )}
-            <strong>{user.name}</strong>
-            <div className="modal-actions">
-              <button type="button" className="btn" onClick={() => setPreview(false)}>Close</button>
-            </div>
-          </div>
-        </Modal>
-      )}
+      {preview && previewModal(resident.photo)}
 
       {showQr && (
         <Modal title="My QR Code" onClose={() => setShowQr(false)}>
