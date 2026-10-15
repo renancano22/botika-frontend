@@ -1260,3 +1260,69 @@ html { scroll-behavior: auto; }
 .drawer-profile { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; color: inherit; text-decoration: none; border-radius: 12px; padding: 4px 6px; margin: -4px -6px; }
 .drawer-profile:hover, .drawer-profile:focus-visible { background: rgba(255, 255, 255, 0.1); }
 .drawer-profile .drawer-user strong, .drawer-profile .drawer-user small { display: block; }
+
+/* ---------- My Profile (view) and Edit Profile */
+button.pf-back { background: none; border: none; font: inherit; cursor: pointer; }
+.pf-photo-btn { flex-shrink: 0; }
+.pf-id { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: 0.03em; color: var(--text, #10201b); }
+.pf-pw-card { display: flex; align-items: flex-start; gap: 14px; }
+.pf-pw-card h2 { margin-bottom: 2px; }
+.pf-pw-card p { margin: 0; }
+.pf-pw-icon { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; background: var(--primary-50); color: var(--primary); flex-shrink: 0; }
+.pf-pw-dots { font-size: 1.1rem; letter-spacing: 0.18em; color: #33443f; line-height: 1.4; }
+.pf-bottom { display: flex; justify-content: center; padding: 4px 0 8px; }
+.pf-bottom .pf-edit-btn { min-width: 240px; justify-content: center; }
+.pf-preview { display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; }
+.pf-preview img { display: block; width: min(420px, 100%); max-height: 62vh; aspect-ratio: 1; object-fit: cover; border-radius: 16px; border: 1px solid var(--border); background: #fff; }
+.pf-preview .avatar-letter { font-size: 4rem; }
+.pf-preview p { margin: 0; }
+.pf-preview .modal-actions { width: 100%; }
+.pf-edit-form { display: flex; flex-direction: column; gap: 16px; }
+.pf-edit-form .card { margin: 0; }
+.pf-edit-photo { display: flex; align-items: center; gap: 16px; }
+.pf-edit-photo-body { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.pf-edit-photo-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+.pf-edit-photo-actions .btn { display: inline-flex; align-items: center; gap: 6px; }
+.pf-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 14px; }
+.pf-fields .pf-field-wide { grid-column: 1 / -1; }
+.pf-optional { color: var(--muted); font-weight: 400; }
+.pf-fixed-note { margin: 0; }
+.pf-pw-note { display: flex; align-items: center; gap: 8px; margin: 0 0 12px; padding: 9px 12px; border-radius: 10px; background: var(--primary-50); color: var(--primary-dark); font-size: 0.86rem; font-weight: 500; }
+.pf-pw-note svg { flex-shrink: 0; }
+.pf-pw-rules { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 14px; font-size: 0.82rem; color: var(--muted); }
+.pf-pw-rules li { display: flex; align-items: center; gap: 6px; }
+.pf-pw-rules.is-active li:not(.ok) { color: #b45309; }
+.pf-pw-rules li.ok { color: var(--ok); font-weight: 600; }
+.pf-edit-actions { padding: 4px 0 8px; }
+.pf-edit-actions .btn { min-width: 140px; }
+.pf-confirm { max-width: 420px; }
+.pf-confirm-icon { background: var(--primary-soft); color: var(--primary); width: 60px; height: 60px; }
+.pf-confirm-list { list-style: none; margin: 4px 0 0; padding: 10px 12px; width: 100%; text-align: left; display: flex; flex-direction: column; gap: 4px; border-radius: 12px; background: #f6f9f7; border: 1px solid var(--border); font-size: 0.9rem; font-weight: 600; }
+.pf-confirm-list li { display: flex; align-items: center; gap: 8px; }
+.pf-confirm-list svg { color: var(--primary); flex-shrink: 0; }
+.pf-confirm-pw { display: flex; gap: 8px; align-items: flex-start; text-align: left; width: 100%; margin-top: 6px !important; padding: 10px 12px; border-radius: 12px; background: #fff7ed; border: 1px solid #fed7aa; color: #9a3412; font-size: 0.88rem; }
+.pf-confirm-pw svg { flex-shrink: 0; margin-top: 2px; }
+@media (max-width: 600px) {
+  .pf-page .card { padding: 14px; }
+  .pf-page .card-head { margin-bottom: 8px; }
+  .pf-page h1 { font-size: 1.35rem; }
+  .pf-head .muted { font-size: 0.86rem; }
+  .profile-who h2 { font-size: 1.15rem; }
+  .pf-info-row { padding: 9px 0; gap: 10px; }
+  .pf-info-icon { width: 30px; height: 30px; }
+  .pf-qr-card { padding: 16px 14px; gap: 6px; }
+  .pf-qr-icon { width: 52px; height: 52px; border-radius: 14px; }
+  .pf-qr-btn { padding: 10px 14px; }
+  .pf-pw-icon { width: 38px; height: 38px; }
+  .pf-bottom .pf-edit-btn { width: 100%; min-width: 0; }
+  .pf-edit-form { gap: 12px; }
+  .pf-edit-photo { gap: 12px; align-items: flex-start; }
+  .pf-edit-photo .avatar { width: 60px !important; height: 60px !important; }
+  .pf-fields { grid-template-columns: minmax(0, 1fr); }
+  .pf-fields label { margin-bottom: 10px; }
+  .pf-pw-rules { grid-template-columns: minmax(0, 1fr); }
+  .pf-edit-actions .btn { flex: 1; min-width: 0; }
+  .pf-confirm { padding: 20px 16px calc(16px + env(safe-area-inset-bottom)); }
+  .pf-confirm h2 { font-size: 1.12rem; }
+  .pf-confirm-icon { width: 50px; height: 50px; }
+}
