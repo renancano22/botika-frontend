@@ -4,7 +4,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { api, errorMessage, formatDate } from '../../api';
 import { useAuth } from '../../auth';
 import { useApi } from '../../hooks';
-import { Avatar, Card, Loading, Message, Modal, PasswordInput } from '../../components/ui';
+import { Avatar, Loading, Message, Modal, PasswordInput } from '../../components/ui';
 import { Svg } from '../../components/RequestCards';
 import type { User } from '../../types';
 import { FIELD } from '../../validation';
@@ -47,42 +47,13 @@ const ICON = {
   key: 'M15 7a4 4 0 1 1-3.9 4.9L3 20v-3h3v-3h3l2.1-2.1A4 4 0 0 1 15 7zM16 9h.01',
 };
 
-type Section = 'basic' | 'contact' | 'address';
-const CLOSED: Record<Section, boolean> = { basic: false, contact: false, address: false };
-
-/** One line of a collapsed Edit Profile section: icon, label and value (like Facebook's "Details"). */
+/** One line of profile information: icon, label and value. */
 function SummaryRow({ icon, label, children }: { icon: string; label: string; children: ReactNode }) {
   return (
     <div className="fb-sum">
       <Svg d={icon} size={18} />
       <span><small>{label}</small><b>{children}</b></span>
     </div>
-  );
-}
-
-/**
- * Facebook-style section of Edit Profile: a title with an "Edit" link on the right. Closed, it shows the
- * values; open, it shows the fields. "Done" closes it only when its fields are valid.
- */
-function EditSection({ title, icon, open, edited, onToggle, summary, children }: {
-  title: string; icon: string; open: boolean; edited: boolean; onToggle: () => void; summary: ReactNode; children: ReactNode;
-}) {
-  const box = useRef<HTMLElement>(null);
-  const toggle = () => {
-    if (open) {
-      const invalid = Array.from(box.current?.querySelectorAll<HTMLInputElement | HTMLSelectElement>('input, select') ?? []).find((el) => !el.checkValidity());
-      if (invalid) { invalid.reportValidity(); return; }
-    }
-    onToggle();
-  };
-  return (
-    <section ref={box} className={`card fb-sec ${open ? 'is-open' : ''}`}>
-      <div className="fb-sec-head">
-        <h2><span className="fb-sec-icon"><Svg d={icon} size={17} /></span>{title}{edited && <em className="fb-edited">Edited</em>}</h2>
-        <button type="button" className="fb-sec-link" onClick={toggle} aria-expanded={open}>{open ? 'Done' : 'Edit'}</button>
-      </div>
-      {open ? <div className="fb-sec-body">{children}</div> : <div className="fb-sec-summary">{summary}</div>}
-    </section>
   );
 }
 
@@ -115,16 +86,6 @@ const normalizePhone = (v: string) => {
   return d.startsWith('63') ? `0${d.slice(2)}` : d;
 };
 
-/** One line of personal information: icon, label and value. */
-function InfoRow({ icon, label, children }: { icon: string; label: string; children: ReactNode }) {
-  return (
-    <div className="pf-info-row">
-      <span className="pf-info-icon"><Svg d={icon} size={18} /></span>
-      <div><dt>{label}</dt><dd>{children}</dd></div>
-    </div>
-  );
-}
-
 /**
  * Resident "My Profile" (view) and "Edit Profile" (?edit=1).
  * Nothing in Edit Profile is saved until the resident confirms it in the "Save changes?" dialog;
@@ -152,7 +113,6 @@ export default function Profile() {
   const [showQr, setShowQr] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
   const formTop = useRef<HTMLDivElement>(null);
-  const [openSec, setOpenSec] = useState(CLOSED);        // Edit Profile sections that are open
   const [pwOpen, setPwOpen] = useState(false);           // Change Password: closed by default
   const [photoMenu, setPhotoMenu] = useState(false);     // camera button menu
   const photoBox = useRef<HTMLDivElement>(null);
@@ -170,7 +130,6 @@ export default function Profile() {
     setPw(EMPTY_PW);
     setPhoto({ kind: 'keep' });
     setFormMsg(null);
-    setOpenSec(CLOSED);
     setPwOpen(false);
     setPhotoMenu(false);
   }, [data, editing]);
@@ -221,12 +180,6 @@ export default function Profile() {
     return list;
   }, [data, resident, form, photo]);
 
-  const edited = {
-    basic: changes.includes('Full name'),
-    contact: changes.includes('Mobile number') || changes.includes('Gmail address'),
-    address: changes.includes('Barangay') || changes.includes('House no. / Street / Purok'),
-  };
-  const toggleSec = (k: Section) => setOpenSec((o) => ({ ...o, [k]: !o[k] }));
   /** Closing Change Password means "keep my current password": the fields are cleared. */
   const togglePassword = () => {
     if (pwOpen) setPw(EMPTY_PW);
@@ -337,10 +290,10 @@ export default function Profile() {
 
   // ------------------------------------------------------------------ Edit Profile
   if (editing) {
+    // Shown only while a picture change is waiting to be saved.
     const photoStatus = preparingPhoto ? 'Preparing picture…'
       : photo.kind === 'new' ? 'New picture chosen — it will be saved when you confirm your changes.'
-        : photo.kind === 'remove' ? 'Picture will be removed when you confirm your changes.'
-          : editPhoto ? 'Tap your picture to view it, or the camera to change it.' : 'Tap the camera to add a profile picture.';
+        : photo.kind === 'remove' ? 'Picture will be removed when you confirm your changes.' : '';
     return (
       <div className="page pf-page fb-edit">
         <header className="fb-top">
@@ -358,10 +311,6 @@ export default function Profile() {
         <form onSubmit={submit} className="fb-form">
           {/* Profile picture on a BulanBotikaCare banner, with a camera button to change it */}
           <section className="card fb-sec fb-photo-sec">
-            <div className="fb-sec-head">
-              <h2><span className="fb-sec-icon"><Svg d={ICON.camera} size={17} /></span>Profile Picture{photo.kind !== 'keep' && <em className="fb-edited">Edited</em>}</h2>
-              <button type="button" className="fb-sec-link" onClick={() => setPhotoMenu((o) => !o)} aria-haspopup="menu" aria-expanded={photoMenu}>Edit</button>
-            </div>
             <div className="fb-cover" aria-hidden="true"><span className="brand-mark">✚</span><span>BulanBotikaCare</span></div>
             <div className="fb-avatar-wrap" ref={photoBox}>
               <button type="button" className="fb-avatar" onClick={() => setPreview(true)} aria-label="View profile picture" title="View profile picture">
@@ -398,48 +347,34 @@ export default function Profile() {
               <strong>{form.name.trim() || user.name}</strong>
               <small>Patient ID {resident.qr_code} · Registered {formatDate(user.created_at)}</small>
             </div>
-            <p className={`fb-photo-status ${photo.kind !== 'keep' ? 'is-pending' : ''}`}>{photoStatus}</p>
+            {photoStatus && <p className="fb-photo-status is-pending">{photoStatus}</p>}
           </section>
 
-          <EditSection title="Name" icon={ICON.user} open={openSec.basic} edited={edited.basic} onToggle={() => toggleSec('basic')}
-            summary={<SummaryRow icon={ICON.user} label="Full name">{form.name}</SummaryRow>}>
-            <label>Full Name
-              <input value={form.name} onChange={set('name')} autoComplete="name" required maxLength={100} {...FIELD.name} />
-            </label>
-          </EditSection>
-
-          <EditSection title="Contact Information" icon={ICON.phone} open={openSec.contact} edited={edited.contact} onToggle={() => toggleSec('contact')}
-            summary={(
-              <>
-                <SummaryRow icon={ICON.phone} label="Contact number">{form.contact_no}</SummaryRow>
-                <SummaryRow icon={ICON.mail} label="Email address">{form.email || <span className="muted">Not added</span>}</SummaryRow>
-              </>
-            )}>
-            <label><span>Contact Number <span className="pf-optional">(used for log in and SMS updates)</span></span>
-              <input type="tel" inputMode="tel" value={form.contact_no} onChange={set('contact_no')} placeholder="09XXXXXXXXX" required maxLength={16} {...FIELD.mobile} />
-            </label>
-            <label><span>Email Address <span className="pf-optional">(Gmail, optional)</span></span>
-              <input type="email" value={form.email} onChange={set('email')} placeholder="name@gmail.com" autoComplete="email" maxLength={255} {...FIELD.gmail} />
-            </label>
-          </EditSection>
-
-          <EditSection title="Address" icon={ICON.pin} open={openSec.address} edited={edited.address} onToggle={() => toggleSec('address')}
-            summary={(
-              <>
-                <SummaryRow icon={ICON.pin} label="Barangay">{form.barangay ? `${form.barangay}, Bulan, Sorsogon` : <span className="muted">Not set</span>}</SummaryRow>
-                <SummaryRow icon={ICON.home} label="House no. / Street / Purok">{form.address_line || <span className="muted">Not added</span>}</SummaryRow>
-              </>
-            )}>
-            <label>Barangay
-              <select value={form.barangay} onChange={set('barangay')} required>
-                <option value="">{barangays ? 'Select your barangay…' : 'Loading barangays…'}</option>
-                {barangays?.map((b) => <option key={b} value={b}>{b}</option>)}
-              </select>
-            </label>
-            <label><span>House Number / Street / Purok <span className="pf-optional">(optional)</span></span>
-              <input value={form.address_line} onChange={set('address_line')} maxLength={120} placeholder="e.g. Purok 3, Rizal St." />
-            </label>
-          </EditSection>
+          <section className="card fb-sec">
+            <div className="fb-sec-head">
+              <h2><span className="fb-sec-icon"><Svg d={ICON.user} size={17} /></span>Personal Information</h2>
+            </div>
+            <div className="fb-sec-body pf-fields">
+              <label className="pf-field-wide">Full Name
+                <input value={form.name} onChange={set('name')} autoComplete="name" required maxLength={100} {...FIELD.name} />
+              </label>
+              <label><span>Contact Number <span className="pf-optional">(for log in and SMS)</span></span>
+                <input type="tel" inputMode="tel" value={form.contact_no} onChange={set('contact_no')} placeholder="09XXXXXXXXX" required maxLength={16} {...FIELD.mobile} />
+              </label>
+              <label><span>Email Address <span className="pf-optional">(Gmail, optional)</span></span>
+                <input type="email" value={form.email} onChange={set('email')} placeholder="name@gmail.com" autoComplete="email" maxLength={255} {...FIELD.gmail} />
+              </label>
+              <label>Barangay
+                <select value={form.barangay} onChange={set('barangay')} required>
+                  <option value="">{barangays ? 'Select your barangay…' : 'Loading barangays…'}</option>
+                  {barangays?.map((b) => <option key={b} value={b}>{b}</option>)}
+                </select>
+              </label>
+              <label><span>House Number / Street / Purok <span className="pf-optional">(optional)</span></span>
+                <input value={form.address_line} onChange={set('address_line')} maxLength={120} placeholder="e.g. Purok 3, Rizal St." />
+              </label>
+            </div>
+          </section>
 
           {/* Optional and closed by default; closing it keeps the current password (the fields are cleared). */}
           <section className={`card fb-sec fb-pw-sec ${pwOpen ? 'is-open' : ''}`}>
@@ -512,7 +447,7 @@ export default function Profile() {
 
   // ------------------------------------------------------------------ My Profile
   return (
-    <div className="page pf-page">
+    <div className="page pf-page fb-page">
       <header className="page-head pf-head no-print">
         <Link to="/dashboard" className="pf-back"><Svg d={ICON.back} size={18} width={2.4} /> Back to Dashboard</Link>
         <div>
@@ -522,27 +457,40 @@ export default function Profile() {
       </header>
       <div className="no-print"><Message type={notice?.type}>{notice?.text}</Message></div>
 
-      <section className="card profile-head no-print">
-        <button type="button" className="pf-photo-btn" onClick={() => setPreview(true)} aria-label="View profile picture" title="View profile picture">
-          <Avatar name={user.name} photo={resident.photo} size={96} />
-          <span className="pf-photo-badge" aria-hidden="true"><Svg d={ICON.zoom} size={16} width={2.2} /></span>
-        </button>
-        <div className="profile-who">
-          <h2>{user.name}</h2>
-          <p className="muted">Patient ID <b className="pf-id">{resident.qr_code}</b></p>
-          <p className="muted">Registered {formatDate(user.created_at)}</p>
-        </div>
-      </section>
+      <div className="fb-form fb-view no-print">
+        <section className="card fb-sec fb-photo-sec">
+          <div className="fb-cover" aria-hidden="true"><span className="brand-mark">✚</span><span>BulanBotikaCare</span></div>
+          <div className="fb-avatar-wrap">
+            <button type="button" className="fb-avatar" onClick={() => setPreview(true)} aria-label="View profile picture" title="View profile picture">
+              <Avatar name={user.name} photo={resident.photo} size={148} />
+            </button>
+          </div>
+          <div className="fb-who">
+            <strong>{user.name}</strong>
+            <small>Patient ID {resident.qr_code} · Registered {formatDate(user.created_at)}</small>
+          </div>
+        </section>
 
-      <div className="grid-2 pf-grid no-print">
-        <Card title="Personal Information">
-          <dl className="pf-info">
-            <InfoRow icon={ICON.phone} label="Mobile number">{resident.contact_no}</InfoRow>
-            <InfoRow icon={ICON.mail} label="Gmail address">{user.email || <span className="muted">Not added</span>}</InfoRow>
-            <InfoRow icon={ICON.pin} label="Barangay">{data.barangay ? `${data.barangay}, Bulan, Sorsogon` : <span className="muted">Not set</span>}</InfoRow>
-            <InfoRow icon={ICON.home} label="House no. / Street / Purok">{data.address_line || <span className="muted">Not added</span>}</InfoRow>
-          </dl>
-        </Card>
+        <section className="card fb-sec">
+          <div className="fb-sec-head"><h2><span className="fb-sec-icon"><Svg d={ICON.user} size={17} /></span>Name</h2></div>
+          <div className="fb-sec-summary"><SummaryRow icon={ICON.user} label="Full name">{user.name}</SummaryRow></div>
+        </section>
+
+        <section className="card fb-sec">
+          <div className="fb-sec-head"><h2><span className="fb-sec-icon"><Svg d={ICON.phone} size={17} /></span>Contact Information</h2></div>
+          <div className="fb-sec-summary">
+            <SummaryRow icon={ICON.phone} label="Contact number">{resident.contact_no}</SummaryRow>
+            <SummaryRow icon={ICON.mail} label="Email address">{user.email || <span className="muted">Not added</span>}</SummaryRow>
+          </div>
+        </section>
+
+        <section className="card fb-sec">
+          <div className="fb-sec-head"><h2><span className="fb-sec-icon"><Svg d={ICON.pin} size={17} /></span>Address</h2></div>
+          <div className="fb-sec-summary">
+            <SummaryRow icon={ICON.pin} label="Barangay">{data.barangay ? `${data.barangay}, Bulan, Sorsogon` : <span className="muted">Not set</span>}</SummaryRow>
+            <SummaryRow icon={ICON.home} label="House no. / Street / Purok">{data.address_line || <span className="muted">Not added</span>}</SummaryRow>
+          </div>
+        </section>
 
         <section className="card pf-qr-card">
           <div className="pf-qr-icon"><Svg d={ICON.qr} size={34} width={1.8} /></div>
@@ -553,6 +501,10 @@ export default function Profile() {
             <Svg d={ICON.qr} size={18} width={2} /> View My QR Code
           </button>
         </section>
+
+        <div className="fb-actions">
+          <button type="button" className="btn btn-lg" onClick={openEdit}><Svg d={ICON.edit} size={18} /> Edit Profile</button>
+        </div>
       </div>
 
       {/* Printed copy (only on paper): QR code, Patient ID, name and address. */}
@@ -561,10 +513,6 @@ export default function Profile() {
         <div className="patient-id">{resident.qr_code}</div>
         <p>{user.name} · {resident.address}</p>
         <p>Show this QR code to the pharmacy staff when claiming your medicines.</p>
-      </div>
-
-      <div className="pf-bottom no-print">
-        <button type="button" className="btn btn-lg pf-edit-btn" onClick={openEdit}><Svg d={ICON.edit} size={18} /> Edit Profile</button>
       </div>
 
       {preview && previewModal(resident.photo)}

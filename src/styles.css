@@ -1387,3 +1387,7 @@ button.pf-back { background: none; border: none; font: inherit; cursor: pointer;
   .fb-photo-menu { width: 260px; max-width: none; margin-left: -130px; }
   .fb-who strong { font-size: 1.08rem; }
 }
+/* My Profile uses the same cards as Edit Profile (read-only, one Edit Profile button at the bottom) */
+.fb-page { max-width: 720px; }
+.fb-photo-sec .fb-cover:first-child { margin-top: 0; }
+.fb-view .fb-who { padding-bottom: 4px; }
