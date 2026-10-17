@@ -1497,3 +1497,26 @@ a.db-person:hover { background: rgba(255, 255, 255, 0.2); }
 .auth-card .page-title h1 { margin: 0; }
 @media (max-width: 480px) { .back-btn { width: 36px; height: 36px; } .page-title { gap: 8px; } }
 @media print { .back-btn { display: none !important; } }
+
+/* ---------- Admin / staff dashboard on phones: compact green header and summary panel (desktop unchanged) */
+@media (max-width: 600px) {
+  .db-hero { padding: 16px; gap: 14px; border-radius: 16px; }
+  .db-hero > div:first-child { width: 100%; }
+  .db-hero h1 { font-size: 1.28rem; line-height: 1.2; margin-bottom: 2px; }
+  .db-hero > div > .muted { font-size: 0.8rem; margin: 0; }
+  .db-hero .db-people { gap: 6px; margin-top: 10px; }
+  .db-hero .db-person { padding: 3px 9px; gap: 5px; font-size: 0.76rem; white-space: nowrap; }
+  .db-hero .db-person svg { width: 14px; height: 14px; }
+  .db-hero .actions { width: 100%; gap: 8px; }
+  .db-hero .actions .btn { flex: 1 1 130px; min-width: 0; min-height: 44px; padding: 8px 10px; font-size: 0.88rem;
+    display: inline-flex; align-items: center; justify-content: center; text-align: center; white-space: nowrap; }
+
+  .db-panel-head { flex-wrap: nowrap; margin-bottom: 10px; }
+  .db-panel-head h2 { font-size: 0.95rem; min-width: 0; }
+  .db-more { font-size: 0.8rem; white-space: nowrap; flex-shrink: 0; }
+  .db-req-item { padding: 10px 12px; gap: 2px; }
+  .db-req-label { font-size: 0.8rem; line-height: 1.25; }
+  .db-req-value { font-size: 1.5rem; }
+  .db-req-hint { align-items: flex-start; font-size: 0.74rem; line-height: 1.3; }
+  .db-dot { margin-top: 4px; }
+}

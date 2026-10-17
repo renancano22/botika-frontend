@@ -41,7 +41,7 @@ export default function OperationsDashboard() {
 
   return (
     <div className="page">
-      <header className="page-head hero-head">
+      <header className="page-head hero-head db-hero">
         <div>
           <h1>{isAdmin ? 'Administrator Dashboard' : 'Pharmacy Staff Dashboard'}</h1>
           <p className="muted">Live overview · updates every 30 seconds</p>
