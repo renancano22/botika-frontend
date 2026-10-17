@@ -7,7 +7,6 @@ import { Badge, Card, Empty, Loading, Message } from '../../components/ui';
 import type { Alerts, MedicineRequest } from '../../types';
 import { ExpiryBanner, expiryText } from '../../components/ExpiryAlerts';
 import { ICONS, PickupCountdown, Svg } from '../../components/RequestCards';
-import BackButton from '../../components/BackButton';
 
 interface OpsDashboard {
   counts: Record<string, number>;
@@ -44,7 +43,7 @@ export default function OperationsDashboard() {
     <div className="page">
       <header className="page-head hero-head">
         <div>
-          <div className="page-title"><BackButton light onlyWithHistory /><h1>{isAdmin ? 'Administrator Dashboard' : 'Pharmacy Staff Dashboard'}</h1></div>
+          <h1>{isAdmin ? 'Administrator Dashboard' : 'Pharmacy Staff Dashboard'}</h1>
           <p className="muted">Live overview · updates every 30 seconds</p>
           <People residents={c.residents} staff={c.staff ?? 0} links={isAdmin} />
         </div>

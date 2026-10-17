@@ -61,7 +61,7 @@ export default function DispensingRecords() {
     <div className="page dr-page">
       <header className="page-head">
         <div>
-          <div className="page-title"><BackButton /><h1>{isResident ? 'My Medicine History' : 'Dispensing Records'}</h1></div>
+          <div className="page-title"><BackButton linkedOnly /><h1>{isResident ? 'My Medicine History' : 'Dispensing Records'}</h1></div>
           <p className="muted">
             {isResident ? 'Medicines you received from Botika ng Bayan, newest first.' : 'Every release of medicine to a resident, newest first.'}
           </p>

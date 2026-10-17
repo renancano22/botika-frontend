@@ -317,7 +317,7 @@ export default function ResidentMedicines() {
     <div className="page page-with-bar">
       <header className="page-head">
         <div>
-          <div className="page-title"><BackButton /><h1>Check Medicine Availability</h1></div>
+          <div className="page-title"><BackButton linkedOnly /><h1>Check Medicine Availability</h1></div>
           <p className="muted">Add available medicines to your request. If a medicine is out of stock, send a restock request.</p>
         </div>
       </header>

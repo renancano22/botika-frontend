@@ -342,7 +342,7 @@ export default function Forecasting() {
     <div className="page fc-page">
       <header className="page-head fc-head">
         <div className="fc-title">
-          <BackButton />
+          <BackButton linkedOnly />
           <span className="fc-title-icon"><Svg d={ICON.bars} size={26} width={2.6} /></span>
           <div>
             <h1>Demand Forecasting</h1>

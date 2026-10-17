@@ -500,7 +500,7 @@ export default function Profile() {
   return (
     <div className="page pf-page fb-page">
       <header className="fb-top no-print">
-        <BackButton />
+        <BackButton linkedOnly />
         <div>
           <h1>My Profile</h1>
         </div>

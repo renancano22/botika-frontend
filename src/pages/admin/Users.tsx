@@ -44,7 +44,7 @@ export default function Users() {
   return (
     <div className="page">
       <header className="page-head">
-        <div className="page-title"><BackButton /><h1>User Accounts</h1></div>
+        <div className="page-title"><BackButton linkedOnly /><h1>User Accounts</h1></div>
         <button className="btn" onClick={() => open()}>+ Create staff / admin account</button>
       </header>
       <Message>{pageError || error}</Message>

@@ -4,6 +4,7 @@ import { ROLE_LABEL } from '../api';
 import { useAuth } from '../auth';
 import type { Role } from '../types';
 import { Avatar } from './ui';
+import { NAV_STATE } from './BackButton';
 import { NotificationBell } from './Notifications';
 import { ExpiryBell } from './ExpiryAlerts';
 
@@ -125,7 +126,7 @@ export default function Layout() {
         >
           <span /><span /><span />
         </button>
-        <NavLink to="/dashboard" className="brand topbar-brand">
+        <NavLink to="/dashboard" state={NAV_STATE} className="brand topbar-brand">
           <span className="brand-mark">✚</span>
           <div>
             <strong>BulanBotikaCare</strong>
@@ -141,7 +142,7 @@ export default function Layout() {
         {user.role === 'resident' && (
           <div className="topbar-actions">
             <NotificationBell />
-            <Link to="/profile" className={`topbar-profile ${location.pathname === '/profile' ? 'is-current' : ''}`} aria-label="Open my profile" title="My profile"
+            <Link to="/profile" state={NAV_STATE} className={`topbar-profile ${location.pathname === '/profile' ? 'is-current' : ''}`} aria-label="Open my profile" title="My profile"
               aria-current={location.pathname === '/profile' ? 'page' : undefined}>
               <Avatar name={user.name} photo={user.resident?.photo} size={36} />
             </Link>
@@ -154,7 +155,7 @@ export default function Layout() {
         <div className="drawer-head">
           {user.role === 'resident' ? (
             // Residents: the picture and name open My Profile.
-            <Link to="/profile" className="drawer-profile" tabIndex={open ? 0 : -1} aria-label="Open my profile" title="My profile">
+            <Link to="/profile" state={NAV_STATE} className="drawer-profile" tabIndex={open ? 0 : -1} aria-label="Open my profile" title="My profile">
               <Avatar name={user.name} photo={user.resident?.photo} size={38} />
               <span className="drawer-user">
                 <strong>{user.name}</strong>
@@ -181,6 +182,7 @@ export default function Layout() {
                 <NavLink
                   key={item.to}
                   to={item.to}
+                  state={NAV_STATE}
                   tabIndex={open ? 0 : -1}
                   className={({ isActive }) => `drawer-item ${isActive ? 'active' : ''}`}
                 >
