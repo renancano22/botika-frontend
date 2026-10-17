@@ -124,7 +124,7 @@ export default function Requests() {
   }, [apiStatus, apiType]);
 
   return (
-    <div className="page">
+    <div className="page req-page">
       <header className="page-head">
         <div>
           <div className="page-title"><BackButton linkedOnly /><h1>Medicine & Restock Requests</h1></div>
@@ -155,19 +155,20 @@ export default function Requests() {
           <p className="muted small tab-hint">Approved medicine requests waiting to be claimed. The medicines are set aside for these residents until the deadline; after that the request is cancelled automatically.</p>
         )}
         {loading && !data ? <Loading /> : !data?.length ? <Empty>No requests found.</Empty> : (
-          <table>
+          <div className="req-table-wrap">
+          <table className="req-table">
             <thead>
-              <tr><th>No.</th><th>Date</th><th>Resident</th><th>Type</th><th>Medicines</th><th>Status</th><th>Resident's note / Remarks</th><th></th></tr>
+              <tr><th>No.</th><th className="rq-date">Date</th><th className="rq-resident">Resident</th><th>Type</th><th className="rq-meds">Medicines</th><th className="rq-status">Status</th><th className="rq-note">Resident's note / Remarks</th><th></th></tr>
             </thead>
             <tbody>
               {data.map((r) => (
                 <tr key={r.request_id}>
                   <td>{r.request_id}</td>
-                  <td className="nowrap">{formatDate(r.request_date, true)}</td>
-                  <td>
+                  <td className="nowrap rq-date">{formatDate(r.request_date, true)}</td>
+                  <td className="rq-resident">
                     {r.resident?.name}
-                    <div className="muted small">{r.resident?.qr_code}</div>
-                    {r.status === 'approved' && r.resident?.contact_no && <div className="muted small">{r.resident.contact_no}</div>}
+                    <div className="muted small nowrap">{r.resident?.qr_code}</div>
+                    {r.status === 'approved' && r.resident?.contact_no && <div className="muted small nowrap">{r.resident.contact_no}</div>}
                   </td>
                   <td><Badge value={r.request_type} /></td>
                   <td>
@@ -195,6 +196,7 @@ export default function Requests() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </Card>
 

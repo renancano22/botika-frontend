@@ -1530,3 +1530,27 @@ a.db-person:hover { background: rgba(255, 255, 255, 0.2); }
   .status-tabs .chip { flex-shrink: 0; white-space: nowrap; gap: 6px; padding: 7px 11px; font-size: 0.82rem; }
   .status-tabs .chip-count { min-width: 20px; height: 20px; font-size: 0.7rem; padding: 0 5px; }
 }
+
+/* ---------- Requests page on phones: everything fits the screen; only the table scrolls sideways */
+@media (max-width: 600px) {
+  .req-page { gap: 14px; }
+  .req-page .page-head h1 { font-size: 1.35rem; line-height: 1.2; }
+  .req-page .page-head .muted { font-size: 0.86rem; line-height: 1.4; margin: 4px 0 0; }
+  .req-page .card { padding: 14px; overflow: visible; }
+  .req-page .card-head { margin-bottom: 10px; }
+  .req-page .card-actions, .req-page .card-actions .filters, .req-page .card-actions select { width: 100%; }
+  .req-page .status-tabs { margin-bottom: 10px; }
+  .req-page .tab-hint { margin: 0 0 10px; font-size: 0.8rem; line-height: 1.4; }
+  .req-table-wrap { overflow-x: auto; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch;
+    border: 1px solid var(--border); border-radius: 12px; }
+  .req-table { width: 920px; font-size: 0.84rem; }
+  .req-table thead th { white-space: nowrap; border-radius: 0; }
+  .req-table th, .req-table td { padding: 9px 10px; }
+  .req-table tbody tr:last-child td { border-bottom: none; }
+  .req-table td.rq-date { white-space: normal; width: 92px; min-width: 92px; }
+  .req-table .rq-resident { min-width: 120px; max-width: 160px; }
+  .req-table .rq-meds { min-width: 180px; max-width: 220px; }
+  .req-table .rq-status { min-width: 150px; max-width: 190px; }
+  .req-table .rq-note { min-width: 140px; max-width: 200px; }
+  .req-table .rx-cell { white-space: nowrap; }
+}
