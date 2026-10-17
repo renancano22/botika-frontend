@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { api, errorMessage, formatDate } from '../../api';
+import { api, errorMessage } from '../../api';
 import { useApi } from '../../hooks';
 import { Badge, Empty, Loading, Message, Modal } from '../../components/ui';
 import { ICONS, quantityText, Svg, unitPlural } from '../../components/RequestCards';
-import type { Medicine, MedicineRequest, MonthlyUsage } from '../../types';
+import type { Medicine, MedicineRequest } from '../../types';
 import { MAX_REQUEST_QUANTITY, quantityWarning } from '../../validation';
 import { PrescriptionUpload, PrescriptionViewer, RX_ICON, RxBadge, type PrescriptionFile } from '../../components/Prescription';
 import { jumpToTop } from '../../scroll';
@@ -43,8 +43,6 @@ export default function ResidentMedicines() {
   });
   const { data, error, loading } = useApi<Medicine[]>('/medicines', { search, category }, 30000);
   const { data: categories } = useApi<string[]>('/medicines/categories');
-  // Monthly limit: total medicines a resident can receive per month (online requests and walk-ins).
-  const { data: monthly, reload: reloadMonthly } = useApi<MonthlyUsage>('/monthly-limit');
   // The resident's open requests (pending, or approved and not finished yet): one per medicine at a time.
   //  - restock: they wait for the SMS;  - medicine: they edit that request instead of making a new one.
   const { data: myRequests, reload: reloadMine } = useApi<MedicineRequest[]>('/requests', undefined, 30000);
@@ -96,12 +94,7 @@ export default function ResidentMedicines() {
 
   const inCart = (m: Medicine) => cart.find((c) => c.medicine.medicine_id === m.medicine_id);
   const cartWarnings = cart.map((c) => quantityWarning(c.quantity, unitPlural(c.medicine.unit), { available: c.medicine.available_stock }));
-  const cartTotal = cart.reduce((s, c) => s + (Number.isFinite(c.quantity) ? c.quantity : 0), 0);
-  const overLimit = !!monthly && cartTotal > monthly.remaining;
-  const limitWarning = !monthly || !overLimit ? null : monthly.remaining === 0
-    ? `You have reached your monthly limit of ${monthly.limit} medicines. You can request again on ${formatDate(monthly.resets_on)}.`
-    : `You can only request ${monthly.remaining} more medicine${monthly.remaining === 1 ? '' : 's'} this month (your request has ${cartTotal}). Lower the quantities.`;
-  const cartValid = cart.length > 0 && cartWarnings.every((w) => !w) && !overLimit;
+  const cartValid = cart.length > 0 && cartWarnings.every((w) => !w);
   // Medicines that need a doctor's prescription: the request must include a photo/PDF of it.
   const rxItems = cart.filter((c) => c.medicine.requires_prescription);
   const needsRx = rxItems.length > 0;
@@ -138,7 +131,6 @@ export default function ResidentMedicines() {
       setCart([]);
       setNote('');
       setPrescription(null);
-      reloadMonthly(true);
       reloadMine(true);
       setCartOpen(false);
       navigate(`/requests/${res.data.request_id}`, { replace: true, state: { submitted: true } });
@@ -198,7 +190,6 @@ export default function ResidentMedicines() {
           ))}
         </ul>
       )}
-      {limitWarning && <p className="field-warning">{limitWarning}</p>}
       {sheetError && <Message>{sheetError}</Message>}
       {cart.length > 0 && (
         <button className="btn btn-block" disabled={!cartValid} onClick={() => goStep('form')}>
@@ -278,9 +269,8 @@ export default function ResidentMedicines() {
                 <strong><Svg d={ICONS.info} size={18} /> Important reminder</strong>
                 <p>Medicines are not suitable for everyone. Follow a doctor's or health worker's advice on whether to use them and how to take them.</p>
                 {needsRx && <p><b>Bring the original prescription when you claim the medicine.</b></p>}
-                <p>You can request up to {MAX_REQUEST_QUANTITY} of each medicine per request{monthly ? `, and up to ${monthly.limit} medicines in total per month (${monthly.remaining} left for ${monthly.month})` : ''}.</p>
+                <p>You can request up to {MAX_REQUEST_QUANTITY} of each medicine per request.</p>
               </div>
-              {limitWarning && <p className="field-warning">{limitWarning}</p>}
 
               {rxMissing && <p className="field-warning">Please upload your prescription to continue.</p>}
               <button className="btn btn-block btn-lg" disabled={!cartValid || rxMissing} onClick={() => goStep('review')}>Review Request</button>
@@ -328,24 +318,6 @@ export default function ResidentMedicines() {
           <p className="muted">Add available medicines to your request. If a medicine is out of stock, send a restock request.</p>
         </div>
       </header>
-
-      {monthly && (
-        <div className={`limit-box ${monthly.remaining === 0 ? 'limit-full' : ''}`}>
-          <div className="limit-head">
-            <strong>Your monthly limit ({monthly.month})</strong>
-            <span><b>{monthly.remaining}</b> of {monthly.limit} medicines left</span>
-          </div>
-          <div className="limit-bar" aria-hidden="true">
-            <span className="limit-claimed" style={{ width: `${Math.min(100, (monthly.claimed / monthly.limit) * 100)}%` }} />
-            <span className="limit-aside" style={{ width: `${Math.min(100, ((monthly.set_aside + monthly.pending) / monthly.limit) * 100)}%` }} />
-          </div>
-          <p className="small">
-            {monthly.remaining === 0
-              ? `You have reached the limit of ${monthly.limit} medicines this month. You can request again on ${formatDate(monthly.resets_on)}.`
-              : `Received this month: ${monthly.claimed} · In your requests: ${monthly.set_aside + monthly.pending}. Each resident can receive up to ${monthly.limit} medicines per month (online and walk-in).`}
-          </p>
-        </div>
-      )}
 
       <div className="grid-main">
         <section>

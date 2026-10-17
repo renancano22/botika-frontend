@@ -17,7 +17,7 @@ const qty = (n: number, unit: string) => `${n} ${n === 1 ? unit : unitPlural(uni
 
 /**
  * Medicine Inventory (admin & staff): the Botika ng Bayan medicine list with generic name, category,
- * strength, dosage form, stock, batches / lot numbers, expiration dates, stock status and last update.
+ * strength, dosage form, stock, expiration dates of its batches, stock status and last update.
  * Medicines whose stock was never recorded are shown as "Not recorded" until staff record a stock-in
  * or confirm there is no stock. Delete is admin only.
  */
@@ -111,7 +111,7 @@ export default function Medicines() {
       {unrecorded > 0 && status !== 'unrecorded' && (
         <div className="mi-verify" role="note">
           <strong>{unrecorded} {unrecorded === 1 ? 'medicine has' : 'medicines have'} no recorded stock yet.</strong>
-          <span>Count the stock and record a stock-in with its batch / lot number and expiration date, or confirm that there is none. Until then residents see them as "Not yet available".</span>
+          <span>Count the stock and record a stock-in with its expiration date, or confirm that there is none. Until then residents see them as "Not yet available".</span>
           <button className="btn btn-outline btn-sm" onClick={() => setFilter('status', 'unrecorded')}>Show them</button>
         </div>
       )}
@@ -129,7 +129,7 @@ export default function Medicines() {
             <option value="out_of_stock">Out of stock</option>
             <option value="unrecorded">Not recorded (needs verification)</option>
           </select>
-          <input className="search" placeholder="Search name, category or batch…" value={search} onChange={(e) => setSearch(e.target.value)} />
+          <input className="search" placeholder="Search name or category…" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
       }>
         {loading && !data ? <Loading /> : !data?.length ? <Empty>No medicines yet.</Empty> : !shown.length ? <Empty>No medicines match these filters.</Empty> : (
@@ -137,7 +137,7 @@ export default function Medicines() {
             <thead>
               <tr>
                 <th>Medicine ID</th><th>Generic Name</th><th>Category</th><th>Strength</th><th>Dosage Form</th>
-                <th>Quantity in Stock</th><th>Batch / Lot No.</th><th>Expiration Date</th><th>Stock Status</th><th>Date Last Updated</th><th></th>
+                <th>Quantity in Stock</th><th>Expiration Date</th><th>Stock Status</th><th>Date Last Updated</th><th></th>
               </tr>
             </thead>
             <tbody>
@@ -156,14 +156,10 @@ export default function Medicines() {
                     {m.status === 'unrecorded' ? <span className="mi-missing">Not recorded</span> : qty(m.available_stock, m.unit)}
                     {!!m.reserved_stock && <div className="muted small">{m.reserved_stock} reserved · {m.free_stock} free</div>}
                   </td>
-                  <td>
-                    {m.batches?.length ? m.batches.map((b) => (
-                      <div key={b.inventory_id} className="mi-batch">{b.batch_number || <span className="mi-missing">Lot not recorded</span>} <span className="muted small">({b.quantity})</span></div>
-                    )) : '—'}
-                  </td>
                   <td className="nowrap">
+                    {/* one line per stock batch: expiration date (quantity) */}
                     {m.batches?.length ? m.batches.map((b) => (
-                      <div key={b.inventory_id} className={`mi-batch mi-exp-${b.expiry_status}`}>{formatDate(b.expiration_date)}</div>
+                      <div key={b.inventory_id} className={`mi-batch mi-exp-${b.expiry_status}`}>{formatDate(b.expiration_date)} <span className="muted small">({b.quantity})</span></div>
                     )) : '—'}
                   </td>
                   <td><Badge value={m.status} /></td>
@@ -223,7 +219,7 @@ export default function Medicines() {
               <input type="checkbox" checked={form.requires_prescription} onChange={(e) => setForm({ ...form, requires_prescription: e.target.checked })} />
               <span><strong>Requires prescription</strong> — residents must upload a doctor's prescription, and staff must check it before approving and dispensing.</span>
             </label>
-            <p className="field-hint">Stock, batch / lot numbers and expiration dates are recorded in Inventory → Stock-in.</p>
+            <p className="field-hint">Stock and expiration dates are recorded in Inventory → Stock-in.</p>
             <div className="modal-actions">
               <button type="button" className="btn btn-outline" onClick={() => setForm(null)}>Cancel</button>
               <button className="btn" disabled={busy}>{busy ? 'Saving…' : 'Save'}</button>

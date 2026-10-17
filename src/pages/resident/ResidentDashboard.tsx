@@ -4,14 +4,13 @@ import { Card, Empty, Loading, Message } from '../../components/ui';
 import { NotificationItem } from '../../components/Notifications';
 import { ICONS, RequestRow, Svg } from '../../components/RequestCards';
 import ActivityTile from '../../components/ActivityTile';
-import type { MedicineRequest, MonthlyUsage, Resident, SmsNotification } from '../../types';
+import type { MedicineRequest, Resident, SmsNotification } from '../../types';
 
 interface ResidentDash {
   resident: Resident;
   counts: { pending: number; approved: number; dispensed: number; available_medicines: number };
   recent_requests: MedicineRequest[];
   recent_notifications: SmsNotification[];
-  monthly?: MonthlyUsage;
 }
 
 export default function ResidentDashboard() {
@@ -39,9 +38,6 @@ export default function ResidentDashboard() {
             hint={counts.approved ? 'Bring your QR code' : undefined} />
           <ActivityTile to="/requests?status=claimed" k="completed" value={counts.dispensed} unit={counts.dispensed === 1 ? 'request' : 'requests'} label="Claimed" />
           <ActivityTile to="/medicines?availability=in_stock" k="available" value={counts.available_medicines} unit="medicines" label="Available now" />
-          {data.monthly && (
-            <ActivityTile to="/medicines" k="submitted" value={data.monthly.remaining} unit={`of ${data.monthly.limit} medicines`} label="Left this month" />
-          )}
           <Link to="/requests" className="act-tile act-more">
             <span className="act-more-icon"><Svg d={ICONS.chevron} size={18} width={2.4} /></span>
             <span>View all requests</span>

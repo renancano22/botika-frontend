@@ -28,7 +28,6 @@ export type StockStatus = 'available' | 'low_stock' | 'out_of_stock' | 'unrecord
 /** One stock batch of a medicine (staff/admin view). */
 export interface MedicineBatch {
   inventory_id: number;
-  batch_number: string | null;
   quantity: number;
   expiration_date: string;
   expiry_status: 'ok' | 'near_expiry' | 'expired';
@@ -73,14 +72,13 @@ export interface StockTransaction {
   dispensing_id: number | null;
   created_at: string;
   medicine?: Pick<Medicine, 'medicine_id' | 'medicine_name' | 'unit'>;
-  batch?: { inventory_id: number; batch_number?: string | null; expiration_date: string } | null;
+  batch?: { inventory_id: number; expiration_date: string } | null;
   performer?: { user_id: number; name: string } | null;
 }
 
 export interface InventoryBatch {
   inventory_id: number;
   medicine_id: number;
-  batch_number: string | null;
   quantity: number;
   expiration_date: string;
   last_updated: string;
@@ -173,21 +171,6 @@ export interface SmsNotification {
   /** null = not read yet */
   read_at: string | null;
   resident?: Pick<Resident, 'resident_id' | 'name' | 'contact_no'>;
-}
-
-/** Monthly limit of a resident: total medicines they can receive per calendar month. */
-export interface MonthlyUsage {
-  limit: number;
-  /** received (dispensed) this month */
-  claimed: number;
-  /** in approved requests not yet claimed */
-  set_aside: number;
-  /** in requests waiting for review */
-  pending: number;
-  remaining: number;
-  month: string;
-  /** date the limit starts again (1st of next month) */
-  resets_on: string;
 }
 
 export type ForecastMethod = 'moving_average' | 'linear_regression' | 'exponential_smoothing';
