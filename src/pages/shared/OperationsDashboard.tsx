@@ -59,6 +59,10 @@ export default function OperationsDashboard() {
         <div className="act-grid act-grid-ops">
           <ActivityTile to="/medicines?status=low_stock" k="reminder" value={c.low_stock} unit={plural(c.low_stock, 'medicine')} label="Low stock" alert={c.low_stock > 0} />
           <ActivityTile to="/medicines?status=out_of_stock" k="rejected" value={c.out_of_stock} unit={plural(c.out_of_stock, 'medicine')} label="Out of stock" alert={c.out_of_stock > 0} />
+          {(c.unrecorded ?? 0) > 0 && (
+            <ActivityTile to="/medicines?status=unrecorded" k="cancelled" value={c.unrecorded} unit={plural(c.unrecorded, 'medicine')} label="Stock not recorded" alert
+              hint="Record stock or confirm none" />
+          )}
           <ActivityTile to="/inventory?expiry=near_expiry" k="expired" value={c.near_expiry} unit={plural(c.near_expiry, 'batch', 'batches')} label="Expiring in 1 month" alert={c.near_expiry > 0} />
           <ActivityTile to="/inventory?expiry=expired" k="rejected" value={c.expired} unit={plural(c.expired, 'batch', 'batches')} label="Expired batches" alert={c.expired > 0}
             hint={c.expired ? 'Remove from stock' : undefined} />

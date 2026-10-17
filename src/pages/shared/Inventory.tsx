@@ -1,4 +1,5 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { api, errorMessage, formatDate } from '../../api';
 import { useApi } from '../../hooks';
 import { Badge, Card, Empty, Loading, Message, Modal } from '../../components/ui';
@@ -16,7 +17,26 @@ export default function Inventory() {
   const { data, error, loading, reload } = useApi<InventoryBatch[]>('/inventory', { search }, 30000);
   const { data: medicines } = useApi<Medicine[]>('/medicines');
   const batches = (data ?? []).filter((b) => !expiry || (b.expiry_status ?? 'ok') === expiry);
-  const [stockIn, setStockIn] = useState<{ medicine_id: string; quantity: number; expiration_date: string } | null>(null);
+  const [stockIn, setStockIn] = useState<{ medicine_id: string; batch_number: string; quantity: number; expiration_date: string } | null>(null);
+  const openStockIn = (medicineId = '') => { setFormError(''); setStockIn({ medicine_id: medicineId, batch_number: '', quantity: 1, expiration_date: '' }); };
+  // ?stockin=<medicine id> (Medicine Inventory → "Record stock") or ?stockin=new opens the stock-in form.
+  const [params, setParams] = useSearchParams();
+  useEffect(() => {
+    const id = params.get('stockin');
+    if (id === null) return;
+    openStockIn(id === 'new' ? '' : id);
+    const next = new URLSearchParams(params);
+    next.delete('stockin');
+    setParams(next, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params]);
+  // Medicines grouped by category for the stock-in list.
+  const grouped = useMemo(() => {
+    const g = new Map<string, Medicine[]>();
+    (medicines ?? []).forEach((m) => g.set(m.category, [...(g.get(m.category) ?? []), m]));
+    return [...g.entries()];
+  }, [medicines]);
+  const chosen = medicines?.find((m) => String(m.medicine_id) === stockIn?.medicine_id);
   const [stockOut, setStockOut] = useState<{ batch: InventoryBatch; quantity: number; reason: string; details: string } | null>(null);
   const [txType, setTxType] = useState('');
   const tx = useApi<StockTransaction[]>('/inventory/transactions', { type: txType }, 30000);
@@ -55,7 +75,7 @@ export default function Inventory() {
           <h1>Inventory</h1>
           <p className="muted">Each stock-in is saved as a batch with its own expiration date. Dispensing uses the earliest-expiring batch first and never uses expired batches.</p>
         </div>
-        <button className="btn" onClick={() => { setFormError(''); setStockIn({ medicine_id: '', quantity: 1, expiration_date: '' }); }}>+ Stock-in</button>
+        <button className="btn" onClick={() => openStockIn()}>+ Stock-in</button>
       </header>
       <Message type="success">{notice}</Message>
       <Message>{error}</Message>
@@ -68,16 +88,16 @@ export default function Inventory() {
             <option value="expired">Expired</option>
             <option value="ok">Not expiring soon</option>
           </select>
-          <input className="search" placeholder="Search medicine…" value={search} onChange={(e) => setSearch(e.target.value)} />
+          <input className="search" placeholder="Search medicine or batch / lot no.…" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
       }>
         {loading && !data ? <Loading /> : !data?.length ? <Empty>No stock yet. Record a stock-in.</Empty> : !batches.length ? <Empty>No batches with this expiry status.</Empty> : (
           <table>
-            <thead><tr><th>Batch #</th><th>Medicine</th><th>Quantity</th><th>Expiration date</th><th>Expiry status</th><th>Last updated</th><th></th></tr></thead>
+            <thead><tr><th>Batch / Lot No.</th><th>Medicine</th><th>Quantity</th><th>Expiration date</th><th>Expiry status</th><th>Last updated</th><th></th></tr></thead>
             <tbody>
               {batches.map((b) => (
                 <tr key={b.inventory_id} className={b.expiry_status === 'expired' ? 'row-danger' : b.expiry_status === 'near_expiry' ? 'row-warn' : ''}>
-                  <td>{b.inventory_id}</td>
+                  <td>{b.batch_number || <span className="mi-missing">Not recorded</span>}<div className="muted small">Record #{b.inventory_id}</div></td>
                   <td>{b.medicine.medicine_name}</td>
                   <td>{b.quantity} {b.medicine.unit}</td>
                   <td>{formatDate(b.expiration_date)}</td>
@@ -101,7 +121,7 @@ export default function Inventory() {
       }>
         {tx.loading && !tx.data ? <Loading /> : !tx.data?.length ? <Empty>No transactions yet.</Empty> : (
           <table>
-            <thead><tr><th>Date</th><th>Type</th><th>Medicine</th><th>Quantity</th><th>Batch #</th><th>Reason</th><th>By</th></tr></thead>
+            <thead><tr><th>Date</th><th>Type</th><th>Medicine</th><th>Quantity</th><th>Batch / Lot No.</th><th>Reason</th><th>By</th></tr></thead>
             <tbody>
               {tx.data.map((t) => (
                 <tr key={t.transaction_id}>
@@ -109,7 +129,7 @@ export default function Inventory() {
                   <td><span className={`badge badge-tx-${t.type}`}>{TX_LABEL[t.type]}</span></td>
                   <td>{t.medicine?.medicine_name}</td>
                   <td>{t.type === 'stock_in' ? '+' : '−'}{t.quantity} {t.medicine?.unit}</td>
-                  <td>{t.inventory_id ?? '—'}</td>
+                  <td>{t.batch?.batch_number || (t.inventory_id ? `Record #${t.inventory_id}` : '—')}</td>
                   <td>{t.reason ?? (t.dispensing_id ? `Dispensing #${t.dispensing_id}` : '—')}</td>
                   <td>{t.performer?.name ?? '—'}</td>
                 </tr>
@@ -126,8 +146,16 @@ export default function Inventory() {
             <label>Medicine
               <select value={stockIn.medicine_id} onChange={(e) => setStockIn({ ...stockIn, medicine_id: e.target.value })} required>
                 <option value="">Select medicine…</option>
-                {medicines?.map((m) => <option key={m.medicine_id} value={m.medicine_id}>{m.medicine_name} ({m.unit})</option>)}
+                {grouped.map(([cat, list]) => (
+                  <optgroup key={cat} label={cat}>
+                    {list.map((m) => <option key={m.medicine_id} value={m.medicine_id}>{m.medicine_name} ({m.unit}){m.status === 'unrecorded' ? ' — not recorded yet' : ''}</option>)}
+                  </optgroup>
+                ))}
               </select>
+            </label>
+            {chosen?.status === 'unrecorded' && <p className="field-hint">This is the first stock record for this medicine. After saving it is no longer marked "Not recorded".</p>}
+            <label><span>Batch / Lot No. <span className="muted">(as printed on the box)</span></span>
+              <input value={stockIn.batch_number} onChange={(e) => setStockIn({ ...stockIn, batch_number: e.target.value })} placeholder="e.g. LOT 24A0915" maxLength={60} />
             </label>
             <div className="row">
               <label>Quantity<input type="number" min={1} value={stockIn.quantity} onChange={(e) => setStockIn({ ...stockIn, quantity: Number(e.target.value) })} required /></label>
@@ -145,7 +173,7 @@ export default function Inventory() {
         <Modal title="Stock-out" onClose={() => setStockOut(null)}>
           <form onSubmit={submitOut}>
             <Message>{formError}</Message>
-            <p>Remove items from batch #{stockOut.batch.inventory_id} — <strong>{stockOut.batch.medicine.medicine_name}</strong>, expires {formatDate(stockOut.batch.expiration_date)} ({stockOut.batch.quantity} left). Use this for expired, damaged or lost items.</p>
+            <p>Remove items from batch {stockOut.batch.batch_number || `#${stockOut.batch.inventory_id}`} — <strong>{stockOut.batch.medicine.medicine_name}</strong>, expires {formatDate(stockOut.batch.expiration_date)} ({stockOut.batch.quantity} left). Use this for expired, damaged or lost items.</p>
             <label>Quantity to remove
               <input type="number" min={1} max={stockOut.batch.quantity} value={stockOut.quantity} onChange={(e) => setStockOut({ ...stockOut, quantity: Number(e.target.value) })} required />
             </label>

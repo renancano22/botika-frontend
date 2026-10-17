@@ -168,6 +168,7 @@ tr.clickable:hover td { background: #f1faf3; }
 .badge-available, .badge-ok, .badge-sent { background: var(--ok-soft); color: var(--ok); }
 .badge-low_stock, .badge-near_expiry, .badge-logged { background: var(--warn-soft); color: var(--warn); }
 .badge-out_of_stock, .badge-failed { background: var(--danger-soft); color: var(--danger); }
+.badge-unrecorded { background: #eef2f1; color: #475569; border: 1px dashed #cbd5d1; }
 .badge-restock, .badge-admin { background: var(--info-soft); color: #1d4ed8; }
 /* request statuses: same colours as the status palette */
 .badge-pending { background: #f3e8ff; color: var(--st-review); }
@@ -1391,3 +1392,17 @@ button.pf-back { background: none; border: none; font: inherit; cursor: pointer;
 .fb-avatar:disabled, .fb-camera:disabled { cursor: default; }
 .fb-photo-sec > .fb-photo-status { margin-top: 8px; }
 .pf-new-photo { width: 150px; height: 150px; border-radius: 50%; object-fit: cover; box-shadow: 0 0 0 4px #fff, 0 0 0 5px var(--border); margin: 4px 0 6px; }
+
+/* ---------- Medicine Inventory */
+.mi-head-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.mi-verify { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; padding: 12px 14px; border-radius: 12px; background: #fffbeb; border: 1px solid #fde68a; color: #92400e; font-size: 0.88rem; }
+.mi-verify strong { flex-basis: 100%; }
+.mi-verify span { flex: 1; min-width: 220px; }
+.mi-table td { vertical-align: top; }
+.mi-code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.82rem; color: var(--muted); }
+.mi-missing { color: #92400e; font-size: 0.82rem; font-style: italic; }
+.mi-unrecorded { background: #fcfcf8; }
+.mi-batch { line-height: 1.55; white-space: nowrap; }
+.mi-exp-near_expiry { color: var(--warn); font-weight: 600; }
+.mi-exp-expired { color: var(--danger); font-weight: 600; text-decoration: line-through; }
+.mi-preview { margin: 0 0 12px; padding: 8px 12px; border-radius: 10px; background: var(--primary-50); font-size: 0.86rem; }

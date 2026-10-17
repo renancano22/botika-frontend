@@ -170,7 +170,8 @@ function MethodExplanation({ method, result, unit, forecast, basisMonths, partia
   );
 }
 
-function PriorityBadge({ priority }: { priority: ForecastResult['priority'] }) {
+function PriorityBadge({ priority, recorded = true }: { priority: ForecastResult['priority']; recorded?: boolean }) {
+  if (!recorded) return <span className="badge badge-unrecorded">Stock not recorded</span>;
   if (!priority) return <span className="prio prio-ok"><Svg d={ICONS.check} size={14} width={2.6} /> Enough stock</span>;
   return (
     <span className={`prio prio-${priority}`}>
@@ -317,7 +318,7 @@ export default function Forecasting() {
     const status = !data.data_start ? 'No dispensing records yet'
       : `${basisText}${provisional ? ' (provisional)' : ''}`;
     const rows = tableRows.map((r) => [r.medicine_name, r.category, r.unit, r.available_stock, r.predicted_demand, r.recommended_restock,
-      r.priority === 'high' ? 'High' : r.priority === 'medium' ? 'Medium' : 'Enough stock', METHOD_LABEL[data.method], periodText(data.forecast_keys), status]);
+      r.stock_recorded === false ? 'Stock not recorded' : r.priority === 'high' ? 'High' : r.priority === 'medium' ? 'Medium' : 'Enough stock', METHOD_LABEL[data.method], periodText(data.forecast_keys), status]);
     const esc = (v: unknown) => `"${String(v ?? '').replace(/"/g, '""')}"`;
     const csv = [head, ...rows].map((r) => r.map(esc).join(',')).join('\r\n');
     const a = document.createElement('a');
@@ -592,10 +593,10 @@ export default function Forecasting() {
                               <span><strong>{r.medicine_name}</strong><small className="muted">{r.unit}</small></span>
                             </span>
                           </td>
-                          <td className="center">{r.available_stock}</td>
+                          <td className="center">{r.stock_recorded === false ? <span className="mi-missing">Not recorded</span> : r.available_stock}</td>
                           <td className="center">{r.predicted_demand}</td>
                           <td className="center"><strong>{r.recommended_restock}</strong></td>
-                          <td><PriorityBadge priority={r.priority} /></td>
+                          <td><PriorityBadge priority={r.priority} recorded={r.stock_recorded !== false} /></td>
                           <td className="right"><Svg d={ICONS.chevron} size={18} /></td>
                         </tr>
                       ))}
@@ -620,7 +621,7 @@ export default function Forecasting() {
         <Modal title={details.medicine_name} onClose={() => setDetails(null)}>
           <p className="muted small fc-detail-sub">{details.category} · {details.unit}</p>
           <div className="fc-detail-grid">
-            <div><small>Current stock</small><strong>{quantityText(details.available_stock, details.unit)}</strong></div>
+            <div><small>Current stock</small><strong>{details.stock_recorded === false ? 'Not recorded' : quantityText(details.available_stock, details.unit)}</strong></div>
             <div><small>Reorder level</small><strong>{details.reorder_level}</strong></div>
             <div><small>Predicted demand ({horizonText.toLowerCase()})</small><strong>{details.predicted_demand}</strong></div>
             <div><small>Suggested restock</small><strong>{details.recommended_restock}</strong></div>
@@ -629,7 +630,7 @@ export default function Forecasting() {
             Suggested restock = predicted demand ({details.predicted_demand}) + reorder level ({details.reorder_level}) − current stock ({details.available_stock})
             {details.recommended_restock === 0 ? ' → no restock needed.' : '.'}
           </p>
-          <PriorityBadge priority={details.priority} />
+          <PriorityBadge priority={details.priority} recorded={details.stock_recorded !== false} />
 
           <h3 className="fc-detail-title">Monthly forecast ({METHOD_LABEL[data.method]}{provisional ? ', provisional' : ''})</h3>
           <table>

@@ -27,6 +27,13 @@ function QtyStepper({ value, onChange, min = 1, max }: { value: number; onChange
  * Resident: check medicine availability, add medicines to a request and submit it,
  * or send a restock request for medicines that are out of stock / low.
  */
+/** Out of stock, or stock not recorded yet by the staff (availability not confirmed): it cannot be requested. */
+const noStock = (m: Medicine) => m.status === 'out_of_stock' || m.status === 'unrecorded';
+/** Residents see "Not yet available" for a medicine whose stock the staff have not recorded yet. */
+const StockBadge = ({ m }: { m: Medicine }) => (m.status === 'unrecorded'
+  ? <span className="badge badge-unrecorded">Not yet available</span>
+  : <Badge value={m.status} />);
+
 export default function ResidentMedicines() {
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('');
@@ -50,7 +57,7 @@ export default function ResidentMedicines() {
   const [alreadyRequested, setAlreadyRequested] = useState<{ medicine: Medicine; requestId: number } | null>(null);
   const [inRequest, setInRequest] = useState<{ medicine: Medicine; requestId: number; status: string } | null>(null);
   const shown = (data ?? []).filter((m) => availability === 'all'
-    || (availability === 'out_of_stock' ? m.status === 'out_of_stock' : m.status !== 'out_of_stock'));
+    || (availability === 'out_of_stock' ? noStock(m) : !noStock(m)));
   const listTitle = `${availability === 'in_stock' ? 'Available' : availability === 'out_of_stock' ? 'Out of Stock' : 'All'} ${category || 'Medicines'}`;
   const [cart, setCart] = useState<CartItem[]>([]);
   const [adding, setAdding] = useState<CartItem | null>(null);       // "Add to request" sheet
@@ -376,11 +383,13 @@ export default function ResidentMedicines() {
                         <span className="muted small">{m.category}</span>
                         {m.requires_prescription && <RxBadge small />}
                       </span>
-                      <Badge value={m.status} />
+                      <StockBadge m={m} />
                     </button>
                     {m.description && <p className="muted small med-desc">{m.description}</p>}
                     <div className="med-bottom">
-                      <span className="med-stock"><b>{m.available_stock}</b> {m.available_stock === 1 ? m.unit : unitPlural(m.unit)} available</span>
+                      {m.status === 'unrecorded'
+                        ? <span className="med-stock muted">Availability not yet confirmed</span>
+                        : <span className="med-stock"><b>{m.available_stock}</b> {m.available_stock === 1 ? m.unit : unitPlural(m.unit)} available</span>}
                       <div className="med-actions">
                         {/* Low stock: the resident may need more than what is left, so restock can be requested too. */}
                         {m.status !== 'available' && (openRestock.has(m.medicine_id) ? (
@@ -390,7 +399,7 @@ export default function ResidentMedicines() {
                         ) : (
                           <button className="btn btn-outline btn-sm" onClick={() => startRestock(m)}>Request restock</button>
                         ))}
-                        {m.status !== 'out_of_stock' && (
+                        {!noStock(m) && (
                           openMedicineReq.has(m.medicine_id) && !added ? (
                             <button className="btn btn-sm btn-added" onClick={() => openAdd(m)} title="Already in one of your requests">
                               <Svg d={ICONS.note} size={16} width={2.2} /> In request No. {openMedicineReq.get(m.medicine_id)?.requestId}
@@ -453,10 +462,10 @@ export default function ResidentMedicines() {
               <p>This medicine requires a valid prescription from a licensed doctor. Upload a photo of it with your request, and bring the original when you claim the medicine.</p>
             </div>
           )}
-          <div className="review-row"><span>Available stock</span><strong>{quantityText(details.available_stock, details.unit)}</strong></div>
+          <div className="review-row"><span>Available stock</span><strong>{details.status === 'unrecorded' ? 'Not yet confirmed' : quantityText(details.available_stock, details.unit)}</strong></div>
           <div className="modal-actions">
             <button className="btn btn-outline" onClick={() => setDetails(null)}>Close</button>
-            {details.status === 'out_of_stock' ? (
+            {noStock(details) ? (
               <button className="btn" onClick={() => startRestock(details)}>{openRestock.has(details.medicine_id) ? 'Restock requested' : 'Request restock'}</button>
             ) : (
               <button className="btn" onClick={() => openAdd(details)}>
@@ -543,7 +552,8 @@ export default function ResidentMedicines() {
         <Modal title="Request restock" onClose={() => setRestockFor(null)}>
           <p>
             <strong>{restockFor.medicine_name}</strong>{' '}
-            {restockFor.available_stock > 0 ? `has only ${quantityText(restockFor.available_stock, restockFor.unit)} left.` : 'is currently out of stock.'}{' '}
+            {restockFor.status === 'unrecorded' ? 'is not yet available.'
+              : restockFor.available_stock > 0 ? `has only ${quantityText(restockFor.available_stock, restockFor.unit)} left.` : 'is currently out of stock.'}{' '}
             The administrator will review your restock request and you will get an SMS once it is available.
           </p>
           <label>Quantity you need ({unitPlural(restockFor.unit)})

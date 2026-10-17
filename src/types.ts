@@ -22,19 +22,41 @@ export interface User {
   resident?: Resident | null;
 }
 
-export type StockStatus = 'available' | 'low_stock' | 'out_of_stock';
+/** unrecorded = staff have not recorded the stock yet (never shown as available). */
+export type StockStatus = 'available' | 'low_stock' | 'out_of_stock' | 'unrecorded';
+
+/** One stock batch of a medicine (staff/admin view). */
+export interface MedicineBatch {
+  inventory_id: number;
+  batch_number: string | null;
+  quantity: number;
+  expiration_date: string;
+  expiry_status: 'ok' | 'near_expiry' | 'expired';
+}
 
 export interface Medicine {
   medicine_id: number;
+  /** "MED-0007" */
+  medicine_code?: string;
+  /** Display name: generic name + strength + dosage form, e.g. "Amoxicillin 500mg Capsule". */
   medicine_name: string;
+  generic_name?: string;
+  strength?: string | null;
+  dosage_form?: string | null;
   category: string;
   unit: string;
   description: string | null;
   /** Can only be requested/dispensed with a doctor's prescription. */
   requires_prescription?: boolean;
   available_stock: number;
+  /** false = stock not recorded yet by staff */
+  stock_recorded?: boolean;
   status: StockStatus;
   reorder_level?: number;
+  /** Staff/admin only: batches with stock, earliest expiry first. */
+  batches?: MedicineBatch[];
+  /** Staff/admin only: last change of the medicine record or its stock. */
+  last_updated?: string | null;
   /** Staff/admin only: quantity promised to approved requests that are not dispensed yet. */
   reserved_stock?: number;
   /** Staff/admin only: available minus reserved (what walk-ins and new requests can use). */
@@ -51,13 +73,14 @@ export interface StockTransaction {
   dispensing_id: number | null;
   created_at: string;
   medicine?: Pick<Medicine, 'medicine_id' | 'medicine_name' | 'unit'>;
-  batch?: { inventory_id: number; expiration_date: string } | null;
+  batch?: { inventory_id: number; batch_number?: string | null; expiration_date: string } | null;
   performer?: { user_id: number; name: string } | null;
 }
 
 export interface InventoryBatch {
   inventory_id: number;
   medicine_id: number;
+  batch_number: string | null;
   quantity: number;
   expiration_date: string;
   last_updated: string;
@@ -222,6 +245,8 @@ export interface ForecastResult {
   predicted_demand: number;
   available_stock: number;
   reorder_level: number;
+  /** false = staff have not recorded this medicine's stock yet (no restock is suggested) */
+  stock_recorded?: boolean;
   recommended_restock: number;
   /** high = stock runs out within the period, medium = falls below the reorder level, null = enough stock */
   priority: 'high' | 'medium' | null;
