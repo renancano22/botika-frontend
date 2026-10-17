@@ -1409,3 +1409,85 @@ tr.jump-flash { animation: none; }
 tr.jump-flash > td { animation: row-flash 1s ease-out; }
 @keyframes row-flash { 0%, 40% { background: #fef3c7; } 100% { background: transparent; } }
 @media (prefers-reduced-motion: reduce) { tr.jump-flash > td { animation: none; } }
+
+/* ---------- Admin / staff dashboard: summary panels */
+.db-people { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 0; }
+.db-person { display: inline-flex; align-items: center; gap: 6px; padding: 4px 11px; border-radius: 999px; font-size: 0.84rem; font-weight: 600;
+  color: #eefbf0; background: rgba(255, 255, 255, 0.12); border: 1px solid rgba(255, 255, 255, 0.22); text-decoration: none; }
+a.db-person:hover { background: rgba(255, 255, 255, 0.2); }
+
+.db-panel { padding: 16px 18px; overflow: visible; }
+.db-panel-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+.db-panel-head h2 { font-size: 1.02rem; margin: 0; }
+.db-more { display: inline-flex; align-items: center; gap: 2px; font-size: 0.86rem; font-weight: 600; text-decoration: none; color: var(--primary); }
+.db-more:hover { text-decoration: underline; }
+
+/* Requests & Dispensing: one panel, four sections separated by thin dividers */
+.db-req { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+.db-req-item { display: flex; flex-direction: column; gap: 4px; padding: 14px 16px; color: inherit; text-decoration: none; min-width: 0;
+  border-left: 1px solid var(--border); transition: background 0.12s; }
+.db-req-item:first-child { border-left: none; }
+.db-req-item:hover, .db-req-item:focus-visible { background: var(--primary-50); }
+.db-req-label { display: flex; align-items: center; gap: 8px; font-size: 0.86rem; font-weight: 600; color: #33443f; }
+.db-req-icon { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; background: var(--primary-50); color: var(--primary); flex-shrink: 0; }
+.db-req-value { font-size: 2rem; font-weight: 800; line-height: 1.1; color: var(--text); font-variant-numeric: tabular-nums; }
+.db-req-hint { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; color: var(--muted); }
+.db-req-item.is-alert .db-req-hint { color: var(--warn); font-weight: 600; }
+.db-dot { width: 8px; height: 8px; border-radius: 50%; background: #f59e0b; flex-shrink: 0; }
+
+/* Medicine Stock Overview: total + status bar + labelled legend, and batch expiry */
+.db-stock { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); gap: 18px; }
+.db-stock-main { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.db-total { display: flex; align-items: baseline; gap: 8px; color: inherit; text-decoration: none; width: fit-content; }
+.db-total strong { font-size: 2rem; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
+.db-total span { font-weight: 600; color: #33443f; }
+.db-total:hover span { text-decoration: underline; }
+.db-bar { display: flex; gap: 2px; height: 14px; border-radius: 999px; overflow: hidden; background: #eef2f1; }
+.db-seg { display: block; min-width: 6px; flex-basis: 0; }
+.db-seg.tone-available { background: #228b39; }
+.db-seg.tone-low { background: #f59e0b; }
+.db-seg.tone-unrecorded { background: repeating-linear-gradient(45deg, #94a3b8 0 4px, #b6c1cf 4px 8px); }
+.db-seg.tone-out { background: #b91c1c; }
+.db-legend { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.db-legend-item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--border); color: inherit; text-decoration: none; transition: background 0.12s, border-color 0.12s; }
+.db-legend-item:hover, .db-legend-item:focus-visible { background: #f6f9f7; border-color: #cfdcd6; }
+.db-swatch { width: 20px; height: 20px; border-radius: 6px; display: grid; place-items: center; color: #fff; flex-shrink: 0; }
+.tone-available .db-swatch { background: #228b39; }
+.tone-low .db-swatch { background: #f59e0b; }
+.tone-unrecorded .db-swatch { background: #94a3b8; }
+.tone-out .db-swatch { background: #b91c1c; }
+.db-legend-label { flex: 1; min-width: 0; font-size: 0.86rem; font-weight: 600; color: #33443f; }
+.db-legend-item strong { font-size: 1.05rem; font-variant-numeric: tabular-nums; }
+.db-legend-pct { width: 36px; text-align: right; font-size: 0.76rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.db-expiry { display: flex; flex-direction: column; gap: 8px; padding-left: 18px; border-left: 1px solid var(--border); min-width: 0; }
+.db-expiry h3 { margin: 0 0 2px; font-size: 0.88rem; color: #33443f; }
+.db-exp-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--border); color: inherit; text-decoration: none; transition: background 0.12s; }
+.db-exp-row:hover, .db-exp-row:focus-visible { background: #f6f9f7; }
+.db-exp-icon { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; flex-shrink: 0; background: #f1f5f4; color: var(--muted); }
+.db-exp-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.db-exp-text span { font-size: 0.88rem; font-weight: 600; }
+.db-exp-text small { font-size: 0.76rem; color: var(--muted); }
+.db-exp-row strong { font-size: 1.5rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+.db-exp-row.tone-low.is-alert { background: #fffbeb; border-color: #fde68a; }
+.db-exp-row.tone-low.is-alert .db-exp-icon { background: #fef3c7; color: #b45309; }
+.db-exp-row.tone-low.is-alert small { color: #b45309; }
+.db-exp-row.tone-out.is-alert { background: #fef2f2; border-color: #fecaca; }
+.db-exp-row.tone-out.is-alert .db-exp-icon { background: #fee2e2; color: #b91c1c; }
+.db-exp-row.tone-out.is-alert small { color: #b91c1c; font-weight: 600; }
+
+@media (max-width: 900px) {
+  .db-stock { grid-template-columns: minmax(0, 1fr); }
+  .db-expiry { padding-left: 0; border-left: none; padding-top: 14px; border-top: 1px solid var(--border); }
+}
+@media (max-width: 760px) {
+  .db-req { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .db-req-item:nth-child(3) { border-left: none; }
+  .db-req-item:nth-child(n + 3) { border-top: 1px solid var(--border); }
+}
+@media (max-width: 480px) {
+  .db-panel { padding: 14px; }
+  .db-req-item { padding: 12px; }
+  .db-req-value, .db-total strong { font-size: 1.65rem; }
+  .db-req-icon { display: none; }
+  .db-legend { grid-template-columns: minmax(0, 1fr); }
+}
