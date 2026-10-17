@@ -112,7 +112,6 @@ export default function Layout() {
 
   if (!user) return null;
   const sections = NAV[user.role];
-  const current = sections.flatMap((s) => s.items).find((i) => location.pathname.startsWith(i.to));
 
   return (
     <div className="app">
@@ -133,7 +132,6 @@ export default function Layout() {
             <small>Botika ng Bayan · Bulan</small>
           </div>
         </NavLink>
-        {current && <span className="topbar-page">{current.label}</span>}
         {user.role !== 'resident' && (
           <div className="topbar-actions">
             <ExpiryBell />
