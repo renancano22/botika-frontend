@@ -1,7 +1,8 @@
 import { useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { formatDate, notificationsChanged } from '../../api';
-import { useApi, useGoBack } from '../../hooks';
+import { useApi } from '../../hooks';
+import BackButton from '../../components/BackButton';
 import { Loading, Message } from '../../components/ui';
 import { cleanMessage, KIND, kindOf, titleOf, type Kind } from '../../components/Notifications';
 import RequestTracker from '../../components/RequestTracker';
@@ -89,7 +90,6 @@ function tip(kind: Kind, r: MedicineRequest | null): string | null {
 /** Resident: details of one notification (opened from the bell, the dashboard or the Notifications page). */
 export default function NotificationDetail() {
   const { id } = useParams();
-  const goBack = useGoBack('/notifications');
   const { data, error, loading } = useApi<Detail>(`/notifications/${id}`);
 
   // Opening the notification marks it as read: update the bell count.
@@ -108,7 +108,7 @@ export default function NotificationDetail() {
   return (
     <div className="page page-narrow">
       <header className="detail-topbar">
-        <button className="icon-btn" onClick={goBack} aria-label="Back"><Svg d={ICONS.back} size={22} /></button>
+        <BackButton fallback="/notifications" />
         <h1>Notification Details</h1>
       </header>
 

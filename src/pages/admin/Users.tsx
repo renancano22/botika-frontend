@@ -5,6 +5,7 @@ import { useApi } from '../../hooks';
 import { Badge, Card, Empty, Loading, Message, Modal, PasswordInput } from '../../components/ui';
 import type { Role, User } from '../../types';
 import { FIELD } from '../../validation';
+import BackButton from '../../components/BackButton';
 
 type Form = { name: string; email: string; password: string; role: Role };
 
@@ -43,7 +44,7 @@ export default function Users() {
   return (
     <div className="page">
       <header className="page-head">
-        <h1>User Accounts</h1>
+        <div className="page-title"><BackButton /><h1>User Accounts</h1></div>
         <button className="btn" onClick={() => open()}>+ Create staff / admin account</button>
       </header>
       <Message>{pageError || error}</Message>

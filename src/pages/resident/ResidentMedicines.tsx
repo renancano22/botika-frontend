@@ -8,6 +8,7 @@ import type { Medicine, MedicineRequest } from '../../types';
 import { MAX_REQUEST_QUANTITY, quantityWarning } from '../../validation';
 import { PrescriptionUpload, PrescriptionViewer, RX_ICON, RxBadge, type PrescriptionFile } from '../../components/Prescription';
 import { jumpToTop } from '../../scroll';
+import BackButton from '../../components/BackButton';
 
 type CartItem = { medicine: Medicine; quantity: number };
 
@@ -205,8 +206,10 @@ export default function ResidentMedicines() {
       <div className="page page-narrow">
         <header className="page-head hero-head form-hero">
           <div>
-            <button className="hero-back" onClick={() => navigate(-1)}><Svg d={ICONS.back} size={18} /> {step === 'review' ? 'Edit request' : 'View Medicines'}</button>
-            <h1>{step === 'review' ? 'Review Your Request' : 'Medicine Request Form'}</h1>
+            <div className="page-title">
+              <BackButton light fallback="/medicines" label={step === 'review' ? 'Back to the request form' : 'Back to medicines'} />
+              <h1>{step === 'review' ? 'Review Your Request' : 'Medicine Request Form'}</h1>
+            </div>
             <p className="muted">{step === 'review' ? 'Please check the details before submitting.' : 'Enter the details of your medicine request.'}</p>
           </div>
         </header>
@@ -314,7 +317,7 @@ export default function ResidentMedicines() {
     <div className="page page-with-bar">
       <header className="page-head">
         <div>
-          <h1>Check Medicine Availability</h1>
+          <div className="page-title"><BackButton /><h1>Check Medicine Availability</h1></div>
           <p className="muted">Add available medicines to your request. If a medicine is out of stock, send a restock request.</p>
         </div>
       </header>

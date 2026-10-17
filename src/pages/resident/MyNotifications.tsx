@@ -3,6 +3,7 @@ import { useApi } from '../../hooks';
 import { Empty, Loading, Message } from '../../components/ui';
 import { markAllRead, NotificationItem } from '../../components/Notifications';
 import type { SmsNotification } from '../../types';
+import BackButton from '../../components/BackButton';
 
 /**
  * Resident notifications: every SMS sent to them (request updates and the administrator's
@@ -25,7 +26,7 @@ export default function MyNotifications() {
     <div className="page page-narrow">
       <header className="page-head hero-head">
         <div>
-          <h1>Notifications</h1>
+          <div className="page-title"><BackButton light /><h1>Notifications</h1></div>
           <p className="muted">Stay updated on your medicine requests. SMS messages sent to you are also kept here.</p>
         </div>
       </header>

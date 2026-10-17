@@ -3,6 +3,7 @@ import { api, errorMessage, formatDate } from '../../api';
 import { useApi } from '../../hooks';
 import { Badge, Card, Empty, Loading, Message } from '../../components/ui';
 import type { SmsNotification } from '../../types';
+import BackButton from '../../components/BackButton';
 
 const CATEGORIES = [
   { value: 'general', label: 'General announcement' },
@@ -36,7 +37,7 @@ export default function Announcements() {
 
   return (
     <div className="page">
-      <header className="page-head"><h1>SMS Notifications</h1></header>
+      <header className="page-head"><div className="page-title"><BackButton /><h1>SMS Notifications</h1></div></header>
 
       <Card title="Send announcement to residents">
         <form onSubmit={send}>

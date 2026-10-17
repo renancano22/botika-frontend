@@ -6,6 +6,7 @@ import { Badge, Card, Empty, Loading, Message, Modal } from '../../components/ui
 import type { InventoryBatch, Medicine, StockTransaction } from '../../types';
 import { tomorrow } from '../../validation';
 import { jumpWhenReady } from '../../scroll';
+import BackButton from '../../components/BackButton';
 
 const STOCK_OUT_REASONS = ['Expired', 'Damaged', 'Lost', 'Returned to supplier', 'Other'];
 const TX_LABEL: Record<StockTransaction['type'], string> = { stock_in: 'Stock-in', stock_out: 'Stock-out', dispensed: 'Dispensed' };
@@ -88,7 +89,7 @@ export default function Inventory() {
     <div className="page">
       <header className="page-head">
         <div>
-          <h1>Stock &amp; Batches</h1>
+          <div className="page-title"><BackButton /><h1>Stock &amp; Batches</h1></div>
           <p className="muted">Each stock-in is saved as a batch with its own expiration date. Dispensing uses the earliest-expiring batch first and never uses expired batches.</p>
         </div>
         <button className="btn" onClick={() => openStockIn()}>+ Stock-in</button>

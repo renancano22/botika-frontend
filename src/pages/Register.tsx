@@ -5,6 +5,7 @@ import { useAuth } from '../auth';
 import { useApi } from '../hooks';
 import { Message, PasswordInput } from '../components/ui';
 import { FIELD } from '../validation';
+import BackButton from '../components/BackButton';
 
 export default function Register() {
   const { register } = useAuth();
@@ -36,7 +37,7 @@ export default function Register() {
   return (
     <div className="auth-page">
       <form className="auth-card" onSubmit={submit}>
-        <h1>Resident Registration</h1>
+        <div className="page-title"><BackButton fallback="/login" /><h1>Resident Registration</h1></div>
         <p className="muted">Create an account to check medicine availability, submit requests and receive SMS updates.</p>
         <Message>{error}</Message>
 

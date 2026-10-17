@@ -6,6 +6,7 @@ import { Empty, Loading, Message, Modal } from '../../components/ui';
 import { ICONS, quantityText, Svg, unitPlural } from '../../components/RequestCards';
 import type { ForecastMethod, ForecastMethodResult, ForecastReport, ForecastResult } from '../../types';
 import { jumpTo } from '../../scroll';
+import BackButton from '../../components/BackButton';
 
 const METHODS: { key: ForecastMethod; label: string; hint: string }[] = [
   { key: 'moving_average', label: 'Moving Average', hint: 'Average of the last 3 months' },
@@ -341,6 +342,7 @@ export default function Forecasting() {
     <div className="page fc-page">
       <header className="page-head fc-head">
         <div className="fc-title">
+          <BackButton />
           <span className="fc-title-icon"><Svg d={ICON.bars} size={26} width={2.6} /></span>
           <div>
             <h1>Demand Forecasting</h1>

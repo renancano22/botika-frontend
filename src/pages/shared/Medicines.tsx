@@ -7,6 +7,7 @@ import { Badge, Card, Empty, Loading, Message, Modal } from '../../components/ui
 import { unitPlural } from '../../components/RequestCards';
 import type { Medicine } from '../../types';
 import { RxBadge } from '../../components/Prescription';
+import BackButton from '../../components/BackButton';
 
 const EMPTY = { generic_name: '', strength: '', dosage_form: '', category: '', unit: '', description: '', reorder_level: 20, requires_prescription: false };
 type Form = typeof EMPTY;
@@ -97,7 +98,7 @@ export default function Medicines() {
     <div className="page">
       <header className="page-head">
         <div>
-          <h1>Medicine List</h1>
+          <div className="page-title"><BackButton /><h1>Medicine List</h1></div>
           <p className="muted">Botika ng Bayan medicine list, stock on hand, batches and expiration dates.</p>
         </div>
         <div className="mi-head-actions">

@@ -9,6 +9,7 @@ import { PrescriptionViewer, requiresPrescription, RxBadge, RX_ICON } from '../.
 import { prescriptionStatus } from '../../components/RequestDetailParts';
 import { PickupCountdown, Svg } from '../../components/RequestCards';
 import type { MedicineRequest } from '../../types';
+import BackButton from '../../components/BackButton';
 
 const itemsText = (r: MedicineRequest) => r.items.map((i) => `${i.medicine.medicine_name} ×${i.quantity}`).join(', ');
 
@@ -118,7 +119,7 @@ export default function Requests() {
     <div className="page">
       <header className="page-head">
         <div>
-          <h1>Medicine & Restock Requests</h1>
+          <div className="page-title"><BackButton /><h1>Medicine & Restock Requests</h1></div>
           <p className="muted">Pharmacy staff review medicine requests. The administrator reviews restock requests. Residents are notified by SMS.</p>
         </div>
       </header>

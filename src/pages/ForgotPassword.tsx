@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { api, errorMessage } from '../api';
 import { Message, PasswordInput } from '../components/ui';
 import { FIELD } from '../validation';
+import BackButton from '../components/BackButton';
 
 /**
  * Forgot password (for admin, staff and residents):
@@ -57,7 +58,7 @@ export default function ForgotPassword() {
     <div className="auth-page">
       {step === 1 ? (
         <form className="auth-card" onSubmit={sendCode}>
-          <h1>Forgot password</h1>
+          <div className="page-title"><BackButton fallback="/login" /><h1>Forgot password</h1></div>
           <p className="muted">Enter the email or mobile number of your account. We'll send you a 6-digit code to reset your password.</p>
           <Message>{error}</Message>
           <label>Email or mobile number
@@ -68,7 +69,7 @@ export default function ForgotPassword() {
         </form>
       ) : (
         <form className="auth-card" onSubmit={reset}>
-          <h1>Reset password</h1>
+          <div className="page-title"><BackButton fallback="/login" /><h1>Reset password</h1></div>
           <Message type="info">{info}</Message>
           <Message>{error}</Message>
           <label>6-digit code

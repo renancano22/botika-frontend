@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import { api, errorMessage } from '../../api';
-import { useApi, useGoBack } from '../../hooks';
+import { useApi } from '../../hooks';
+import BackButton from '../../components/BackButton';
 import { Loading, Message, Modal } from '../../components/ui';
 import RequestTracker from '../../components/RequestTracker';
 import { ICONS, Svg } from '../../components/RequestCards';
@@ -14,7 +15,6 @@ import { unitPlural } from '../../components/RequestCards';
 /** Resident: one request with its tracking timeline (opened from My Requests). */
 export default function RequestDetail() {
   const { id } = useParams();
-  const goBack = useGoBack('/requests');
   const { data: r, error, loading, setData } = useApi<MedicineRequest>(`/requests/${id}`, undefined, 30000);
   const [msg, setMsg] = useState<{ type: 'error' | 'success'; text: string } | null>(null);
   const [editing, setEditing] = useState<MedicineRequest | null>(null);
@@ -80,7 +80,7 @@ export default function RequestDetail() {
   return (
     <div className="page page-narrow">
       <header className="detail-topbar">
-        <button className="icon-btn" onClick={goBack} aria-label="Back"><Svg d={ICONS.back} size={22} /></button>
+        <BackButton fallback="/requests" />
         <h1>Request Details</h1>
       </header>
 

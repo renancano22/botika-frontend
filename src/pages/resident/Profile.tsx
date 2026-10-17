@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent, type ReactNode } from 'react';
-import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
 import { api, errorMessage } from '../../api';
 import { useAuth } from '../../auth';
@@ -9,6 +9,7 @@ import { Svg } from '../../components/RequestCards';
 import type { User } from '../../types';
 import { FIELD } from '../../validation';
 import { jumpTo, jumpToTop } from '../../scroll';
+import BackButton from '../../components/BackButton';
 
 interface ProfileData {
   user: User;
@@ -371,9 +372,7 @@ export default function Profile() {
     return (
       <div className="page pf-page fb-edit">
         <header className="fb-top">
-          <button type="button" className="fb-top-back" onClick={closeEdit} aria-label="Back to My Profile" title="Back to My Profile">
-            <Svg d={ICON.back} size={22} width={2.4} />
-          </button>
+          <BackButton onClick={closeEdit} label="Back to My Profile" />
           <div>
             <h1>Edit Profile</h1>
           </div>
@@ -501,9 +500,7 @@ export default function Profile() {
   return (
     <div className="page pf-page fb-page">
       <header className="fb-top no-print">
-        <Link to="/dashboard" className="fb-top-back" aria-label="Back to Dashboard" title="Back to Dashboard">
-          <Svg d={ICON.back} size={22} width={2.4} />
-        </Link>
+        <BackButton />
         <div>
           <h1>My Profile</h1>
         </div>

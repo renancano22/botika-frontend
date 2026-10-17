@@ -5,6 +5,7 @@ import { NotificationItem } from '../../components/Notifications';
 import { ICONS, RequestRow, Svg } from '../../components/RequestCards';
 import ActivityTile from '../../components/ActivityTile';
 import type { MedicineRequest, Resident, SmsNotification } from '../../types';
+import BackButton from '../../components/BackButton';
 
 interface ResidentDash {
   resident: Resident;
@@ -24,7 +25,7 @@ export default function ResidentDashboard() {
     <div className="page">
       <header className="page-head hero-head">
         <div>
-          <h1>Hello, {resident.name.split(' ')[0]}!</h1>
+          <div className="page-title"><BackButton light onlyWithHistory /><h1>Hello, {resident.name.split(' ')[0]}!</h1></div>
           <p className="muted">Check medicines, send requests and follow their status here.</p>
         </div>
         <Link className="btn" to="/medicines">Check medicines</Link>

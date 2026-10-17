@@ -9,6 +9,7 @@ import type { Dispensing, Medicine, MedicineRequest, Resident } from '../../type
 import { MAX_REQUEST_QUANTITY, quantityWarning } from '../../validation';
 import QrScanner from './QrScanner';
 import { jumpTo, jumpWhenReady } from '../../scroll';
+import BackButton from '../../components/BackButton';
 
 interface Lookup {
   resident: Resident;
@@ -102,7 +103,7 @@ export default function Dispense() {
     <div className="page">
       <header className="page-head">
         <div>
-          <h1>Dispense Medicine</h1>
+          <div className="page-title"><BackButton /><h1>Dispense Medicine</h1></div>
           <p className="muted">Scan the resident's QR code or type the Resident ID to verify identity before dispensing.</p>
         </div>
       </header>

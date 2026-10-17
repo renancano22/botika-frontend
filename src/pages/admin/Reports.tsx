@@ -4,6 +4,7 @@ import { useApi } from '../../hooks';
 import { Empty, Loading, Message } from '../../components/ui';
 import { Svg } from '../../components/RequestCards';
 import { jumpTo } from '../../scroll';
+import BackButton from '../../components/BackButton';
 
 const TYPES: Record<string, string> = {
   usage: 'Medicine Usage',
@@ -138,7 +139,7 @@ export default function Reports() {
     <div className="page rp-page">
       <header className="page-head no-print">
         <div>
-          <h1>Reports</h1>
+          <div className="page-title"><BackButton /><h1>Reports</h1></div>
           <p className="muted">Generate, download and print reports on medicine usage, dispensing and inventory.</p>
         </div>
       </header>

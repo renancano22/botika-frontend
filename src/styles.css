@@ -629,8 +629,6 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--p
 
 /* ---------- medicine request form */
 .form-hero { flex-direction: column; align-items: flex-start; }
-.hero-back { display: inline-flex; align-items: center; gap: 4px; margin: -4px 0 8px -4px; padding: 4px 6px; border: none; border-radius: 8px; background: transparent; color: rgba(238, 251, 240, 0.9); font: inherit; font-weight: 600; cursor: pointer; }
-.hero-back:hover { background: rgba(255, 255, 255, 0.12); }
 .form-card { display: flex; flex-direction: column; gap: 12px; padding: 18px; }
 .form-med { padding-bottom: 14px; border-bottom: 1px solid var(--border); }
 .form-med-head { display: flex; gap: 14px; align-items: flex-start; margin-bottom: 12px; }
@@ -1318,8 +1316,6 @@ button.pf-back { background: none; border: none; font: inherit; cursor: pointer;
 .fb-top { display: flex; align-items: center; gap: 10px; }
 .fb-top h1 { margin: 0; font-size: 1.25rem; font-weight: 700; letter-spacing: 0; }
 .fb-top p { margin: 0; font-size: 0.88rem; }
-.fb-top-back { width: 42px; height: 42px; flex-shrink: 0; border-radius: 50%; border: 1px solid var(--border); background: #fff; color: var(--primary); display: grid; place-items: center; cursor: pointer; box-shadow: var(--shadow-sm); }
-.fb-top-back:hover { background: var(--primary-50); }
 .fb-form { display: flex; flex-direction: column; gap: 12px; }
 .fb-form .card { margin: 0; }
 .fb-sec { padding: 14px 16px; }
@@ -1364,7 +1360,6 @@ button.pf-back { background: none; border: none; font: inherit; cursor: pointer;
 @media (max-width: 600px) {
   .fb-top h1 { font-size: 1.15rem; }
   .fb-top p { font-size: 0.8rem; }
-  .fb-top-back { width: 38px; height: 38px; }
   .pf-page .card.fb-sec { padding: 12px 14px; }
   .fb-avatar-wrap { width: 120px; }
   .fb-avatar .avatar { width: 112px !important; height: 112px !important; }
@@ -1491,3 +1486,20 @@ a.db-person:hover { background: rgba(255, 255, 255, 0.2); }
   .db-req-icon { display: none; }
   .db-legend { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* ---------- Back button: the same "<" chevron at the top-left of every page, beside the title */
+.page-title { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.page-title h1 { margin: 0; min-width: 0; }
+.page-title + .muted, .page-title + p { margin-top: 4px; }
+.back-btn { width: 40px; height: 40px; padding: 0; flex-shrink: 0; border-radius: 50%; border: 1px solid var(--border); background: #fff; color: var(--primary);
+  display: grid; place-items: center; cursor: pointer; box-shadow: var(--shadow-sm); transition: background 0.12s, border-color 0.12s; }
+.back-btn:hover { background: var(--primary-50); border-color: color-mix(in srgb, var(--primary) 30%, white); }
+.back-btn:focus-visible { outline: 3px solid var(--primary-soft); outline-offset: 2px; }
+.back-btn:active { transform: translateY(1px); }
+/* white version on the green page headers */
+.back-btn-light { background: rgba(255, 255, 255, 0.14); border-color: rgba(255, 255, 255, 0.35); color: #fff; box-shadow: none; }
+.back-btn-light:hover { background: rgba(255, 255, 255, 0.24); border-color: rgba(255, 255, 255, 0.55); }
+.auth-card .page-title { margin-bottom: 12px; }
+.auth-card .page-title h1 { margin: 0; }
+@media (max-width: 480px) { .back-btn { width: 36px; height: 36px; } .page-title { gap: 8px; } }
+@media print { .back-btn { display: none !important; } }

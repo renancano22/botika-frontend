@@ -6,6 +6,7 @@ import { Empty, Loading, Message } from '../../components/ui';
 import { RequestRow, STATUS_COLOR_KEY, STATUS_LABEL, statusKey, Svg, type StatusKey } from '../../components/RequestCards';
 import StatusDropdown from '../../components/StatusDropdown';
 import type { MedicineRequest } from '../../types';
+import BackButton from '../../components/BackButton';
 
 const FILTERS: ('all' | StatusKey)[] = ['all', 'review', 'claim', 'stock', 'claimed', 'available', 'cancelled', 'expired', 'rejected'];
 
@@ -46,7 +47,7 @@ export default function MyRequests() {
     <div className="page">
       <header className="page-head hero-head">
         <div>
-          <h1>{greeting()}, {user?.name.split(' ')[0]}!</h1>
+          <div className="page-title"><BackButton light /><h1>{greeting()}, {user?.name.split(' ')[0]}!</h1></div>
           <p className="muted">Here are your medicine requests.</p>
         </div>
         <Link className="btn" to="/medicines">+ New request</Link>
