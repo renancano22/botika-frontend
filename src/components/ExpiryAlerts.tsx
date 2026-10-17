@@ -124,7 +124,7 @@ export function ExpiryBanner({ alerts }: { alerts: Alerts }) {
       </ul>
       <div className="expiry-banner-foot">
         {near.length + expired.length > shown.length && <span className="muted small">+{near.length + expired.length - shown.length} more</span>}
-        <Link to="/inventory" className="btn btn-sm">View in Inventory</Link>
+        <Link to="/inventory" className="btn btn-sm">View in Stock &amp; Batches</Link>
       </div>
     </section>
   );

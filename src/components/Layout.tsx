@@ -41,8 +41,8 @@ const NAV: Record<Role, Section[]> = {
   admin: [
     { items: [{ to: '/dashboard', label: 'Dashboard', icon: 'home' }] },
     { title: 'Inventory', items: [
-      { to: '/medicines', label: 'Medicines', icon: 'pill' },
-      { to: '/inventory', label: 'Inventory', icon: 'box' },
+      { to: '/medicines', label: 'Medicine List', icon: 'pill' },
+      { to: '/inventory', label: 'Stock & Batches', icon: 'box' },
     ] },
     { title: 'Distribution', items: [
       { to: '/requests', label: 'Requests', icon: 'clipboard' },
@@ -66,8 +66,8 @@ const NAV: Record<Role, Section[]> = {
       { to: '/dispensing', label: 'Dispensing Records', icon: 'history' },
     ] },
     { title: 'Inventory', items: [
-      { to: '/inventory', label: 'Inventory', icon: 'box' },
-      { to: '/medicines', label: 'Medicines', icon: 'pill' },
+      { to: '/inventory', label: 'Stock & Batches', icon: 'box' },
+      { to: '/medicines', label: 'Medicine List', icon: 'pill' },
     ] },
   ],
   resident: [

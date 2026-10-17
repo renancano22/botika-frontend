@@ -16,7 +16,7 @@ const displayName = (f: Form) => [f.generic_name, f.strength, f.dosage_form].map
 const qty = (n: number, unit: string) => `${n} ${n === 1 ? unit : unitPlural(unit)}`;
 
 /**
- * Medicine Inventory (admin & staff): the Botika ng Bayan medicine list with generic name, category,
+ * Medicine List (admin & staff): the Botika ng Bayan medicine list with generic name, category,
  * strength, dosage form, stock, expiration dates of its batches, stock status and last update.
  * Medicines whose stock was never recorded are shown as "Not recorded" until staff record a stock-in
  * or confirm there is no stock. Delete is admin only.
@@ -97,7 +97,7 @@ export default function Medicines() {
     <div className="page">
       <header className="page-head">
         <div>
-          <h1>Medicine Inventory</h1>
+          <h1>Medicine List</h1>
           <p className="muted">Botika ng Bayan medicine list, stock on hand, batches and expiration dates.</p>
         </div>
         <div className="mi-head-actions">
@@ -219,7 +219,7 @@ export default function Medicines() {
               <input type="checkbox" checked={form.requires_prescription} onChange={(e) => setForm({ ...form, requires_prescription: e.target.checked })} />
               <span><strong>Requires prescription</strong> — residents must upload a doctor's prescription, and staff must check it before approving and dispensing.</span>
             </label>
-            <p className="field-hint">Stock and expiration dates are recorded in Inventory → Stock-in.</p>
+            <p className="field-hint">Stock and expiration dates are recorded in Stock &amp; Batches → Stock-in.</p>
             <div className="modal-actions">
               <button type="button" className="btn btn-outline" onClick={() => setForm(null)}>Cancel</button>
               <button className="btn" disabled={busy}>{busy ? 'Saving…' : 'Save'}</button>

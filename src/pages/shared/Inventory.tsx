@@ -19,7 +19,7 @@ export default function Inventory() {
   const batches = (data ?? []).filter((b) => !expiry || (b.expiry_status ?? 'ok') === expiry);
   const [stockIn, setStockIn] = useState<{ medicine_id: string; quantity: number; expiration_date: string } | null>(null);
   const openStockIn = (medicineId = '') => { setFormError(''); setStockIn({ medicine_id: medicineId, quantity: 1, expiration_date: '' }); };
-  // ?stockin=<medicine id> (Medicine Inventory → "Record stock") or ?stockin=new opens the stock-in form.
+  // ?stockin=<medicine id> (Medicine List → "Record stock") or ?stockin=new opens the stock-in form.
   const [params, setParams] = useSearchParams();
   useEffect(() => {
     const id = params.get('stockin');
@@ -72,7 +72,7 @@ export default function Inventory() {
     <div className="page">
       <header className="page-head">
         <div>
-          <h1>Inventory</h1>
+          <h1>Stock &amp; Batches</h1>
           <p className="muted">Each stock-in is saved as a batch with its own expiration date. Dispensing uses the earliest-expiring batch first and never uses expired batches.</p>
         </div>
         <button className="btn" onClick={() => openStockIn()}>+ Stock-in</button>
