@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api, errorMessage, formatDate } from '../../api';
 import { useAuth } from '../../auth';
@@ -115,6 +115,14 @@ export default function Requests() {
     <button className="btn btn-danger btn-sm" onClick={() => openReject(r)}>Reject</button>
   </>;
 
+  // On phones the status tabs are one swipeable row: keep the selected tab in view.
+  const tabsRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const row = tabsRef.current;
+    const active = row?.querySelector<HTMLElement>('.chip.active');
+    if (row && active && row.scrollWidth > row.clientWidth) row.scrollLeft = active.offsetLeft - row.offsetLeft - 12;
+  }, [apiStatus, apiType]);
+
   return (
     <div className="page">
       <header className="page-head">
@@ -135,7 +143,7 @@ export default function Requests() {
           </select>
         </div>
       }>
-        <div className="chips status-tabs" role="tablist" aria-label="Status">
+        <div className="chips status-tabs" role="tablist" aria-label="Status" ref={tabsRef}>
           {statusTabs(apiType).map(([value, label]) => (
             <button key={value || 'all'} role="tab" aria-selected={apiStatus === value} className={`chip ${apiStatus === value ? 'active' : ''}`}
               onClick={() => setFilter({ status: value })}>
