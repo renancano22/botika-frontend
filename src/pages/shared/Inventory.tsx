@@ -5,6 +5,7 @@ import { useApi } from '../../hooks';
 import { Badge, Card, Empty, Loading, Message, Modal } from '../../components/ui';
 import type { InventoryBatch, Medicine, StockTransaction } from '../../types';
 import { tomorrow } from '../../validation';
+import { jumpWhenReady } from '../../scroll';
 
 const STOCK_OUT_REASONS = ['Expired', 'Damaged', 'Lost', 'Returned to supplier', 'Other'];
 const TX_LABEL: Record<StockTransaction['type'], string> = { stock_in: 'Stock-in', stock_out: 'Stock-out', dispensed: 'Dispensed' };
@@ -12,7 +13,8 @@ const TX_LABEL: Record<StockTransaction['type'], string> = { stock_in: 'Stock-in
 /** Inventory: stock-in batches, stock-out, real-time stock and expiration monitoring. */
 export default function Inventory() {
   const [search, setSearch] = useState('');
-  // ?expiry=near_expiry / expired (from the dashboard tiles) opens the batches already filtered.
+  // ?expiry=near_expiry / expired (dashboard tiles, expiry alerts) opens the batches already filtered;
+  // &batch=<id> (an expiry alert) also jumps to that batch and highlights it.
   const [expiry, setExpiry] = useState(() => new URLSearchParams(window.location.search).get('expiry') ?? '');
   const { data, error, loading, reload } = useApi<InventoryBatch[]>('/inventory', { search }, 30000);
   const { data: medicines } = useApi<Medicine[]>('/medicines');
@@ -21,6 +23,20 @@ export default function Inventory() {
   const openStockIn = (medicineId = '') => { setFormError(''); setStockIn({ medicine_id: medicineId, quantity: 1, expiration_date: '' }); };
   // ?stockin=<medicine id> (Medicine List → "Record stock") or ?stockin=new opens the stock-in form.
   const [params, setParams] = useSearchParams();
+  const batchParam = params.get('batch');
+  useEffect(() => {
+    const e = params.get('expiry');
+    if (e !== null) setExpiry(e);
+    if (batchParam) setSearch(''); // make sure the batch is not hidden by an earlier search
+  }, [params, batchParam]);
+  useEffect(() => {
+    if (!batchParam || !data) return;
+    jumpWhenReady(`batch-${batchParam}`);
+    const next = new URLSearchParams(params);
+    next.delete('batch');
+    setParams(next, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [batchParam, data]);
   useEffect(() => {
     const id = params.get('stockin');
     if (id === null) return;
@@ -96,7 +112,7 @@ export default function Inventory() {
             <thead><tr><th>Batch #</th><th>Medicine</th><th>Quantity</th><th>Expiration date</th><th>Expiry status</th><th>Last updated</th><th></th></tr></thead>
             <tbody>
               {batches.map((b) => (
-                <tr key={b.inventory_id} className={b.expiry_status === 'expired' ? 'row-danger' : b.expiry_status === 'near_expiry' ? 'row-warn' : ''}>
+                <tr key={b.inventory_id} id={`batch-${b.inventory_id}`} className={b.expiry_status === 'expired' ? 'row-danger' : b.expiry_status === 'near_expiry' ? 'row-warn' : ''}>
                   <td>{b.inventory_id}</td>
                   <td>{b.medicine.medicine_name}</td>
                   <td>{b.quantity} {b.medicine.unit}</td>

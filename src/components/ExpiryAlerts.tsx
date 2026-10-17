@@ -33,15 +33,20 @@ export function useStockAlerts() {
   return alerts;
 }
 
-function BatchLine({ b, expired }: { b: InventoryBatch; expired: boolean }) {
+/** One alert; tapping it opens that exact batch in Stock & Batches (filtered and highlighted). */
+function BatchLine({ b, expired, onOpen }: { b: InventoryBatch; expired: boolean; onOpen?: () => void }) {
   return (
-    <li className={`expiry-item ${expired ? 'k-rejected' : 'k-reminder'}`}>
-      <span className="expiry-icon kicon"><Svg d={expired ? ICONS.x : ICONS.clock} size={18} width={2.2} /></span>
-      <span className="expiry-text">
-        <strong>{b.medicine.medicine_name}</strong>
-        <span>{quantityText(b.quantity, b.medicine.unit)} · batch #{b.inventory_id}</span>
-        <span className="expiry-when">{expiryText(b)}</span>
-      </span>
+    <li>
+      <Link to={`/inventory?expiry=${expired ? 'expired' : 'near_expiry'}&batch=${b.inventory_id}`} onClick={onOpen}
+        className={`expiry-item expiry-link ${expired ? 'k-rejected' : 'k-reminder'}`} title="View this batch in Stock & Batches">
+        <span className="expiry-icon kicon"><Svg d={expired ? ICONS.x : ICONS.clock} size={18} width={2.2} /></span>
+        <span className="expiry-text">
+          <strong>{b.medicine.medicine_name}</strong>
+          <span>{quantityText(b.quantity, b.medicine.unit)} · batch #{b.inventory_id}</span>
+          <span className="expiry-when">{expiryText(b)}</span>
+        </span>
+        <span className="expiry-go" aria-hidden="true"><Svg d={ICONS.chevron} size={18} width={2.4} /></span>
+      </Link>
     </li>
   );
 }
@@ -59,7 +64,7 @@ export function ExpiryBell() {
   const expired = alerts?.expired ?? [];
   const count = near.length + expired.length;
 
-  useEffect(() => { setOpen(false); }, [location.pathname]);
+  useEffect(() => { setOpen(false); }, [location.pathname, location.search]);
   useEffect(() => {
     if (!open) return;
     const onDown = (e: MouseEvent | TouchEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
@@ -88,11 +93,11 @@ export function ExpiryBell() {
             <p className="empty">No medicine will expire within 1 month.</p>
           ) : (
             <ul className="expiry-list">
-              {expired.map((b) => <BatchLine key={b.inventory_id} b={b} expired />)}
-              {near.map((b) => <BatchLine key={b.inventory_id} b={b} expired={false} />)}
+              {expired.map((b) => <BatchLine key={b.inventory_id} b={b} expired onOpen={() => setOpen(false)} />)}
+              {near.map((b) => <BatchLine key={b.inventory_id} b={b} expired={false} onOpen={() => setOpen(false)} />)}
             </ul>
           )}
-          <Link to="/inventory" className="bell-all">Open inventory</Link>
+          <Link to="/inventory" className="bell-all" onClick={() => setOpen(false)}>Open Stock &amp; Batches</Link>
         </div>
       )}
     </div>

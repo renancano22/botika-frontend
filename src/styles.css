@@ -1397,3 +1397,15 @@ button.pf-back { background: none; border: none; font: inherit; cursor: pointer;
 .mi-exp-near_expiry { color: var(--warn); font-weight: 600; }
 .mi-exp-expired { color: var(--danger); font-weight: 600; text-decoration: line-through; }
 .mi-preview { margin: 0 0 12px; padding: 8px 12px; border-radius: 10px; background: var(--primary-50); font-size: 0.86rem; }
+
+/* expiry alerts: each alert opens its batch in Stock & Batches */
+.expiry-link { color: inherit; text-decoration: none; transition: background 0.12s, border-color 0.12s, transform 0.05s; }
+.expiry-link:hover, .expiry-link:focus-visible { background: color-mix(in srgb, var(--k) 13%, white); border-color: color-mix(in srgb, var(--k) 40%, white); }
+.expiry-link:active { transform: translateY(1px); }
+.expiry-link .expiry-text { flex: 1; min-width: 0; }
+.expiry-go { margin-left: auto; align-self: center; color: var(--k); flex-shrink: 0; }
+/* table rows can't show the ring: the row's cells glow briefly instead */
+tr.jump-flash { animation: none; }
+tr.jump-flash > td { animation: row-flash 1s ease-out; }
+@keyframes row-flash { 0%, 40% { background: #fef3c7; } 100% { background: transparent; } }
+@media (prefers-reduced-motion: reduce) { tr.jump-flash > td { animation: none; } }
