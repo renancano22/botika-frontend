@@ -24,13 +24,13 @@ export default function ResidentDashboard() {
   const { resident, counts } = data;
 
   const activity = [
-    { to: '/requests?status=review', icon: REVIEW_ICON, value: counts.pending, label: 'Under review',
+    { to: '/requests?status=review', tone: 'review', icon: REVIEW_ICON, value: counts.pending, label: 'Under review',
       hint: counts.pending ? 'Being checked by the pharmacy' : 'Nothing under review', alert: false },
-    { to: '/requests?status=claim', icon: ICONS.check, value: counts.approved, label: 'Ready to claim',
+    { to: '/requests?status=claim', tone: 'ready', icon: ICONS.check, value: counts.approved, label: 'Ready to claim',
       hint: counts.approved ? 'Bring your QR code' : 'Nothing to claim', alert: counts.approved > 0 },
-    { to: '/requests?status=claimed', icon: ICONS.hand, value: counts.dispensed, label: 'Claimed',
+    { to: '/requests?status=claimed', tone: 'completed', icon: ICONS.hand, value: counts.dispensed, label: 'Claimed',
       hint: 'Medicines received', alert: false },
-    { to: '/medicines?availability=in_stock', icon: ICONS.pill, value: counts.available_medicines, label: 'Available now',
+    { to: '/medicines?availability=in_stock', tone: 'available', icon: ICONS.pill, value: counts.available_medicines, label: 'Available now',
       hint: 'Medicines in stock', alert: false },
   ];
 
@@ -56,7 +56,7 @@ export default function ResidentDashboard() {
         </div>
         <div className="db-req">
           {activity.map((m) => (
-            <Link key={m.label} to={m.to} className={`db-req-item ${m.alert ? 'is-alert' : ''}`}>
+            <Link key={m.label} to={m.to} className={`db-req-item t-${m.tone} ${m.alert ? 'is-alert' : ''}`}>
               <span className="db-req-label"><span className="db-req-icon"><Svg d={m.icon} size={18} /></span>{m.label}</span>
               <strong className="db-req-value">{m.value}</strong>
               <span className="db-req-hint">{m.alert && <span className="db-dot" aria-hidden="true" />}{m.hint}</span>

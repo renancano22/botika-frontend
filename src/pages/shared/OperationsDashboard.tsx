@@ -199,13 +199,13 @@ function People({ residents, staff, links }: { residents: number; staff: number;
 /** Requests & Dispensing: one summary panel with four sections (tap a section to open it). */
 function RequestsPanel({ c, today }: { c: Record<string, number>; today: string }) {
   const items = [
-    { to: '/requests?type=medicine&status=pending', icon: ICON.review, value: c.pending_requests, label: 'Pending requests',
+    { to: '/requests?type=medicine&status=pending', tone: 'review', icon: ICON.review, value: c.pending_requests, label: 'Pending requests',
       hint: c.pending_requests ? 'Waiting for review' : 'All reviewed', alert: c.pending_requests > 0 },
-    { to: '/requests?type=medicine&status=approved', icon: ICONS.check, value: c.approved_to_dispense, label: 'Ready for pickup',
+    { to: '/requests?type=medicine&status=approved', tone: 'ready', icon: ICONS.check, value: c.approved_to_dispense, label: 'Ready for pickup',
       hint: c.approved_to_dispense ? 'Waiting to be claimed' : 'None waiting', alert: false },
-    { to: `/dispensing?from=${today}&to=${today}`, icon: ICONS.hand, value: c.dispensed_today, label: 'Dispensed today',
+    { to: `/dispensing?from=${today}&to=${today}`, tone: 'completed', icon: ICONS.hand, value: c.dispensed_today, label: 'Dispensed today',
       hint: `${plural(c.dispensed_today, 'release')} today`, alert: false },
-    { to: '/requests?type=restock&status=pending', icon: ICON.restock, value: c.pending_restock, label: 'Pending restock',
+    { to: '/requests?type=restock&status=pending', tone: 'restock', icon: ICON.restock, value: c.pending_restock, label: 'Pending restock',
       hint: c.pending_restock ? 'Needs admin review' : 'None waiting', alert: c.pending_restock > 0 },
   ];
   return (
@@ -216,7 +216,7 @@ function RequestsPanel({ c, today }: { c: Record<string, number>; today: string 
       </div>
       <div className="db-req">
         {items.map((m) => (
-          <Link key={m.label} to={m.to} className={`db-req-item ${m.alert ? 'is-alert' : ''}`}>
+          <Link key={m.label} to={m.to} className={`db-req-item t-${m.tone} ${m.alert ? 'is-alert' : ''}`}>
             <span className="db-req-label"><span className="db-req-icon"><Svg d={m.icon} size={18} /></span>{m.label}</span>
             <strong className="db-req-value">{m.value}</strong>
             <span className="db-req-hint">{m.alert && <span className="db-dot" aria-hidden="true" />}{m.hint}</span>

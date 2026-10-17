@@ -1548,3 +1548,20 @@ a.db-person:hover { background: rgba(255, 255, 255, 0.2); }
   .req-table .rq-note { min-width: 140px; max-width: 200px; }
   .req-table .rx-cell { white-space: nowrap; }
 }
+
+/* ---------- Dashboards: colour accents. Each summary box has its own colour (the same as its status pill). */
+.t-review { --t: var(--st-review); }
+.t-ready { --t: var(--st-ready); }
+.t-completed { --t: var(--st-completed); }
+.t-restock { --t: #d97706; }
+.t-available { --t: #059669; }
+.db-panel-head h2 { display: flex; align-items: center; gap: 8px; }
+.db-panel-head h2::before { content: ''; width: 4px; height: 18px; border-radius: 4px; background: linear-gradient(180deg, #2fb350, var(--primary)); flex-shrink: 0; }
+.db-req-item[class*=' t-'] { position: relative; background: linear-gradient(160deg, color-mix(in srgb, var(--t) 14%, white) 0%, color-mix(in srgb, var(--t) 3%, white) 80%); }
+.db-req-item[class*=' t-']::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 4px; background: linear-gradient(90deg, var(--t), color-mix(in srgb, var(--t) 55%, white)); }
+.db-req-item[class*=' t-']:hover, .db-req-item[class*=' t-']:focus-visible { background: color-mix(in srgb, var(--t) 18%, white); }
+.db-req-item[class*=' t-'] .db-req-icon { background: linear-gradient(135deg, color-mix(in srgb, var(--t) 80%, white), var(--t)); color: #fff; box-shadow: 0 3px 8px color-mix(in srgb, var(--t) 35%, transparent); }
+.db-req-item[class*=' t-'] .db-req-value { color: color-mix(in srgb, var(--t) 85%, black); }
+.db-req-item[class*=' t-'] .db-req-label { color: color-mix(in srgb, var(--t) 45%, #1f2d29); }
+.db-req-item[class*=' t-'].is-alert .db-req-hint { color: color-mix(in srgb, var(--t) 80%, black); }
+.db-req-item[class*=' t-'] .db-dot { background: var(--t); box-shadow: 0 0 0 3px color-mix(in srgb, var(--t) 20%, white); }
