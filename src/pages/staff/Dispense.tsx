@@ -4,23 +4,20 @@ import { useApi } from '../../hooks';
 import { Badge, Card, Empty, Message, Modal } from '../../components/ui';
 import { PrescriptionViewer, requiresPrescription, RX_ICON, RxBadge } from '../../components/Prescription';
 import { prescriptionStatus } from '../../components/RequestDetailParts';
-import { Svg, unitPlural } from '../../components/RequestCards';
-import type { Dispensing, Medicine, MedicineRequest, Resident } from '../../types';
+import { ICONS, Svg, unitPlural } from '../../components/RequestCards';
+import type { Medicine, MedicineRequest } from '../../types';
 import { MAX_REQUEST_QUANTITY, quantityWarning } from '../../validation';
 import QrScanner from './QrScanner';
 import { jumpTo, jumpWhenReady } from '../../scroll';
 import BackButton from '../../components/BackButton';
-
-interface Lookup {
-  resident: Resident;
-  approved_requests: MedicineRequest[];
-  dispensing_history: Dispensing[];
-}
+import ResidentSearch, { type ResidentLookup as Lookup } from './ResidentSearch';
 
 /** QR Code / Resident ID verification and medicine dispensing. */
 export default function Dispense() {
   const [code, setCode] = useState('');
   const [scanning, setScanning] = useState(false);
+  // 'search': the resident forgot their QR code and Resident ID, so they are found by name and verified another way.
+  const [mode, setMode] = useState<'id' | 'search'>('id');
   const [found, setFound] = useState<Lookup | null>(null);
   const [msg, setMsg] = useState<{ type: 'error' | 'success'; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
@@ -54,6 +51,22 @@ export default function Dispense() {
       });
     }
   }, []);
+
+  const openSearch = () => {
+    setScanning(false);
+    setFound(null); // nothing can be dispensed until the searched resident is verified
+    setMsg(null);
+    setMode('search');
+  };
+
+  const verifiedBySearch = (record: Lookup) => {
+    setFound(record);
+    setCode(record.resident.qr_code);
+    setWalkIn([]);
+    setMode('id');
+    setMsg({ type: 'success', text: `Identity of ${record.resident.name} (${record.resident.qr_code}) confirmed with their registered mobile number.` });
+    jumpWhenReady('dispense-resident');
+  };
 
   const afterDispense = async (text: string) => {
     setMsg({ type: 'success', text });
@@ -104,18 +117,28 @@ export default function Dispense() {
       <header className="page-head">
         <div>
           <div className="page-title"><BackButton linkedOnly /><h1>Dispense Medicine</h1></div>
-          <p className="muted">Scan the resident's QR code or type the Resident ID to verify identity before dispensing.</p>
+          <p className="muted">Scan the resident's QR code, type the Resident ID, or search by name to verify identity before dispensing.</p>
         </div>
       </header>
 
-      <Card title="1. Verify resident">
-        <form className="lookup" onSubmit={(e) => { e.preventDefault(); lookup(code); }}>
-          <input value={code} onChange={(e) => setCode(e.target.value)} placeholder="Resident ID, e.g. BBC-000001" />
-          <button className="btn">Verify</button>
-          <button type="button" className="btn btn-outline" onClick={() => setScanning(!scanning)}>{scanning ? 'Stop camera' : 'Scan QR code'}</button>
-        </form>
-        {scanning && <QrScanner onScan={lookup} />}
-      </Card>
+      {mode === 'search' ? <ResidentSearch onBack={() => setMode('id')} onVerified={verifiedBySearch} /> : (
+        <Card title="1. Verify resident">
+          <form className="lookup" onSubmit={(e) => { e.preventDefault(); lookup(code); }}>
+            <input value={code} onChange={(e) => setCode(e.target.value)} placeholder="Resident ID, e.g. BBC-000001" />
+            <button className="btn">Verify</button>
+            <button type="button" className="btn btn-outline" onClick={() => setScanning(!scanning)}>{scanning ? 'Stop camera' : 'Scan QR code'}</button>
+          </form>
+          {scanning && <QrScanner onScan={lookup} />}
+          <div className="rs-forgot">
+            <span className="rs-forgot-icon" aria-hidden="true"><Svg d={ICONS.user} size={20} /></span>
+            <span className="rs-forgot-text">
+              <strong>Forgot Resident ID or QR code?</strong>
+              <span className="muted small">Find the resident by their registered name, then confirm their identity.</span>
+            </span>
+            <button type="button" className="btn btn-outline" onClick={openSearch}>Search resident</button>
+          </div>
+        </Card>
+      )}
 
       <div id="dispense-msg">{msg && <Message type={msg.type}>{msg.text}</Message>}</div>
 
