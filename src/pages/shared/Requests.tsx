@@ -182,7 +182,13 @@ export default function Requests() {
                     {r.status === 'approved' && r.claim_by && (
                       <div className="muted small">Ready for pickup · claim by {formatDate(r.claim_by)} <PickupCountdown claimBy={r.claim_by} /></div>
                     )}
-                    {r.reviewer && <div className="muted small">{r.status === 'approved' ? 'Approved by' : 'by'} {r.reviewer.name}</div>}
+                    {/* The reviewer is the staff who approved or rejected it; only the resident can cancel a request. */}
+                    {r.status === 'cancelled' && <div className="muted small">Cancelled by the resident{r.cancelled_at ? ` · ${formatDate(r.cancelled_at, true)}` : ''}</div>}
+                    {r.reviewer && (
+                      <div className="muted small">
+                        {r.status === 'rejected' ? 'Rejected by' : r.status === 'pending' ? 'by' : r.status === 'cancelled' || r.status === 'expired' ? 'Earlier approved by' : 'Approved by'} {r.reviewer.name}
+                      </div>
+                    )}
                   </td>
                   <td>
                     {r.resident_note && <div className="note-text">“{r.resident_note}”</div>}
