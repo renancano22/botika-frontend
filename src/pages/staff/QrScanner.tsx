@@ -30,7 +30,7 @@ export default function QrScanner({ onScan }: { onScan: (text: string) => void }
     const started = scanner
       .start(
         { facingMode: 'environment' }, // back camera on phones; the normal webcam on laptops
-        { fps: 10, qrbox: 220 },
+        { fps: 10, qrbox: (w: number, h: number) => { const size = Math.max(160, Math.floor(Math.min(w, h) * 0.7)); return { width: size, height: size }; } }, // scanning box scales with the camera view
         (text) => {
           if (scanned) return; // the camera reads ~10 frames per second, only use the first result
           scanned = true;
@@ -56,7 +56,8 @@ export default function QrScanner({ onScan }: { onScan: (text: string) => void }
   return (
     <div className="qr-reader">
       {error && <div className="msg msg-error">{error}</div>}
-      <div ref={containerRef} />
+      <div ref={containerRef} className="qr-video" />
+      {!error && <p className="qr-hint">Hold the resident's QR code inside the box.</p>}
     </div>
   );
 }

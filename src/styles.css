@@ -256,7 +256,12 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--p
 .qr-card .btn { margin-top: 10px; }
 .lookup { display: flex; gap: 8px; flex-wrap: wrap; }
 .lookup input { flex: 1; min-width: 220px; }
-.qr-reader { max-width: 420px; margin-top: 14px; }
+.qr-reader { width: 100%; max-width: 440px; margin: 16px auto 0; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; }
+.qr-reader .msg { width: 100%; text-align: left; }
+.qr-video { width: 100%; border-radius: 18px; overflow: hidden; background: #0f1f1b; box-shadow: 0 0 0 4px var(--primary-soft), var(--shadow-md); }
+.qr-video:empty { display: none; }
+.qr-video video { display: block; width: 100% !important; height: auto !important; object-fit: cover; }
+.qr-hint { margin: 0; font-size: 0.85rem; color: var(--muted); }
 .resident-info { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
 .resident-info small, .resident-info strong { display: block; }
 .print-only { display: none; }
