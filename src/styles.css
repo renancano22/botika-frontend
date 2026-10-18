@@ -1586,3 +1586,53 @@ a.db-person:hover { background: rgba(255, 255, 255, 0.2); }
 @media (prefers-reduced-motion: reduce) {
   .db-req-item[class*=' t-'], .db-req-item[class*=' t-'] .db-req-icon, .db-req-item[class*=' t-'] .db-req-value { transition: none; transform: none !important; }
 }
+
+/* ---------- Hover feedback for everything clickable (mouse only; phones get a small press effect). */
+.btn, .chip, .back-btn, .icon-btn, .status-dd-btn, .cart-bar, .db-person, .db-more svg, .req-row, .req-row-arrow, .notif-body,
+.db-legend-item, .db-exp-row, .expiry-link, .med-card, .drawer-item, .drawer-profile, .topbar-profile, .topbar-icon, .hamburger,
+.fb-sec-link, .pf-qr-btn, .fb-qr-btn, .rx-drop, .act-tile, .db-total strong, .db-seg {
+  transition: transform 0.16s ease, box-shadow 0.16s ease, background 0.16s ease, border-color 0.16s ease, color 0.16s ease, filter 0.16s ease;
+}
+@media (hover: hover) {
+  /* buttons */
+  .btn:not(:disabled):hover { transform: translateY(-2px); box-shadow: 0 6px 14px rgba(20, 63, 28, 0.24); }
+  .btn-outline:not(:disabled):hover { box-shadow: 0 5px 12px rgba(20, 63, 28, 0.14); border-color: var(--primary); }
+  .btn-danger:not(:disabled):hover { box-shadow: 0 6px 14px rgba(190, 18, 60, 0.26); }
+  .btn-ghost:not(:disabled):hover { transform: none; box-shadow: none; color: var(--primary); background: var(--primary-50); border-radius: 8px; }
+  .hero-head .btn:not(:disabled):hover { box-shadow: 0 8px 18px rgba(0, 0, 0, 0.22); }
+  .chip:not(.active):hover { transform: translateY(-2px); background: var(--primary-50); color: var(--primary-dark); box-shadow: 0 4px 10px rgba(20, 63, 28, 0.12); }
+  .chip.active:hover { box-shadow: 0 4px 12px rgba(20, 63, 28, 0.25); }
+  .back-btn:hover { transform: translateX(-2px); box-shadow: var(--shadow-md); }
+  .icon-btn:hover, .status-dd-btn:hover, .pf-qr-btn:hover, .fb-qr-btn:hover { transform: translateY(-1px); box-shadow: var(--shadow-md); }
+  .cart-bar:hover { transform: translateY(-2px); filter: brightness(1.06); }
+  .rx-drop:hover { border-color: var(--primary); }
+  /* clickable cards and rows */
+  .req-row:hover, .notif-body:hover, .db-legend-item:hover, .db-exp-row:hover, .expiry-link:hover, .med-card:hover {
+    transform: translateY(-3px); box-shadow: 0 10px 22px rgba(16, 40, 34, 0.12); border-color: color-mix(in srgb, var(--k, var(--primary)) 40%, white); }
+  .bell-panel .notif-body:hover { transform: none; }
+  .req-row:hover { border-left-color: var(--k); }
+  .req-row:hover .req-row-arrow { color: var(--k, var(--primary)); transform: translateX(4px); }
+  .db-exp-row:hover strong, .db-legend-item:hover strong { color: var(--primary-dark); }
+  .db-total:hover strong { color: var(--primary); }
+  .db-seg:hover { filter: brightness(1.12) saturate(1.15); }
+  /* links */
+  .db-more:hover svg { transform: translateX(3px); }
+  .db-person:hover { transform: translateY(-1px); }
+  .link-button:not(:disabled):hover, .forgot-link:hover { color: var(--primary-dark); }
+  .drawer-item:not(.active):hover { transform: translateX(3px); background: rgba(255, 255, 255, 0.12); }
+  .topbar-profile:hover, .topbar-icon:hover, .hamburger:hover { transform: scale(1.06); }
+}
+/* hover border colour of the stock legend and expiry rows follows their own colour */
+:is(.db-legend-item, .db-exp-row).tone-available { --k: #228b39; }
+:is(.db-legend-item, .db-exp-row).tone-low { --k: #f59e0b; }
+:is(.db-legend-item, .db-exp-row).tone-unrecorded { --k: #94a3b8; }
+:is(.db-legend-item, .db-exp-row).tone-out { --k: #b91c1c; }
+/* touch screens: a short press effect instead of hover */
+@media (hover: none) {
+  .btn:not(:disabled):active, .chip:active, .req-row:active, .notif-body:active, .db-legend-item:active, .db-exp-row:active,
+  .expiry-link:active, .med-card:active, .back-btn:active, .db-person:active { transform: scale(0.97); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .btn, .chip, .back-btn, .req-row, .notif-body, .db-legend-item, .db-exp-row, .expiry-link, .med-card, .drawer-item, .db-person,
+  .topbar-profile, .topbar-icon, .hamburger, .cart-bar, .icon-btn, .status-dd-btn, .db-more svg, .req-row-arrow { transform: none !important; }
+}
