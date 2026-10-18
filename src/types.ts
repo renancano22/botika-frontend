@@ -70,6 +70,8 @@ export interface StockTransaction {
   type: 'stock_in' | 'stock_out' | 'dispensed';
   quantity: number;
   reason: string | null;
+  /** Reason as shown in the history, e.g. "Dispensed to Juan Dela Cruz (BBC-000004) · Request No. 47". */
+  reason_text?: string | null;
   dispensing_id: number | null;
   created_at: string;
   medicine?: Pick<Medicine, 'medicine_id' | 'medicine_name' | 'unit'>;

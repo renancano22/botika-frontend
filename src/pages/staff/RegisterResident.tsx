@@ -21,7 +21,8 @@ export default function RegisterResident({ onBack, onRegistered, onVerified }: {
   const [form, setForm] = useState(EMPTY);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const [matches, setMatches] = useState<Match[] | null>(null); // same name already registered in the barangay
+  // Already registered in the barangay: the same name (blocked = cannot be registered again) or a similar name.
+  const [matches, setMatches] = useState<{ list: Match[]; blocked: boolean; message: string } | null>(null);
   const [picked, setPicked] = useState<Match | null>(null);
   const set = (k: keyof typeof EMPTY) => (e: { target: { value: string } }) => { setForm({ ...form, [k]: e.target.value }); setMatches(null); };
 
@@ -33,8 +34,9 @@ export default function RegisterResident({ onBack, onRegistered, onVerified }: {
       const res = await api.post<ResidentLookup>('/residents', { ...form, confirm_new: confirmNew });
       onRegistered(res.data);
     } catch (err) {
-      const e = err as { response?: { status?: number; data?: { matches?: Match[] } } };
-      if (e.response?.status === 409 && e.response.data?.matches) setMatches(e.response.data.matches);
+      const e = err as { response?: { status?: number; data?: { matches?: Match[]; blocked?: boolean; message?: string } } };
+      const d = e.response?.data;
+      if (e.response?.status === 409 && d?.matches) setMatches({ list: d.matches, blocked: !!d.blocked, message: d.message ?? '' });
       else setError(errorMessage(err));
     } finally { setBusy(false); }
   };
@@ -74,10 +76,19 @@ export default function RegisterResident({ onBack, onRegistered, onVerified }: {
 
       {matches && (
         <div className="rr-dupe" role="alert">
-          <strong>{matches.length === 1 ? 'A resident with this name is already registered in this barangay.' : 'Residents with this name are already registered in this barangay.'}</strong>
-          <span className="small">If it is the same person, select them instead of registering again.</span>
+          {matches.blocked ? (
+            <>
+              <strong>Already registered — this resident cannot be registered again.</strong>
+              <span className="small">Select them below. If this is a different person with exactly the same name, add their middle name or suffix (e.g. Jr., Sr.) to tell them apart.</span>
+            </>
+          ) : (
+            <>
+              <strong>{matches.list.length === 1 ? 'A resident with a similar name is already registered in this barangay.' : 'Residents with a similar name are already registered in this barangay.'}</strong>
+              <span className="small">If it is the same person, select them instead of registering again.</span>
+            </>
+          )}
           <ul className="rs-results">
-            {matches.map((r) => (
+            {matches.list.map((r) => (
               <li key={r.resident_id} className="rs-card">
                 <span className="rs-avatar" aria-hidden="true"><Svg d={ICONS.user} size={20} /></span>
                 <span className="rs-info">
@@ -89,9 +100,11 @@ export default function RegisterResident({ onBack, onRegistered, onVerified }: {
               </li>
             ))}
           </ul>
-          <div className="rr-actions">
-            <button type="button" className="btn btn-outline" disabled={busy} onClick={() => save(true)}>{busy ? 'Saving…' : 'No, register as a new resident'}</button>
-          </div>
+          {!matches.blocked && (
+            <div className="rr-actions">
+              <button type="button" className="btn btn-outline" disabled={busy} onClick={() => save(true)}>{busy ? 'Saving…' : 'Different person — register as new'}</button>
+            </div>
+          )}
         </div>
       )}
 

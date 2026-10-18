@@ -154,7 +154,7 @@ export default function Inventory() {
                   <td>{t.medicine?.medicine_name}</td>
                   <td>{t.type === 'stock_in' ? '+' : '−'}{t.quantity} {t.medicine?.unit}</td>
                   <td>{t.inventory_id ?? '—'}</td>
-                  <td>{t.reason ?? (t.dispensing_id ? `Dispensing #${t.dispensing_id}` : '—')}</td>
+                  <td>{t.reason_text ?? t.reason ?? '—'}</td>
                   <td>{t.performer?.name ?? '—'}</td>
                 </tr>
               ))}
