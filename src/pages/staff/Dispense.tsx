@@ -197,15 +197,46 @@ export default function Dispense() {
             <button type="button" className="btn btn-outline btn-sm dv-change" onClick={changeResident}>Change resident</button>
           </section>
 
-          <div className="grid-2">
-            <Card title="2a. Approved requests to dispense">
-              {found.approved_requests.length === 0 ? (
-                <div className="dv-empty">
-                  <span className="dv-empty-icon" aria-hidden="true"><Svg d={ICONS.note} size={22} /></span>
-                  <strong>No approved requests</strong>
-                  <span>This resident has no approved request waiting. To give medicine now, use Dispense Medicine.</span>
-                </div>
-              ) : (
+          <Card title="Dispense Medicine">
+            <form onSubmit={dispenseWalkIn} className="dv-walkin">
+              <button type="button" className="btn btn-outline dv-add" onClick={addMedicine}>+ Add Medicine</button>
+              {walkIn.length > 0 && (
+                <>
+                  <div className="dv-cart-head" aria-hidden="true"><span>Medicine</span><span>Qty</span><span /></div>
+                  {walkIn.map((item, idx) => (
+                    <div className="cart-row" key={idx}>
+                      <select value={item.medicine_id} onChange={(e) => setWalkIn(walkIn.map((x, i) => (i === idx ? { ...x, medicine_id: Number(e.target.value) } : x)))} required aria-label={`Medicine ${idx + 1}`}>
+                        <option value={0}>Select medicine…</option>
+                        {available.map((m) => <option key={m.medicine_id} value={m.medicine_id}>{m.medicine_name} ({m.free_stock ?? m.available_stock} {m.unit} free)</option>)}
+                      </select>
+                      <input type="number" min={1} max={MAX_REQUEST_QUANTITY} value={item.quantity} onChange={(e) => setWalkIn(walkIn.map((x, i) => (i === idx ? { ...x, quantity: Number(e.target.value) } : x)))} aria-label={`Quantity ${idx + 1}`} />
+                      <button type="button" className="btn-ghost dv-remove" onClick={() => setWalkIn(walkIn.filter((_, i) => i !== idx))} aria-label="Remove medicine" title="Remove"><Svg d={ICONS.x} size={18} /></button>
+                      {walkInWarnings[idx] && <p className="field-warning walkin-warning">{walkInWarnings[idx]}</p>}
+                    </div>
+                  ))}
+                  <p className="field-hint">Up to {MAX_REQUEST_QUANTITY} per medicine · Total: {walkInTotal}. Stock is taken from the earliest-expiring batch.</p>
+                  {walkInRx.length > 0 && (
+                    <div className="rx-box">
+                      <strong><Svg d={RX_ICON} size={18} width={2.4} /> Prescription medicine</strong>
+                      <p>{walkInRx.map((m) => m.medicine_name).join(', ')} can only be given with a doctor's prescription.</p>
+                      <label className="rx-check">
+                        <input type="checkbox" checked={walkInRxChecked} onChange={(e) => setWalkInRxChecked(e.target.checked)} />
+                        <span>I checked the resident's original prescription: it is valid, written for this resident, and matches the medicine and quantity.</span>
+                      </label>
+                    </div>
+                  )}
+                  <div className="dv-actions">
+                    <button type="button" className="btn btn-outline" onClick={() => { setWalkIn([]); setWalkInRxChecked(false); }} disabled={busy}>Clear</button>
+                    <button className="btn" disabled={busy || walkIn.some((i) => !i.medicine_id) || walkInWarnings.some(Boolean) || (walkInRx.length > 0 && !walkInRxChecked)}>
+                      {busy ? 'Dispensing…' : `Dispense (${walkIn.length})`}
+                    </button>
+                  </div>
+                </>
+              )}
+            </form>
+            {found.approved_requests.length > 0 && (
+              <div className="dv-approved">
+                <h3 className="dv-sub">Approved requests ({found.approved_requests.length})</h3>
                 <table>
                   <thead><tr><th>No.</th><th>Medicines</th><th>Approved</th><th></th></tr></thead>
                   <tbody>
@@ -225,48 +256,9 @@ export default function Dispense() {
                     ))}
                   </tbody>
                 </table>
-              )}
-            </Card>
-
-            <Card title="Dispense Medicine">
-              <form onSubmit={dispenseWalkIn} className="dv-walkin">
-                <button type="button" className="btn btn-outline dv-add" onClick={addMedicine}>+ Add Medicine</button>
-                {walkIn.length > 0 && (
-                  <>
-                    <div className="dv-cart-head" aria-hidden="true"><span>Medicine</span><span>Qty</span><span /></div>
-                    {walkIn.map((item, idx) => (
-                      <div className="cart-row" key={idx}>
-                        <select value={item.medicine_id} onChange={(e) => setWalkIn(walkIn.map((x, i) => (i === idx ? { ...x, medicine_id: Number(e.target.value) } : x)))} required aria-label={`Medicine ${idx + 1}`}>
-                          <option value={0}>Select medicine…</option>
-                          {available.map((m) => <option key={m.medicine_id} value={m.medicine_id}>{m.medicine_name} ({m.free_stock ?? m.available_stock} {m.unit} free)</option>)}
-                        </select>
-                        <input type="number" min={1} max={MAX_REQUEST_QUANTITY} value={item.quantity} onChange={(e) => setWalkIn(walkIn.map((x, i) => (i === idx ? { ...x, quantity: Number(e.target.value) } : x)))} aria-label={`Quantity ${idx + 1}`} />
-                        <button type="button" className="btn-ghost dv-remove" onClick={() => setWalkIn(walkIn.filter((_, i) => i !== idx))} aria-label="Remove medicine" title="Remove"><Svg d={ICONS.x} size={18} /></button>
-                        {walkInWarnings[idx] && <p className="field-warning walkin-warning">{walkInWarnings[idx]}</p>}
-                      </div>
-                    ))}
-                    <p className="field-hint">Up to {MAX_REQUEST_QUANTITY} per medicine · Total: {walkInTotal}. Stock is taken from the earliest-expiring batch.</p>
-                    {walkInRx.length > 0 && (
-                      <div className="rx-box">
-                        <strong><Svg d={RX_ICON} size={18} width={2.4} /> Prescription medicine</strong>
-                        <p>{walkInRx.map((m) => m.medicine_name).join(', ')} can only be given with a doctor's prescription.</p>
-                        <label className="rx-check">
-                          <input type="checkbox" checked={walkInRxChecked} onChange={(e) => setWalkInRxChecked(e.target.checked)} />
-                          <span>I checked the resident's original prescription: it is valid, written for this resident, and matches the medicine and quantity.</span>
-                        </label>
-                      </div>
-                    )}
-                    <div className="dv-actions">
-                      <button type="button" className="btn btn-outline" onClick={() => { setWalkIn([]); setWalkInRxChecked(false); }} disabled={busy}>Clear</button>
-                      <button className="btn" disabled={busy || walkIn.some((i) => !i.medicine_id) || walkInWarnings.some(Boolean) || (walkInRx.length > 0 && !walkInRxChecked)}>
-                        {busy ? 'Dispensing…' : `Dispense (${walkIn.length})`}
-                      </button>
-                    </div>
-                  </>
-                )}
-              </form>
-            </Card>
-          </div>
+              </div>
+            )}
+          </Card>
 
           <Card title="Dispensing history of this resident">
             {found.dispensing_history.length === 0 ? <Empty>No previous dispensing.</Empty> : (

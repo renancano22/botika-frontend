@@ -1754,3 +1754,7 @@ a.db-person:hover { background: rgba(255, 255, 255, 0.2); }
 .dv-add { width: fit-content; }
 .dv-walkin .dv-add + .dv-cart-head { margin-top: 14px; }
 @media (max-width: 600px) { .dv-add { width: 100%; min-height: 44px; } }
+
+/* Approved requests inside the single Dispense Medicine card */
+.dv-approved { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--border); overflow-x: auto; }
+.dv-sub { margin: 0 0 8px; font-size: 0.92rem; color: #33443f; }
