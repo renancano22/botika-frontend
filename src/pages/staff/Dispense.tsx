@@ -13,6 +13,7 @@ import BackButton from '../../components/BackButton';
 import ResidentSearch, { type ResidentLookup as Lookup } from './ResidentSearch';
 import RegisterResident from './RegisterResident';
 
+const initials = (name: string) => name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]?.toUpperCase()).join('');
 const RR_ICON = 'M15 19v-1a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v1M8.5 10a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7M19 8v6M16 11h6';
 
 /** QR Code / Resident ID verification and medicine dispensing. */
@@ -79,6 +80,15 @@ export default function Dispense() {
     setMode('id');
     setMsg({ type: 'success', text: `Identity of ${record.resident.name} (${record.resident.qr_code}) confirmed by staff.` });
     jumpWhenReady('dispense-resident');
+  };
+
+  // Clears the verified resident to serve the next one.
+  const changeResident = () => {
+    setFound(null);
+    setCode('');
+    setMsg(null);
+    setWalkIn([]);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const afterDispense = async (text: string) => {
@@ -172,18 +182,29 @@ export default function Dispense() {
       {found && (
         <>
           <div id="dispense-resident" />
-          <Card title="Resident verified ✓">
-            <div className="resident-info">
-              <div><small className="muted">Name</small><strong>{found.resident.name}</strong></div>
-              <div><small className="muted">Resident ID</small><strong>{found.resident.qr_code}</strong></div>
-              <div><small className="muted">Address</small><strong>{found.resident.address}</strong></div>
-              <div><small className="muted">Mobile</small><strong>{found.resident.contact_no || 'None (no SMS)'}</strong></div>
+          <section className="card dv-resident" aria-label="Verified resident">
+            <span className="dv-avatar" aria-hidden="true">{initials(found.resident.name)}</span>
+            <div className="dv-who">
+              <span className="dv-verified"><Svg d={ICONS.check} size={14} width={3} /> Resident verified</span>
+              <h2>{found.resident.name}</h2>
+              <div className="dv-meta">
+                <span className="dv-chip"><small>Resident ID</small><strong>{found.resident.qr_code}</strong></span>
+                <span className="dv-chip"><small>Address</small><strong>{found.resident.address}</strong></span>
+                <span className="dv-chip"><small>Mobile</small><strong>{found.resident.contact_no || 'None (no SMS)'}</strong></span>
+              </div>
             </div>
-          </Card>
+            <button type="button" className="btn btn-outline btn-sm dv-change" onClick={changeResident}>Change resident</button>
+          </section>
 
           <div className="grid-2">
             <Card title="2a. Approved requests to dispense">
-              {found.approved_requests.length === 0 ? <Empty>No approved requests for this resident.</Empty> : (
+              {found.approved_requests.length === 0 ? (
+                <div className="dv-empty">
+                  <span className="dv-empty-icon" aria-hidden="true"><Svg d={ICONS.note} size={22} /></span>
+                  <strong>No approved requests</strong>
+                  <span>This resident has no approved request waiting. To give medicine now, use Walk-in dispensing.</span>
+                </div>
+              ) : (
                 <table>
                   <thead><tr><th>No.</th><th>Medicines</th><th>Approved</th><th></th></tr></thead>
                   <tbody>
@@ -207,7 +228,16 @@ export default function Dispense() {
             </Card>
 
             <Card title="2b. Walk-in dispensing">
-              <form onSubmit={dispenseWalkIn}>
+              <form onSubmit={dispenseWalkIn} className="dv-walkin">
+                {walkIn.length === 0 ? (
+                  <div className="dv-empty">
+                    <span className="dv-empty-icon" aria-hidden="true"><Svg d={ICONS.pill} size={22} /></span>
+                    <strong>No medicines added yet</strong>
+                    <span>Add the medicines you are giving to this resident. Stock is taken from the earliest-expiring batch.</span>
+                  </div>
+                ) : (
+                  <div className="dv-cart-head" aria-hidden="true"><span>Medicine</span><span>Qty</span><span /></div>
+                )}
                 {walkIn.map((item, idx) => (
                   <div className="cart-row" key={idx}>
                     <select value={item.medicine_id} onChange={(e) => setWalkIn(walkIn.map((x, i) => (i === idx ? { ...x, medicine_id: Number(e.target.value) } : x)))} required>
@@ -215,7 +245,7 @@ export default function Dispense() {
                       {available.map((m) => <option key={m.medicine_id} value={m.medicine_id}>{m.medicine_name} ({m.free_stock ?? m.available_stock} {m.unit} free)</option>)}
                     </select>
                     <input type="number" min={1} max={MAX_REQUEST_QUANTITY} value={item.quantity} onChange={(e) => setWalkIn(walkIn.map((x, i) => (i === idx ? { ...x, quantity: Number(e.target.value) } : x)))} />
-                    <button type="button" className="btn-ghost" onClick={() => setWalkIn(walkIn.filter((_, i) => i !== idx))} aria-label="Remove">✕</button>
+                    <button type="button" className="btn-ghost dv-remove" onClick={() => setWalkIn(walkIn.filter((_, i) => i !== idx))} aria-label="Remove medicine" title="Remove"><Svg d={ICONS.x} size={18} /></button>
                     {walkInWarnings[idx] && <p className="field-warning walkin-warning">{walkInWarnings[idx]}</p>}
                   </div>
                 ))}
@@ -230,9 +260,11 @@ export default function Dispense() {
                     </label>
                   </div>
                 )}
-                <div className="modal-actions">
+                <div className="dv-actions">
                   <button type="button" className="btn btn-outline" onClick={() => setWalkIn([...walkIn, { medicine_id: 0, quantity: 1 }])}>+ Add medicine</button>
-                  <button className="btn" disabled={busy || walkIn.length === 0 || walkIn.some((i) => !i.medicine_id) || walkInWarnings.some(Boolean) || (walkInRx.length > 0 && !walkInRxChecked)}>Dispense</button>
+                  <button className="btn" disabled={busy || walkIn.length === 0 || walkIn.some((i) => !i.medicine_id) || walkInWarnings.some(Boolean) || (walkInRx.length > 0 && !walkInRxChecked)}>
+                    {busy ? 'Dispensing…' : walkIn.length ? `Dispense (${walkIn.length})` : 'Dispense'}
+                  </button>
                 </div>
               </form>
             </Card>
