@@ -14,6 +14,9 @@ import ResidentSearch, { type ResidentLookup as Lookup } from './ResidentSearch'
 import RegisterResident from './RegisterResident';
 
 const initials = (name: string) => name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]?.toUpperCase()).join('');
+const ID_ICON = 'M3 6h18v12H3zM7 10h4M7 14h6M15 10h2';
+const QR_ICON = 'M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2v2h-2zM18 18h2v2h-2zM18 14h2M14 18h2';
+const SEARCH_ICON = 'M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-3.5-3.5';
 const RR_ICON = 'M15 19v-1a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v1M8.5 10a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7M19 8v6M16 11h6';
 
 /** QR Code / Resident ID verification and medicine dispensing. */
@@ -153,27 +156,38 @@ export default function Dispense() {
       {mode === 'search' ? <ResidentSearch onBack={() => setMode('id')} onVerified={verifiedBySearch} />
         : mode === 'register' ? <RegisterResident onBack={() => setMode('id')} onRegistered={registered} onVerified={verifiedBySearch} /> : (
         <Card title="1. Verify resident">
-          <form className="lookup" onSubmit={(e) => { e.preventDefault(); lookup(code); }}>
-            <input value={code} onChange={(e) => setCode(e.target.value)} placeholder="Resident ID, e.g. BBC-000001" />
+          <form className="lookup dv-lookup" onSubmit={(e) => { e.preventDefault(); lookup(code); }}>
+            <span className="dv-id-input">
+              <Svg d={ID_ICON} size={18} />
+              <input value={code} onChange={(e) => setCode(e.target.value)} placeholder="Resident ID, e.g. BBC-000001" aria-label="Resident ID" autoComplete="off" spellCheck={false} />
+            </span>
             <button className="btn">Verify</button>
-            <button type="button" className="btn btn-outline" onClick={() => setScanning(!scanning)}>{scanning ? 'Stop camera' : 'Scan QR code'}</button>
+            <button type="button" className={`btn btn-outline dv-scan ${scanning ? 'is-on' : ''}`} onClick={() => setScanning(!scanning)}>
+              <Svg d={QR_ICON} size={18} /> {scanning ? 'Stop camera' : 'Scan QR code'}
+            </button>
           </form>
           {scanning && <QrScanner onScan={lookup} />}
-          <div className="rs-forgot">
-            <span className="rs-forgot-icon" aria-hidden="true"><Svg d={ICONS.user} size={20} /></span>
-            <span className="rs-forgot-text">
-              <strong>Forgot Resident ID or QR code?</strong>
-              <span className="muted small">Find the resident by their registered name, then confirm their identity.</span>
-            </span>
-            <button type="button" className="btn btn-outline" onClick={() => openMode('search')}>Search resident</button>
-          </div>
-          <div className="rs-forgot">
-            <span className="rs-forgot-icon" aria-hidden="true"><Svg d={RR_ICON} size={20} /></span>
-            <span className="rs-forgot-text">
-              <strong>Not registered yet? (e.g. no cellphone)</strong>
-              <span className="muted small">Register the resident here so the medicines given are recorded and taken out of the inventory.</span>
-            </span>
-            <button type="button" className="btn btn-outline" onClick={() => openMode('register')}>Register resident</button>
+
+          <div className="dv-alt">
+            <span className="dv-alt-label">No QR code or Resident ID?</span>
+            <div className="dv-alt-grid">
+              <button type="button" className="dv-alt-tile" onClick={() => openMode('search')}>
+                <span className="dv-alt-icon" aria-hidden="true"><Svg d={SEARCH_ICON} size={20} /></span>
+                <span className="dv-alt-text">
+                  <strong>Search resident by name</strong>
+                  <small>Forgot their Resident ID or QR code</small>
+                </span>
+                <Svg d={ICONS.chevron} size={18} />
+              </button>
+              <button type="button" className="dv-alt-tile" onClick={() => openMode('register')}>
+                <span className="dv-alt-icon" aria-hidden="true"><Svg d={RR_ICON} size={20} /></span>
+                <span className="dv-alt-text">
+                  <strong>Register resident</strong>
+                  <small>Not registered yet, e.g. no cellphone</small>
+                </span>
+                <Svg d={ICONS.chevron} size={18} />
+              </button>
+            </div>
           </div>
         </Card>
       )}

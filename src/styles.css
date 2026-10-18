@@ -1759,3 +1759,36 @@ a.db-person:hover { background: rgba(255, 255, 255, 0.2); }
 .dv-approved { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--border); overflow-x: auto; }
 .dv-sub { margin: 0 0 8px; font-size: 0.92rem; color: #33443f; }
 .dv-none { display: flex; align-items: center; gap: 6px; margin: 14px 0 0; padding-top: 12px; border-top: 1px solid var(--border); font-size: 0.86rem; color: var(--muted); }
+
+/* ---------- Dispense step 1: Resident ID / QR, with the other options as tiles */
+.dv-lookup { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 8px; align-items: stretch; }
+.dv-id-input { position: relative; display: flex; align-items: center; min-width: 0; }
+.dv-id-input > svg { position: absolute; left: 12px; color: var(--muted); pointer-events: none; }
+.dv-id-input input { width: 100%; min-width: 0; padding-left: 40px; height: 100%; }
+.dv-lookup .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; min-height: 44px; }
+.dv-scan.is-on { background: var(--primary-50); }
+.dv-lookup .btn svg, .dv-id-input > svg, .dv-alt-tile svg { flex-shrink: 0; }
+.dv-alt { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border); }
+.dv-alt-label { display: block; margin-bottom: 8px; font-size: 0.78rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+.dv-alt-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.dv-alt-tile { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 14px; border-radius: 14px; border: 1px solid var(--border); background: #fff;
+  font: inherit; color: inherit; text-align: left; cursor: pointer; box-shadow: var(--shadow-sm);
+  transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease, background 0.16s ease; }
+.dv-alt-tile > svg { color: #9ca3af; flex-shrink: 0; transition: transform 0.16s ease, color 0.16s ease; }
+.dv-alt-icon { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; flex-shrink: 0; background: var(--primary-50); color: var(--primary); }
+.dv-alt-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.dv-alt-text strong { font-size: 0.93rem; }
+.dv-alt-text small { font-size: 0.8rem; color: var(--muted); }
+.dv-alt-tile:focus-visible { outline: 3px solid color-mix(in srgb, var(--primary) 40%, white); outline-offset: 2px; }
+@media (hover: hover) {
+  .dv-alt-tile:hover { transform: translateY(-2px); border-color: color-mix(in srgb, var(--primary) 40%, white); background: var(--primary-50); box-shadow: 0 8px 18px rgba(16, 40, 34, 0.1); }
+  .dv-alt-tile:hover > svg { color: var(--primary); transform: translateX(3px); }
+}
+.dv-alt-tile:active { transform: scale(0.98); }
+@media (max-width: 700px) {
+  .dv-lookup { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .dv-id-input { grid-column: 1 / -1; }
+  .dv-id-input input { min-height: 44px; }
+  .dv-alt-grid { grid-template-columns: minmax(0, 1fr); }
+}
+@media (prefers-reduced-motion: reduce) { .dv-alt-tile, .dv-alt-tile > svg { transform: none !important; } }
