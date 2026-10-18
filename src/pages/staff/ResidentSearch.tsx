@@ -97,7 +97,7 @@ export default function ResidentSearch({ onBack, onVerified }: { onBack: () => v
         <label><span>Resident's name <span className="rs-req" aria-hidden="true">*</span></span>
           <span className="rs-input">
             <Svg d={SEARCH_ICON} size={18} />
-            <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Type a first name, last name or part of it" maxLength={100} required autoFocus autoComplete="off" aria-describedby="rs-status" />
+            <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Type a first name, last name or part of it" maxLength={100} required autoFocus autoComplete="off" spellCheck={false} autoCorrect="off" aria-describedby="rs-status" />
             {searching && <span className="rs-spinner" aria-hidden="true" />}
           </span>
         </label>
@@ -113,7 +113,7 @@ export default function ResidentSearch({ onBack, onVerified }: { onBack: () => v
       </p>
 
       {error && <Message>{error}</Message>}
-      {!error && typedLength < 2 && <p className="muted small rs-start">{typedLength === 1 ? 'Keep typing — at least 2 letters.' : 'Results will appear here as you type.'}</p>}
+      {!error && typedLength === 0 && <p className="muted small rs-start">Results will appear here as you type.</p>}
       {!found && searching && <p className="empty">Searching residents…</p>}
 
       {found && typedLength >= 2 && (results.length === 0 ? (
