@@ -116,7 +116,12 @@ export default function Dispense() {
     <div className="page">
       <header className="page-head">
         <div>
-          <div className="page-title"><BackButton linkedOnly /><h1>Dispense Medicine</h1></div>
+          <div className="page-title">
+            {/* In the name search, the arrow returns to Resident ID / QR code; otherwise to the previous page (or the dashboard). */}
+            <BackButton fallback="/dashboard" onClick={mode === 'search' ? () => setMode('id') : undefined}
+              label={mode === 'search' ? 'Back to Resident ID or QR code' : 'Go back'} />
+            <h1>Dispense Medicine</h1>
+          </div>
           <p className="muted">Scan the resident's QR code, type the Resident ID, or search by name to verify identity before dispensing.</p>
         </div>
       </header>
