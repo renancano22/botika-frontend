@@ -1565,3 +1565,24 @@ a.db-person:hover { background: rgba(255, 255, 255, 0.2); }
 .db-req-item[class*=' t-'] .db-req-label { color: color-mix(in srgb, var(--t) 45%, #1f2d29); }
 .db-req-item[class*=' t-'].is-alert .db-req-hint { color: color-mix(in srgb, var(--t) 80%, black); }
 .db-req-item[class*=' t-'] .db-dot { background: var(--t); box-shadow: 0 0 0 3px color-mix(in srgb, var(--t) 20%, white); }
+/* Summary boxes are separate coloured tiles that lift when hovered (tap feedback on phones). */
+.db-req:has(.db-req-item[class*=' t-']) { gap: 12px; border: none; border-radius: 0; overflow: visible; }
+.db-req-item[class*=' t-'] { border: 1px solid color-mix(in srgb, var(--t) 22%, white); border-radius: 14px; overflow: hidden;
+  box-shadow: 0 1px 3px color-mix(in srgb, var(--t) 12%, transparent);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, background 0.18s ease; }
+.db-req-item[class*=' t-']::before { transition: height 0.18s ease; }
+.db-req-item[class*=' t-'] .db-req-icon { transition: transform 0.18s ease; }
+.db-req-item[class*=' t-'] .db-req-value { transition: transform 0.18s ease; transform-origin: left bottom; }
+@media (hover: hover) {
+  .db-req-item[class*=' t-']:hover { transform: translateY(-4px); border-color: color-mix(in srgb, var(--t) 45%, white);
+    box-shadow: 0 12px 24px color-mix(in srgb, var(--t) 22%, transparent), 0 2px 6px color-mix(in srgb, var(--t) 14%, transparent); }
+  .db-req-item[class*=' t-']:hover::before { height: 6px; }
+  .db-req-item[class*=' t-']:hover .db-req-icon { transform: scale(1.1) rotate(-6deg); }
+  .db-req-item[class*=' t-']:hover .db-req-value { transform: scale(1.08); }
+}
+.db-req-item[class*=' t-']:focus-visible { outline: 3px solid color-mix(in srgb, var(--t) 45%, white); outline-offset: 2px; }
+.db-req-item[class*=' t-']:active { transform: scale(0.97); }
+@media (max-width: 600px) { .db-req:has(.db-req-item[class*=' t-']) { gap: 8px; } }
+@media (prefers-reduced-motion: reduce) {
+  .db-req-item[class*=' t-'], .db-req-item[class*=' t-'] .db-req-icon, .db-req-item[class*=' t-'] .db-req-value { transition: none; transform: none !important; }
+}
