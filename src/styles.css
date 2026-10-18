@@ -1749,3 +1749,8 @@ a.db-person:hover { background: rgba(255, 255, 255, 0.2); }
   .dv-walkin .cart-row input { padding-left: 8px; padding-right: 6px; }
   .dv-remove { width: 32px; height: 32px; }
 }
+
+/* Dispense Medicine card: "+ Add Medicine" right under the heading; the form appears only after it is clicked */
+.dv-add { width: fit-content; }
+.dv-walkin .dv-add + .dv-cart-head { margin-top: 14px; }
+@media (max-width: 600px) { .dv-add { width: 100%; min-height: 44px; } }

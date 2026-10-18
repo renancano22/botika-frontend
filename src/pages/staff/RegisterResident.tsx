@@ -43,12 +43,12 @@ export default function RegisterResident({ onBack, onRegistered, onVerified }: {
   const submit = (e: FormEvent) => { e.preventDefault(); save(false); };
 
   return (
-    <Card title="1. Register walk-in resident" actions={
+    <Card title="1. Register resident" actions={
       <button type="button" className="btn btn-ghost rs-back" onClick={onBack}>
         <Svg d={ICONS.back} size={16} width={2.4} /> Use Resident ID or QR code
       </button>
     }>
-      <p className="muted small rs-intro">For a resident who is not registered yet, for example because they have no cellphone. After saving, record the medicines you give in <strong>Walk-in dispensing</strong> so the inventory is updated.</p>
+      <p className="muted small rs-intro">For a resident who is not registered yet, for example because they have no cellphone. After saving, add the medicines you give in <strong>Dispense Medicine</strong> so the inventory is updated.</p>
       <form className="rr-form" onSubmit={submit}>
         <label>Full name
           <input value={form.name} onChange={set('name')} placeholder="e.g. Juan Dela Cruz" required maxLength={100} autoFocus autoComplete="off" spellCheck={false} {...FIELD.name} />
