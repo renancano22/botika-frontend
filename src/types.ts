@@ -5,7 +5,8 @@ export interface Resident {
   user_id: number | null;
   name: string;
   address: string;
-  contact_no: string;
+  /** Empty for residents registered at the Botika without a cellphone (no SMS is sent to them). */
+  contact_no: string | null;
   qr_code: string;
   /** Profile picture (data URL). Only included for the logged-in resident's own account. */
   photo?: string | null;

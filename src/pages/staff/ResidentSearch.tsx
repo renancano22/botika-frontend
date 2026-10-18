@@ -12,7 +12,7 @@ export interface ResidentLookup {
 }
 
 /** One search result: only what is needed to pick the right person (no mobile number or address). */
-interface Match { resident_id: number; name: string; qr_code: string; barangay: string | null }
+export interface Match { resident_id: number; name: string; qr_code: string; barangay: string | null }
 
 const SEARCH_ICON = 'M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-3.5-3.5';
 const NAME_PATTERN = /^[\p{L}\s.'-]+$/u;
@@ -151,7 +151,7 @@ export default function ResidentSearch({ onBack, onVerified }: { onBack: () => v
 }
 
 /** Selecting a name does not verify anyone: the staff check the resident's identity in person and confirm it. */
-function VerifyIdentity({ resident, onClose, onVerified }: { resident: Match; onClose: () => void; onVerified: (record: ResidentLookup) => void }) {
+export function VerifyIdentity({ resident, onClose, onVerified }: { resident: Match; onClose: () => void; onVerified: (record: ResidentLookup) => void }) {
   const [confirmed, setConfirmed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');

@@ -11,13 +11,17 @@ import QrScanner from './QrScanner';
 import { jumpTo, jumpWhenReady } from '../../scroll';
 import BackButton from '../../components/BackButton';
 import ResidentSearch, { type ResidentLookup as Lookup } from './ResidentSearch';
+import RegisterResident from './RegisterResident';
+
+const RR_ICON = 'M15 19v-1a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v1M8.5 10a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7M19 8v6M16 11h6';
 
 /** QR Code / Resident ID verification and medicine dispensing. */
 export default function Dispense() {
   const [code, setCode] = useState('');
   const [scanning, setScanning] = useState(false);
   // 'search': the resident forgot their QR code and Resident ID, so they are found by name and verified another way.
-  const [mode, setMode] = useState<'id' | 'search'>('id');
+  // 'register': a walk-in resident who is not registered yet (e.g. no cellphone) is registered by the staff.
+  const [mode, setMode] = useState<'id' | 'search' | 'register'>('id');
   const [found, setFound] = useState<Lookup | null>(null);
   const [msg, setMsg] = useState<{ type: 'error' | 'success'; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
@@ -52,11 +56,20 @@ export default function Dispense() {
     }
   }, []);
 
-  const openSearch = () => {
+  const openMode = (next: 'search' | 'register') => {
     setScanning(false);
-    setFound(null); // nothing can be dispensed until the searched resident is verified
+    setFound(null); // nothing can be dispensed until the resident is verified / registered
     setMsg(null);
-    setMode('search');
+    setMode(next);
+  };
+
+  const registered = (record: Lookup) => {
+    setFound(record);
+    setCode(record.resident.qr_code);
+    setWalkIn([]);
+    setMode('id');
+    setMsg({ type: 'success', text: `${record.resident.name} is registered with Resident ID ${record.resident.qr_code}. Write this ID down for the resident's next visit, then record the medicines given in Walk-in dispensing.` });
+    jumpWhenReady('dispense-resident');
   };
 
   const verifiedBySearch = (record: Lookup) => {
@@ -118,15 +131,16 @@ export default function Dispense() {
         <div>
           <div className="page-title">
             {/* In the name search, the arrow returns to Resident ID / QR code; otherwise to the previous page (or the dashboard). */}
-            <BackButton fallback="/dashboard" onClick={mode === 'search' ? () => setMode('id') : undefined}
-              label={mode === 'search' ? 'Back to Resident ID or QR code' : 'Go back'} />
+            <BackButton fallback="/dashboard" onClick={mode !== 'id' ? () => setMode('id') : undefined}
+              label={mode !== 'id' ? 'Back to Resident ID or QR code' : 'Go back'} />
             <h1>Dispense Medicine</h1>
           </div>
           <p className="muted">Scan the resident's QR code, type the Resident ID, or search by name to verify identity before dispensing.</p>
         </div>
       </header>
 
-      {mode === 'search' ? <ResidentSearch onBack={() => setMode('id')} onVerified={verifiedBySearch} /> : (
+      {mode === 'search' ? <ResidentSearch onBack={() => setMode('id')} onVerified={verifiedBySearch} />
+        : mode === 'register' ? <RegisterResident onBack={() => setMode('id')} onRegistered={registered} onVerified={verifiedBySearch} /> : (
         <Card title="1. Verify resident">
           <form className="lookup" onSubmit={(e) => { e.preventDefault(); lookup(code); }}>
             <input value={code} onChange={(e) => setCode(e.target.value)} placeholder="Resident ID, e.g. BBC-000001" />
@@ -140,7 +154,15 @@ export default function Dispense() {
               <strong>Forgot Resident ID or QR code?</strong>
               <span className="muted small">Find the resident by their registered name, then confirm their identity.</span>
             </span>
-            <button type="button" className="btn btn-outline" onClick={openSearch}>Search resident</button>
+            <button type="button" className="btn btn-outline" onClick={() => openMode('search')}>Search resident</button>
+          </div>
+          <div className="rs-forgot">
+            <span className="rs-forgot-icon" aria-hidden="true"><Svg d={RR_ICON} size={20} /></span>
+            <span className="rs-forgot-text">
+              <strong>Not registered yet? (e.g. no cellphone)</strong>
+              <span className="muted small">Register the walk-in resident here so the medicines given are recorded and taken out of the inventory.</span>
+            </span>
+            <button type="button" className="btn btn-outline" onClick={() => openMode('register')}>Register resident</button>
           </div>
         </Card>
       )}
@@ -155,7 +177,7 @@ export default function Dispense() {
               <div><small className="muted">Name</small><strong>{found.resident.name}</strong></div>
               <div><small className="muted">Resident ID</small><strong>{found.resident.qr_code}</strong></div>
               <div><small className="muted">Address</small><strong>{found.resident.address}</strong></div>
-              <div><small className="muted">Mobile</small><strong>{found.resident.contact_no}</strong></div>
+              <div><small className="muted">Mobile</small><strong>{found.resident.contact_no || 'None (no SMS)'}</strong></div>
             </div>
           </Card>
 
