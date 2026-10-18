@@ -234,6 +234,9 @@ export default function Dispense() {
                 </>
               )}
             </form>
+            {found.approved_requests.length === 0 && (
+              <p className="dv-none"><Svg d={ICONS.info} size={16} /> No requests ready for pickup for this resident.</p>
+            )}
             {found.approved_requests.length > 0 && (
               <div className="dv-approved">
                 <h3 className="dv-sub">Approved requests ({found.approved_requests.length})</h3>
