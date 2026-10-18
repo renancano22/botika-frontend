@@ -58,10 +58,14 @@ export default function Inventory() {
   const [txType, setTxType] = useState('');
   const tx = useApi<StockTransaction[]>('/inventory/transactions', { type: txType }, 30000);
   const [formError, setFormError] = useState('');
+  // While a stock-in / stock-out is being saved its button is disabled, so a double click cannot save it twice.
+  const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState('');
 
   const submitIn = async (e: FormEvent) => {
     e.preventDefault();
+    if (saving) return;
+    setSaving(true);
     try {
       await api.post('/inventory/stock-in', stockIn);
       setStockIn(null);
@@ -69,11 +73,13 @@ export default function Inventory() {
       reload();
       tx.reload(true);
     } catch (err) { setFormError(errorMessage(err)); }
+    finally { setSaving(false); }
   };
 
   const submitOut = async (e: FormEvent) => {
     e.preventDefault();
-    if (!stockOut) return;
+    if (!stockOut || saving) return;
+    setSaving(true);
     try {
       const details = stockOut.details.trim();
       const reason = stockOut.reason === 'Other' ? details : details ? `${stockOut.reason} - ${details}` : stockOut.reason;
@@ -83,6 +89,7 @@ export default function Inventory() {
       reload();
       tx.reload(true);
     } catch (err) { setFormError(errorMessage(err)); }
+    finally { setSaving(false); }
   };
 
   return (
@@ -177,7 +184,7 @@ export default function Inventory() {
             </div>
             <div className="modal-actions">
               <button type="button" className="btn btn-outline" onClick={() => setStockIn(null)}>Cancel</button>
-              <button className="btn">Save stock-in</button>
+              <button className="btn" disabled={saving}>{saving ? 'Saving…' : 'Save stock-in'}</button>
             </div>
           </form>
         </Modal>
@@ -205,7 +212,7 @@ export default function Inventory() {
             </div>
             <div className="modal-actions">
               <button type="button" className="btn btn-outline" onClick={() => setStockOut(null)}>Cancel</button>
-              <button className="btn btn-danger">Record stock-out</button>
+              <button className="btn btn-danger" disabled={saving}>{saving ? 'Saving…' : 'Record stock-out'}</button>
             </div>
           </form>
         </Modal>
