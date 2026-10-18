@@ -19,7 +19,7 @@ const status = (err: unknown) => (err as { response?: { status?: number } }).res
 
 /**
  * "Forgot Resident ID or QR code?": find the resident by registered full name (optionally the barangay),
- * then confirm their identity with their registered mobile number before their record is opened for dispensing.
+ * then the staff confirm the resident's identity in person before their record is opened for dispensing.
  */
 export default function ResidentSearch({ onBack, onVerified }: { onBack: () => void; onVerified: (record: ResidentLookup) => void }) {
   const { data: barangays } = useApi<string[]>('/barangays');
@@ -109,9 +109,8 @@ export default function ResidentSearch({ onBack, onVerified }: { onBack: () => v
   );
 }
 
-/** Selecting a name does not verify anyone: the resident states their registered mobile number and the staff confirm the identity check. */
+/** Selecting a name does not verify anyone: the staff check the resident's identity in person and confirm it. */
 function VerifyIdentity({ resident, onClose, onVerified }: { resident: Match; onClose: () => void; onVerified: (record: ResidentLookup) => void }) {
-  const [mobile, setMobile] = useState('');
   const [confirmed, setConfirmed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -122,7 +121,7 @@ function VerifyIdentity({ resident, onClose, onVerified }: { resident: Match; on
     setBusy(true);
     setError('');
     try {
-      const res = await api.post<ResidentLookup>(`/residents/${resident.resident_id}/verify`, { contact_no: mobile, identity_confirmed: confirmed });
+      const res = await api.post<ResidentLookup>(`/residents/${resident.resident_id}/verify`, { identity_confirmed: confirmed });
       onVerified(res.data);
     } catch (err) {
       const code = status(err);
@@ -132,7 +131,6 @@ function VerifyIdentity({ resident, onClose, onVerified }: { resident: Match; on
     } finally { setBusy(false); }
   };
 
-  const digits = mobile.replace(/\D/g, '');
   return (
     <Modal title="Confirm the resident's identity" onClose={() => !busy && onClose()}>
       <form onSubmit={verify}>
@@ -141,18 +139,14 @@ function VerifyIdentity({ resident, onClose, onVerified }: { resident: Match; on
           <span className="small">Resident ID: {resident.qr_code}{resident.barangay ? ` · Brgy. ${resident.barangay}` : ''}</span>
         </div>
         <p className="small rs-warn">Selecting a name does not verify the resident. Confirm their identity before releasing any medicine.</p>
-        <label>Registered mobile number
-          <input type="tel" inputMode="numeric" value={mobile} onChange={(e) => setMobile(e.target.value)} placeholder="09XXXXXXXXX" maxLength={20} autoFocus required autoComplete="off" />
-          <span className="field-hint">Ask the resident to say the mobile number they registered with. Do not read a number to them.</span>
-        </label>
         <label className="rx-check">
-          <input type="checkbox" checked={confirmed} onChange={(e) => setConfirmed(e.target.checked)} />
+          <input type="checkbox" checked={confirmed} onChange={(e) => setConfirmed(e.target.checked)} autoFocus />
           <span>I checked the resident's identity following the Botika ng Bayan's identity-verification procedure, and they are the person named above.</span>
         </label>
         {error && <Message>{error}</Message>}
         <div className="modal-actions">
           <button type="button" className="btn btn-outline" onClick={onClose} disabled={busy}>Cancel</button>
-          <button className="btn" disabled={busy || digits.length < 10 || !confirmed}>{busy ? 'Verifying…' : 'Verify identity'}</button>
+          <button className="btn" disabled={busy || !confirmed}>{busy ? 'Verifying…' : 'Verify identity'}</button>
         </div>
       </form>
     </Modal>

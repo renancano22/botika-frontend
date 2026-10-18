@@ -64,7 +64,7 @@ export default function Dispense() {
     setCode(record.resident.qr_code);
     setWalkIn([]);
     setMode('id');
-    setMsg({ type: 'success', text: `Identity of ${record.resident.name} (${record.resident.qr_code}) confirmed with their registered mobile number.` });
+    setMsg({ type: 'success', text: `Identity of ${record.resident.name} (${record.resident.qr_code}) confirmed by staff.` });
     jumpWhenReady('dispense-resident');
   };
 
