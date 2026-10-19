@@ -275,7 +275,7 @@ export default function Requests() {
           {rejectError && <Message>{rejectError}</Message>}
           <div className="modal-actions">
             <button className="btn btn-outline" onClick={() => setRejecting(null)}>Cancel</button>
-            <button className="btn btn-danger" disabled={!remarks} onClick={async () => {
+            <button className="btn btn-danger" disabled={remarks.length < 3} onClick={async () => {
               try {
                 await api.post(`/requests/${rejecting.request_id}/reject`, { remarks });
                 setMsg({ type: 'success', text: `Request No. ${rejecting.request_id} rejected. SMS sent to the resident.` });

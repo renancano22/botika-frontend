@@ -23,7 +23,29 @@ export const FIELD = {
     pattern: '[0-9]{6}',
     title: 'Enter the 6-digit code.',
   },
+  medicineName: {
+    pattern: "[\\p{L}\\p{N}][\\p{L}\\p{N} .,'\\(\\)\\/+\\-]{1,149}",
+    title: "Letters, numbers, spaces and . , ' ( ) / + - only (at least 2 characters).",
+  },
+  strength: {
+    pattern: '[0-9][\\p{L}\\p{N} .,\\/%+\\-]{0,49}',
+    title: 'Start with a number, e.g. 500mg, 100mg/5ml or 1%.',
+  },
+  unit: {
+    pattern: '[\\p{L}][\\p{L} \\-]{0,49}',
+    title: 'Letters only, e.g. tablet, capsule, bottle.',
+  },
 };
+
+/** Largest quantity for one stock-in (same as the backend). */
+export const MAX_STOCK_IN = 100000;
+
+/** Latest expiration date accepted for a stock-in: 10 years from today (YYYY-MM-DD). */
+export function maxExpiry(): string {
+  const d = new Date();
+  d.setFullYear(d.getFullYear() + 10);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
 
 /** Tomorrow's date as YYYY-MM-DD (for expiration date fields, which must be in the future). */
 export function tomorrow(): string {

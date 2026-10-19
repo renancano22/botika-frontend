@@ -48,10 +48,10 @@ export default function Announcements() {
             </select>
           </label>
           <label>Message ({message.length}/300)
-            <textarea rows={3} maxLength={300} value={message} onChange={(e) => setMessage(e.target.value)}
+            <textarea rows={3} minLength={5} maxLength={300} value={message} onChange={(e) => setMessage(e.target.value)}
               placeholder="e.g. Free maintenance medicines for senior citizens are now available at Botika ng Bayan." required />
           </label>
-          <button className="btn" disabled={busy || !message.trim()}>{busy ? 'Sending…' : 'Send SMS'}</button>
+          <button className="btn" disabled={busy || message.trim().length < 5}>{busy ? 'Sending…' : 'Send SMS'}</button>
         </form>
       </Card>
 

@@ -4,7 +4,7 @@ import { api, errorMessage, formatDate } from '../../api';
 import { useApi } from '../../hooks';
 import { Badge, Card, Empty, Loading, Message, Modal } from '../../components/ui';
 import type { InventoryBatch, Medicine, StockTransaction } from '../../types';
-import { tomorrow } from '../../validation';
+import { MAX_STOCK_IN, maxExpiry, tomorrow } from '../../validation';
 import { jumpWhenReady } from '../../scroll';
 import BackButton from '../../components/BackButton';
 
@@ -179,8 +179,8 @@ export default function Inventory() {
             </label>
             {chosen?.status === 'unrecorded' && <p className="field-hint">This is the first stock record for this medicine. After saving it is no longer marked "Not recorded".</p>}
             <div className="row">
-              <label>Quantity<input type="number" min={1} value={stockIn.quantity} onChange={(e) => setStockIn({ ...stockIn, quantity: Number(e.target.value) })} required /></label>
-              <label>Expiration date<input type="date" min={tomorrow()} value={stockIn.expiration_date} onChange={(e) => setStockIn({ ...stockIn, expiration_date: e.target.value })} required /></label>
+              <label>Quantity<input type="number" min={1} max={MAX_STOCK_IN} step={1} value={stockIn.quantity} onChange={(e) => setStockIn({ ...stockIn, quantity: Number(e.target.value) })} required /></label>
+              <label>Expiration date<input type="date" min={tomorrow()} max={maxExpiry()} value={stockIn.expiration_date} onChange={(e) => setStockIn({ ...stockIn, expiration_date: e.target.value })} required /></label>
             </div>
             <div className="modal-actions">
               <button type="button" className="btn btn-outline" onClick={() => setStockIn(null)}>Cancel</button>
@@ -196,7 +196,7 @@ export default function Inventory() {
             <Message>{formError}</Message>
             <p>Remove items from batch #{stockOut.batch.inventory_id} — <strong>{stockOut.batch.medicine.medicine_name}</strong>, expires {formatDate(stockOut.batch.expiration_date)} ({stockOut.batch.quantity} left). Use this for expired, damaged or lost items.</p>
             <label>Quantity to remove
-              <input type="number" min={1} max={stockOut.batch.quantity} value={stockOut.quantity} onChange={(e) => setStockOut({ ...stockOut, quantity: Number(e.target.value) })} required />
+              <input type="number" min={1} max={stockOut.batch.quantity} step={1} value={stockOut.quantity} onChange={(e) => setStockOut({ ...stockOut, quantity: Number(e.target.value) })} required />
             </label>
             <div className="row">
               <label>Reason
@@ -207,7 +207,7 @@ export default function Inventory() {
               </label>
               <label>Details {stockOut.reason === 'Other' ? '(required)' : '(optional)'}
                 <input value={stockOut.details} onChange={(e) => setStockOut({ ...stockOut, details: e.target.value })}
-                  placeholder="e.g. broken bottles during delivery" required={stockOut.reason === 'Other'} maxLength={200} />
+                  placeholder="e.g. broken bottles during delivery" required={stockOut.reason === 'Other'} minLength={stockOut.reason === 'Other' ? 3 : undefined} maxLength={200} />
               </label>
             </div>
             <div className="modal-actions">

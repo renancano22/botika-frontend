@@ -8,6 +8,7 @@ import { unitPlural } from '../../components/RequestCards';
 import type { Medicine } from '../../types';
 import { RxBadge } from '../../components/Prescription';
 import BackButton from '../../components/BackButton';
+import { FIELD } from '../../validation';
 
 const EMPTY = { generic_name: '', strength: '', dosage_form: '', category: '', unit: '', reorder_level: 20, requires_prescription: false };
 type Form = typeof EMPTY;
@@ -186,11 +187,11 @@ export default function Medicines() {
           <form onSubmit={save}>
             <Message>{formError}</Message>
             <label>Generic name
-              <input value={form.generic_name} onChange={(e) => setForm({ ...form, generic_name: e.target.value })} placeholder="e.g. Amoxicillin" required maxLength={150} />
+              <input value={form.generic_name} onChange={(e) => setForm({ ...form, generic_name: e.target.value })} placeholder="e.g. Amoxicillin" required minLength={2} maxLength={150} {...FIELD.medicineName} />
             </label>
             <div className="row">
               <label>Strength
-                <input value={form.strength} onChange={(e) => setForm({ ...form, strength: e.target.value })} placeholder="e.g. 500mg or 100mg/5ml" maxLength={50} />
+                <input value={form.strength} onChange={(e) => setForm({ ...form, strength: e.target.value })} placeholder="e.g. 500mg or 100mg/5ml" maxLength={50} {...FIELD.strength} />
               </label>
               <label>Dosage form
                 <select value={form.dosage_form} onChange={(e) => chooseForm(e.target.value)}>
@@ -207,12 +208,12 @@ export default function Medicines() {
                 </select>
               </label>
               <label>Counted per (unit)
-                <input value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })} placeholder="tablet, capsule, bottle, tube…" required maxLength={50} />
+                <input value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })} placeholder="tablet, capsule, bottle, tube…" required maxLength={50} {...FIELD.unit} />
               </label>
             </div>
             {displayName(form) && <p className="mi-preview">Shown to residents and in records as <strong>{displayName(form)}</strong></p>}
             <label>Reorder level (alert when stock is at or below)
-              <input type="number" min={0} value={form.reorder_level} onChange={(e) => setForm({ ...form, reorder_level: Number(e.target.value) })} required />
+              <input type="number" min={0} max={100000} step={1} value={form.reorder_level} onChange={(e) => setForm({ ...form, reorder_level: Number(e.target.value) })} required />
             </label>
             <label className="rx-check">
               <input type="checkbox" checked={form.requires_prescription} onChange={(e) => setForm({ ...form, requires_prescription: e.target.checked })} />
