@@ -350,15 +350,20 @@ export default function ResidentMedicines() {
               {shown.map((m) => {
                 const added = inCart(m);
                 return (
-                  <article key={m.medicine_id} className={`med-card ${added ? 'med-added' : ''} ${m.requires_prescription ? 'med-rx' : ''}`}>
+                  <article key={m.medicine_id} className={`med-card st-${m.status} ${added ? 'med-added' : ''} ${m.requires_prescription ? 'med-rx' : ''}`}>
                     <button type="button" className="med-top med-open" onClick={() => setDetails(m)} aria-label={`${m.medicine_name} details`}>
                       <span className="med-icon"><Svg d={m.requires_prescription ? RX_ICON : ICONS.pill} size={22} width={1.9} /></span>
                       <span className="med-name">
-                        <strong>{m.medicine_name}</strong>
-                        <span className="muted small">{m.category}</span>
-                        {m.requires_prescription && <RxBadge small />}
+                        <strong>{m.generic_name || m.medicine_name}</strong>
+                        <span className="med-sub">
+                          {m.generic_name && [m.strength, m.dosage_form].filter(Boolean).join(' ')}
+                          {m.generic_name && (m.strength || m.dosage_form) ? ' · ' : ''}{m.category}
+                        </span>
+                        <span className="med-tags">
+                          <StockBadge m={m} />
+                          {m.requires_prescription && <RxBadge small />}
+                        </span>
                       </span>
-                      <StockBadge m={m} />
                     </button>
                     {m.description && <p className="muted small med-desc">{m.description}</p>}
                     <div className="med-bottom">

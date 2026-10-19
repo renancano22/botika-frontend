@@ -1797,3 +1797,20 @@ a.db-person:hover { background: rgba(255, 255, 255, 0.2); }
   .dv-alt-grid { grid-template-columns: minmax(0, 1fr); }
 }
 @media (prefers-reduced-motion: reduce) { .dv-alt-tile, .dv-alt-tile > svg { transform: none !important; } }
+
+/* ---------- Check Medicine Availability: cleaner medicine cards */
+.med-card { border-left: 4px solid var(--st, var(--border)); }
+.med-card.st-available { --st: #22a046; }
+.med-card.st-low_stock { --st: #f59e0b; }
+.med-card.st-out_of_stock { --st: #dc2626; }
+.med-card.st-unrecorded { --st: #94a3b8; }
+.med-card.med-rx { background: #fff; border-color: var(--border); border-left-color: var(--st, var(--border)); }
+.med-card.med-added { border-left-color: var(--primary); }
+.med-name strong { font-size: 1.02rem; line-height: 1.25; overflow-wrap: anywhere; }
+.med-sub { font-size: 0.82rem; color: var(--muted); margin-top: 1px; }
+.med-tags { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px; }
+.med-tags .badge { font-size: 0.72rem; padding: 2px 9px; }
+.med-bottom { flex-direction: column; align-items: stretch; gap: 10px; }
+.med-actions { justify-content: stretch; }
+.med-actions .btn { flex: 1 1 0; display: inline-flex; align-items: center; justify-content: center; gap: 5px; white-space: nowrap; min-height: 36px; }
+@media (max-width: 600px) { .med-actions .btn { min-height: 42px; } }
