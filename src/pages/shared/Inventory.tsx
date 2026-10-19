@@ -94,9 +94,10 @@ export default function Inventory() {
 
   return (
     <div className="page">
+      <BackButton linkedOnly />
       <header className="page-head">
         <div>
-          <div className="page-title"><BackButton linkedOnly /><h1>Stock &amp; Batches</h1></div>
+          <div className="page-title"><h1>Stock &amp; Batches</h1></div>
           <p className="muted">Each stock-in is saved as a batch with its own expiration date. Dispensing uses the earliest-expiring batch first and never uses expired batches.</p>
         </div>
         <button className="btn" onClick={() => openStockIn()}>+ Stock-in</button>

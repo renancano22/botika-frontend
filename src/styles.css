@@ -422,18 +422,33 @@ input[type='password']::-ms-reveal, input[type='password']::-ms-clear { display:
 .section-title { font-size: 1.15rem; margin: 4px 0 12px; }
 
 .req-rows { display: flex; flex-direction: column; gap: 12px; }
+/* Request card: full border in the status colour, header (number, date, status), medicines, status line */
 .req-row {
-  display: flex; align-items: center; gap: 14px; padding: 14px; border-radius: 16px; background: #fff;
-  border: 1px solid var(--border); color: inherit; text-decoration: none; box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+  display: flex; flex-direction: column; gap: 10px; padding: 14px; border-radius: 16px; background: #fff; color: inherit; text-decoration: none;
+  border: 1.5px solid color-mix(in srgb, var(--k) 38%, white); box-shadow: 0 2px 8px color-mix(in srgb, var(--k) 9%, transparent);
 }
-.req-row:hover { border-color: #cbd5e1; box-shadow: 0 3px 10px rgba(15, 23, 42, 0.08); }
+.req-row:hover { border-color: color-mix(in srgb, var(--k) 60%, white); }
 .req-icon { width: 52px; height: 52px; border-radius: 14px; display: grid; place-items: center; flex-shrink: 0; }
-.req-row-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.req-row-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
-.req-row-date { font-size: 0.8rem; color: var(--muted); }
-.req-row-med { font-weight: 600; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.req-row-qty { font-size: 0.85rem; color: var(--muted); }
-.req-row-arrow { color: #9ca3af; display: grid; }
+.req-row .req-icon { width: 44px; height: 44px; border-radius: 12px; }
+.req-row-head { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.req-row-title { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.req-row-title-top { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 4px 8px; }
+.req-row-title-top .pill { flex-shrink: 0; }
+.req-row-date { font-size: 0.8rem; color: var(--muted); white-space: nowrap; }
+.req-row-body { display: flex; flex-direction: column; gap: 4px; padding: 10px 12px; border-radius: 12px;
+  background: color-mix(in srgb, var(--k) 6%, white); border: 1px solid color-mix(in srgb, var(--k) 14%, white); }
+.req-row-med { font-weight: 700; color: var(--text); line-height: 1.35; overflow-wrap: anywhere;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.req-row-sub { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; font-size: 0.82rem; color: var(--muted); }
+.req-row-sub > span + span::before { content: '•'; margin-right: 10px; color: #c4ccca; }
+.req-row-more { margin-left: 8px; padding: 1px 8px; border-radius: 999px; font-size: 0.75rem; font-weight: 700; white-space: nowrap; vertical-align: 1px;
+  background: color-mix(in srgb, var(--k) 14%, white); color: color-mix(in srgb, var(--k) 80%, black); }
+.req-type { font-weight: 600; color: color-mix(in srgb, var(--k) 75%, black); }
+.req-row-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-top: 10px; border-top: 1px dashed color-mix(in srgb, var(--k) 28%, white); font-size: 0.82rem; }
+.req-row-hint { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; min-width: 0; font-weight: 600; color: color-mix(in srgb, var(--k) 78%, black); }
+.req-row-hint-text { overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.req-row-view { display: inline-flex; align-items: center; gap: 2px; flex-shrink: 0; font-weight: 700; color: color-mix(in srgb, var(--k) 85%, black); }
+.req-row-arrow { display: grid; transition: transform 0.15s; }
 
 .pill { display: inline-block; padding: 4px 11px; border-radius: 999px; font-size: 0.75rem; font-weight: 700; white-space: nowrap; background: color-mix(in srgb, var(--k) 13%, white); color: color-mix(in srgb, var(--k) 88%, black); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--k) 22%, white); }
 
@@ -571,8 +586,6 @@ input[type='password']::-ms-reveal, input[type='password']::-ms-clear { display:
 .st-current .step-dot { background: #fff; border-color: var(--k); color: var(--k); box-shadow: 0 0 0 5px color-mix(in srgb, var(--k) 16%, transparent); }
 .st-current .vstep-title strong, .st-rejected .vstep-title strong, .st-cancelled .vstep-title strong { color: color-mix(in srgb, var(--k) 85%, black); }
 
-/* request list cards: thin status-coloured edge */
-.req-row { border-left: 4px solid var(--k); }
 
 /* ---------- resident: medicine cards, add-to-request sheet, request bar */
 .med-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; margin-top: 14px; }
@@ -1007,7 +1020,7 @@ html { scroll-behavior: auto; }
 .req-no { display: inline-flex; align-items: baseline; gap: 5px; white-space: nowrap; }
 .req-no-label { font-weight: 600; color: #3d4d49; letter-spacing: 0.01em; }
 .req-no-num { font-weight: 800; color: var(--text); font-variant-numeric: tabular-nums; }
-.req-row-top .req-no { font-size: 1rem; }
+.req-row-title .req-no { font-size: 1rem; }
 .detail-id.req-no { font-size: 1.15rem; }
 
 /* ---------- Dispensing Records */
@@ -1528,6 +1541,9 @@ a.db-person:hover { background: rgba(255, 255, 255, 0.2); }
 
 /* ---------- Back button: the same "<" chevron at the top-left of every page, beside the title */
 .page-title { display: flex; align-items: center; gap: 10px; min-width: 0; }
+/* Back arrow row: upper-left of the page, above the heading and outside any card. */
+.page-back { display: flex; align-items: center; margin-bottom: -6px; }
+@media print { .page-back { display: none !important; } }
 .page-title h1 { margin: 0; min-width: 0; }
 .page-title + .muted, .page-title + p { margin-top: 4px; }
 .back-btn { width: 40px; height: 40px; padding: 0; flex-shrink: 0; border-radius: 50%; border: 1px solid var(--border); background: #fff; color: var(--primary);
@@ -1661,7 +1677,6 @@ a.db-person:hover { background: rgba(255, 255, 255, 0.2); }
   .req-row:hover, .notif-body:hover, .db-legend-item:hover, .db-exp-row:hover, .expiry-link:hover, .med-card:hover {
     transform: translateY(-3px); box-shadow: 0 10px 22px rgba(16, 40, 34, 0.12); border-color: color-mix(in srgb, var(--k, var(--primary)) 40%, white); }
   .bell-panel .notif-body:hover { transform: none; }
-  .req-row:hover { border-left-color: var(--k); }
   .req-row:hover .req-row-arrow { color: var(--k, var(--primary)); transform: translateX(4px); }
   .db-exp-row:hover strong, .db-legend-item:hover strong { color: var(--primary-dark); }
   .db-total:hover strong { color: var(--primary); }

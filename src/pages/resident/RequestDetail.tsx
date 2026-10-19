@@ -79,8 +79,8 @@ export default function RequestDetail() {
 
   return (
     <div className="page page-narrow">
+      <BackButton fallback="/requests" />
       <header className="detail-topbar">
-        <BackButton fallback="/requests" />
         <h1>Request Details</h1>
       </header>
 

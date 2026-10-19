@@ -167,8 +167,8 @@ export default function NotificationDetail() {
 
   return (
     <div className="page page-narrow">
+      <BackButton fallback="/notifications" />
       <header className="detail-topbar">
-        <BackButton fallback="/notifications" />
         <h1>Notification Details</h1>
       </header>
 

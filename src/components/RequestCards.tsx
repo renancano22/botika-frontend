@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { formatDate } from '../api';
 import type { MedicineRequest } from '../types';
 
 /** Small line icons used on request and notification cards. */
@@ -102,30 +103,59 @@ export function dateTime(value: string): string {
   return `${d.toLocaleDateString('en-PH', { dateStyle: 'medium' })} • ${d.toLocaleTimeString('en-PH', { hour: 'numeric', minute: '2-digit' })}`;
 }
 
-/** One request in a list: icon, request number, date, medicine and quantity, status and an arrow. */
+/** Short line under a request card: what the status means right now. */
+function rowHint(r: MedicineRequest): string {
+  switch (statusKey(r)) {
+    case 'review': return 'Waiting for review';
+    case 'claim': return `Claim by ${formatDate(r.claim_by)}`;
+    case 'stock': return 'Waiting for the medicine to arrive';
+    case 'claimed': return r.dispensing?.dispensed_at ? `Received on ${formatDate(r.dispensing.dispensed_at)}` : 'Medicine received';
+    case 'available': return 'Medicine is now in stock';
+    case 'rejected': return r.remarks ? `Reason: ${r.remarks}` : 'Not approved';
+    case 'expired': return 'Not claimed before the deadline';
+    default: return r.cancelled_at ? `Cancelled on ${formatDate(r.cancelled_at)}` : 'Cancelled';
+  }
+}
+
+/**
+ * One request in a list (card with a full border in the status colour): request number, date and status,
+ * the medicines, then a short status line and "View details".
+ */
 export function RequestRow({ request: r }: { request: MedicineRequest }) {
   const colour = STATUS_COLOR_KEY[statusKey(r)];
+  const restock = r.request_type === 'restock';
   const first = r.items[0];
   const more = r.items.length - 1;
   return (
     <Link to={`/requests/${r.request_id}`} className={`req-row k-${colour}`}>
-      <span className="req-icon kicon">
-        <Svg d={r.request_type === 'restock' ? ICONS.box : ICONS.pill} size={24} width={1.9} />
-      </span>
-      <span className="req-row-main">
-        <span className="req-row-top">
-          <RequestNo id={r.request_id} />
-          <StatusPill request={r} />
+      <span className="req-row-head">
+        <span className="req-icon kicon">
+          <Svg d={restock ? ICONS.box : ICONS.pill} size={22} width={1.9} />
         </span>
-        <span className="req-row-date">{dateTime(r.request_date)}{r.request_type === 'restock' ? ' • Restock' : ''}</span>
-        {first && (
-          <span className="req-row-med">
-            {first.medicine.medicine_name}{more > 0 && <span className="muted"> +{more} more</span>}
+        <span className="req-row-title">
+          <span className="req-row-title-top">
+            <RequestNo id={r.request_id} />
+            <StatusPill request={r} />
           </span>
-        )}
-        {first && <span className="req-row-qty">{quantityText(first.quantity, first.medicine.unit)}</span>}
+          <span className="req-row-date">{dateTime(r.request_date)}</span>
+        </span>
       </span>
-      <span className="req-row-arrow"><Svg d={ICONS.chevron} size={20} /></span>
+      {first && (
+        <span className="req-row-body">
+          <span className="req-row-med">{first.medicine.medicine_name}{more > 0 && <span className="req-row-more">+{more} more</span>}</span>
+          <span className="req-row-sub">
+            <span className="req-type">{restock ? 'Restock request' : 'Medicine request'}</span>
+            <span>{quantityText(first.quantity, first.medicine.unit)}</span>
+          </span>
+        </span>
+      )}
+      <span className="req-row-foot">
+        <span className="req-row-hint">
+          <span className="req-row-hint-text">{rowHint(r)}</span>
+          {statusKey(r) === 'claim' && <PickupCountdown claimBy={r.claim_by} />}
+        </span>
+        <span className="req-row-view">View details <span className="req-row-arrow"><Svg d={ICONS.chevron} size={18} /></span></span>
+      </span>
     </Link>
   );
 }

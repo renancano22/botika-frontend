@@ -9,7 +9,7 @@ import { PrescriptionViewer, requiresPrescription, RX_ICON, RxBadge } from './Pr
 export function pickupText(r: MedicineRequest): string {
   if (r.request_type === 'restock') return r.status === 'fulfilled' ? 'Medicine available — you may now request it' : 'Not applicable (restock request)';
   const p = pickupPeriod(r);
-  if (r.status === 'approved' && p) return `Botika ng Bayan, Bulan · ${p.pickup} to ${p.deadline} (claim on or before ${p.deadline})`;
+  if (r.status === 'approved' && p) return `Botika ng Bayan, Bulan · Pickup date: ${p.pickup} · Claim on or before: ${p.deadline}`;
   if (r.status === 'dispensed') return `Claimed on ${dateTime(r.dispensing?.dispensed_at ?? r.request_date)}`;
   if (r.status === 'pending') return 'Not yet available — waiting for approval';
   if (r.status === 'expired') return p ? `Not claimed — pickup period was ${p.pickup} to ${p.deadline}` : 'Not claimed before the deadline';

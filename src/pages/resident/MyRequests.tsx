@@ -45,9 +45,10 @@ export default function MyRequests() {
 
   return (
     <div className="page">
+      <BackButton linkedOnly />
       <header className="page-head hero-head">
         <div>
-          <div className="page-title"><BackButton linkedOnly light /><h1>{greeting()}, {user?.name.split(' ')[0]}!</h1></div>
+          <div className="page-title"><h1>{greeting()}, {user?.name.split(' ')[0]}!</h1></div>
           <p className="muted">Here are your medicine requests.</p>
         </div>
         <Link className="btn" to="/medicines">+ New request</Link>

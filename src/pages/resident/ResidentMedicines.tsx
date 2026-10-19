@@ -204,10 +204,10 @@ export default function ResidentMedicines() {
     const rxMissing = needsRx && !prescription;
     return (
       <div className="page page-narrow">
+        <BackButton fallback="/medicines" label={step === 'review' ? 'Back to the request form' : 'Back to medicines'} />
         <header className="page-head hero-head form-hero">
           <div>
             <div className="page-title">
-              <BackButton light fallback="/medicines" label={step === 'review' ? 'Back to the request form' : 'Back to medicines'} />
               <h1>{step === 'review' ? 'Review Your Request' : 'Medicine Request Form'}</h1>
             </div>
             <p className="muted">{step === 'review' ? 'Please check the details before submitting.' : 'Enter the details of your medicine request.'}</p>
@@ -315,9 +315,10 @@ export default function ResidentMedicines() {
 
   return (
     <div className="page page-with-bar">
+      <BackButton linkedOnly />
       <header className="page-head">
         <div>
-          <div className="page-title"><BackButton linkedOnly /><h1>Check Medicine Availability</h1></div>
+          <div className="page-title"><h1>Check Medicine Availability</h1></div>
           <p className="muted">Add available medicines to your request. If a medicine is out of stock, send a restock request.</p>
         </div>
       </header>

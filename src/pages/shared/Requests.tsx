@@ -125,9 +125,10 @@ export default function Requests() {
 
   return (
     <div className="page req-page">
+      <BackButton linkedOnly />
       <header className="page-head">
         <div>
-          <div className="page-title"><BackButton linkedOnly /><h1>Medicine & Restock Requests</h1></div>
+          <div className="page-title"><h1>Medicine & Restock Requests</h1></div>
           <p className="muted">Pharmacy staff review medicine requests. The administrator reviews restock requests. Residents are notified by SMS.</p>
         </div>
       </header>

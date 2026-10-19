@@ -13,7 +13,8 @@ export const hasPreviousPage = () => ((window.history.state as { idx?: number } 
 export const NAV_STATE = { nav: true } as const;
 
 /**
- * "<" back button, placed before the page title.
+ * "<" back button: its own row at the upper-left of the page, above the page heading and outside any
+ * card or coloured banner (the same place on every page, desktop and mobile). Icon only, no text.
  *  - Nested pages (details, forms, edit): always shown. Goes to the previous page in the history (with its
  *    filters and search); when the page was opened directly, goes to `fallback` (its parent page).
  *  - linkedOnly (main sections such as Requests or Medicine List): shown only when the page was opened
@@ -26,13 +27,15 @@ export default function BackButton({ fallback = '/dashboard', light = false, lin
   const goBack = useGoBack(fallback);
   const location = useLocation();
   // Decided when the page opens: later filter changes on the same page keep it as it was.
-  const [show] = useState(() => !linkedOnly || (hasPreviousPage() && !(location.state as { nav?: boolean } | null)?.nav));
-  if (!show) return null;
+  const [openedFromPage] = useState(() => hasPreviousPage() && !(location.state as { nav?: boolean } | null)?.nav);
+  if (linkedOnly && !openedFromPage) return null;
   return (
-    <button type="button" className={`back-btn ${light ? 'back-btn-light' : ''}`} onClick={onClick ?? goBack} aria-label={label} title={label}>
-      <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M15 6l-6 6 6 6" />
-      </svg>
-    </button>
+    <div className="page-back">
+      <button type="button" className={`back-btn ${light ? 'back-btn-light' : ''}`} onClick={onClick ?? goBack} aria-label={label} title={label}>
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M15 6l-6 6 6 6" />
+        </svg>
+      </button>
+    </div>
   );
 }

@@ -37,7 +37,8 @@ export default function Announcements() {
 
   return (
     <div className="page">
-      <header className="page-head"><div className="page-title"><BackButton linkedOnly /><h1>SMS Notifications</h1></div></header>
+      <BackButton linkedOnly />
+      <header className="page-head"><div className="page-title"><h1>SMS Notifications</h1></div></header>
 
       <Card title="Send announcement to residents">
         <form onSubmit={send}>

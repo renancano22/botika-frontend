@@ -137,9 +137,10 @@ export default function Reports() {
 
   return (
     <div className="page rp-page">
+      <BackButton linkedOnly />
       <header className="page-head no-print">
         <div>
-          <div className="page-title"><BackButton linkedOnly /><h1>Reports</h1></div>
+          <div className="page-title"><h1>Reports</h1></div>
           <p className="muted">Generate, download and print reports on medicine usage, dispensing and inventory.</p>
         </div>
       </header>

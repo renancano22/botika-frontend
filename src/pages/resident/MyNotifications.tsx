@@ -24,9 +24,10 @@ export default function MyNotifications() {
 
   return (
     <div className="page page-narrow">
+      <BackButton linkedOnly />
       <header className="page-head hero-head">
         <div>
-          <div className="page-title"><BackButton linkedOnly light /><h1>Notifications</h1></div>
+          <div className="page-title"><h1>Notifications</h1></div>
           <p className="muted">Stay updated on your medicine requests. SMS messages sent to you are also kept here.</p>
         </div>
       </header>

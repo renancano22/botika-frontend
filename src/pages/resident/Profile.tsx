@@ -371,8 +371,8 @@ export default function Profile() {
         : photo.kind === 'remove' ? 'Picture will be removed when you confirm your changes.' : '';
     return (
       <div className="page pf-page fb-edit">
+        <BackButton onClick={closeEdit} label="Back to My Profile" />
         <header className="fb-top">
-          <BackButton onClick={closeEdit} label="Back to My Profile" />
           <div>
             <h1>Edit Profile</h1>
           </div>
@@ -499,8 +499,8 @@ export default function Profile() {
   // ------------------------------------------------------------------ My Profile
   return (
     <div className="page pf-page fb-page">
+      <BackButton linkedOnly />
       <header className="fb-top no-print">
-        <BackButton linkedOnly />
         <div>
           <h1>My Profile</h1>
         </div>

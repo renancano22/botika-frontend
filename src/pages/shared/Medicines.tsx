@@ -97,9 +97,10 @@ export default function Medicines() {
 
   return (
     <div className="page">
+      <BackButton linkedOnly />
       <header className="page-head">
         <div>
-          <div className="page-title"><BackButton linkedOnly /><h1>Medicine List</h1></div>
+          <div className="page-title"><h1>Medicine List</h1></div>
           <p className="muted">Botika ng Bayan medicine list, stock on hand, batches and expiration dates.</p>
         </div>
         <div className="mi-head-actions">
