@@ -53,7 +53,7 @@ function buildSteps(r: MedicineRequest, forResident: boolean): Step[] {
         : [submitted, review, approved, {
           ...ready, state: 'current', tag: 'Current',
           text: forResident
-            ? `Your medicines are ready for pickup since ${p?.pickup ?? '—'}. Bring your QR code / Resident ID and claim them on or before ${p?.deadline ?? '—'} (within ${p?.days ?? '—'} days). After the deadline, the medicine will no longer be given to you.`
+            ? `Your medicines are ready for pickup since ${p?.pickup ?? '—'}. Bring your QR code / Resident ID and a valid ID or Barangay ID, and claim them on or before ${p?.deadline ?? '—'} (within ${p?.days ?? '—'} days). After the deadline, the medicine will no longer be given to you.`
             : `Waiting for the resident to claim the medicines on or before ${p?.deadline ?? '—'}.`,
         }, completed];
     case 'dispensed':

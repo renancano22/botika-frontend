@@ -35,7 +35,7 @@ export function PickupDeadlineBox({ r, reminder = false }: { r: MedicineRequest;
         You must claim your medicine within {p.days} days from the pickup date. If you do not claim it on or before <b>{p.deadline}</b>,
         the medicine will no longer be given to you and this request will no longer be valid for pickup.
       </p>
-      {r.resident?.qr_code && <small>Bring your Resident ID / QR code ({r.resident.qr_code}) for verification.</small>}
+      <small>When claiming, bring your Resident ID / QR code{r.resident?.qr_code ? ` (${r.resident.qr_code})` : ''} and a <b>valid ID or Barangay ID</b> for verification.</small>
     </div>
   );
 }

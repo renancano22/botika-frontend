@@ -134,7 +134,7 @@ function nextStep(r: MedicineRequest | null): string | null {
     case 'approved':
       return r.request_type === 'restock'
         ? 'No action is needed for now. You will be notified once the medicine is available. Then you can submit a medicine request to get it.'
-        : `Go to Botika ng Bayan on or before ${p?.deadline ?? 'the claim deadline'} and show your QR code / Resident ID (My Profile). If you no longer need the medicine, please cancel the request so other residents can use it.`;
+        : `Go to Botika ng Bayan on or before ${p?.deadline ?? 'the claim deadline'} and show your QR code / Resident ID (My Profile) together with a valid ID or Barangay ID. If you no longer need the medicine, please cancel the request so other residents can use it.`;
     case 'dispensed':
       return 'No further action is needed. You can view this request anytime in My Requests.';
     case 'fulfilled':
