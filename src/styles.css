@@ -1814,3 +1814,5 @@ a.db-person:hover { background: rgba(255, 255, 255, 0.2); }
 .med-actions { justify-content: stretch; }
 .med-actions .btn { flex: 1 1 0; display: inline-flex; align-items: center; justify-content: center; gap: 5px; white-space: nowrap; min-height: 36px; }
 @media (max-width: 600px) { .med-actions .btn { min-height: 42px; } }
+.rs-sent { display: flex; align-items: center; gap: 8px; margin: 0 0 4px; color: var(--primary-dark); font-weight: 600; font-size: 0.92rem; }
+.rs-sent svg { flex-shrink: 0; }

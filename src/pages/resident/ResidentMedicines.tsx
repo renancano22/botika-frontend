@@ -511,17 +511,17 @@ export default function ResidentMedicines() {
 
       {alreadyRequested && (
         <Modal title="Restock already requested" onClose={() => setAlreadyRequested(null)}>
-          <div className="info-box info-ok">
-            <strong><Svg d={ICONS.check} size={18} width={2.4} /> You already submitted a restock request</strong>
-            <p>
-              You already asked for a restock of <b>{alreadyRequested.medicine.medicine_name}</b> (request No. {alreadyRequested.requestId}).
-              We will notify you by SMS when the medicine is available.
-            </p>
-            <small>You can still request a restock of other medicines.</small>
+          <div className="sheet-med">
+            <span className="med-icon"><Svg d={alreadyRequested.medicine.requires_prescription ? RX_ICON : ICONS.pill} size={22} width={1.9} /></span>
+            <div>
+              <strong>{alreadyRequested.medicine.medicine_name}</strong>
+              <span className="muted small">Restock request No. {alreadyRequested.requestId}</span>
+            </div>
           </div>
+          <p className="rs-sent"><Svg d={ICONS.check} size={18} width={2.6} /> You'll get an SMS once it is back in stock.</p>
           <div className="modal-actions">
             <button className="btn btn-outline" onClick={() => setAlreadyRequested(null)}>Close</button>
-            <button className="btn" onClick={() => navigate(`/requests/${alreadyRequested.requestId}`)}>View my request</button>
+            <button className="btn" onClick={() => navigate(`/requests/${alreadyRequested.requestId}`)}>View request</button>
           </div>
         </Modal>
       )}
