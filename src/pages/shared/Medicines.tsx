@@ -9,7 +9,7 @@ import type { Medicine } from '../../types';
 import { RxBadge } from '../../components/Prescription';
 import BackButton from '../../components/BackButton';
 
-const EMPTY = { generic_name: '', strength: '', dosage_form: '', category: '', unit: '', description: '', reorder_level: 20, requires_prescription: false };
+const EMPTY = { generic_name: '', strength: '', dosage_form: '', category: '', unit: '', reorder_level: 20, requires_prescription: false };
 type Form = typeof EMPTY;
 
 /** "Amoxicillin 500mg Capsule" — the same name the server builds. */
@@ -52,7 +52,7 @@ export default function Medicines() {
     setFormError('');
     setForm(m ? {
       generic_name: m.generic_name ?? m.medicine_name, strength: m.strength ?? '', dosage_form: m.dosage_form ?? '',
-      category: m.category, unit: m.unit, description: m.description ?? '', reorder_level: m.reorder_level ?? 20,
+      category: m.category, unit: m.unit, reorder_level: m.reorder_level ?? 20,
       requires_prescription: !!m.requires_prescription,
     } : { ...EMPTY, category: category || '' });
   };
@@ -148,7 +148,6 @@ export default function Medicines() {
                   <td>
                     <strong>{m.generic_name ?? m.medicine_name}</strong>
                     {m.requires_prescription && <div><RxBadge small /></div>}
-                    {m.description && <div className="muted small">{m.description}</div>}
                   </td>
                   <td>{m.category}</td>
                   <td>{m.strength || <span className="mi-missing">Not specified</span>}</td>
@@ -215,7 +214,6 @@ export default function Medicines() {
             <label>Reorder level (alert when stock is at or below)
               <input type="number" min={0} value={form.reorder_level} onChange={(e) => setForm({ ...form, reorder_level: Number(e.target.value) })} required />
             </label>
-            <label>Description<textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={2} /></label>
             <label className="rx-check">
               <input type="checkbox" checked={form.requires_prescription} onChange={(e) => setForm({ ...form, requires_prescription: e.target.checked })} />
               <span><strong>Requires prescription</strong> — residents must upload a doctor's prescription, and staff must check it before approving and dispensing.</span>

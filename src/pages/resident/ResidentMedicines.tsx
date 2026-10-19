@@ -365,7 +365,6 @@ export default function ResidentMedicines() {
                         </span>
                       </span>
                     </button>
-                    {m.description && <p className="muted small med-desc">{m.description}</p>}
                     <div className="med-bottom">
                       {m.status === 'unrecorded'
                         ? <span className="med-stock muted">Availability not yet confirmed</span>
@@ -435,7 +434,6 @@ export default function ResidentMedicines() {
               <span className="muted small">{details.category} · {details.unit}</span>
             </div>
           </div>
-          {details.description && <p className="note-text">{details.description}</p>}
           {details.requires_prescription && (
             <div className="rx-box">
               <strong><Svg d={RX_ICON} size={18} width={2.4} /> Prescription Required</strong>

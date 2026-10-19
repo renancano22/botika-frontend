@@ -45,7 +45,7 @@ export interface Medicine {
   dosage_form?: string | null;
   category: string;
   unit: string;
-  description: string | null;
+  description?: string | null;
   /** Can only be requested/dispensed with a doctor's prescription. */
   requires_prescription?: boolean;
   available_stock: number;
