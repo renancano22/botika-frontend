@@ -41,7 +41,7 @@ export function kindOf(n: SmsNotification): Kind {
   if (m.includes('expired') || m.includes('not claimed')) return 'expired';
   if (m.includes('not approved')) return 'rejected';
   if (m.includes('approved')) return 'approved';
-  if (m.includes('dispensed')) return 'dispensed';
+  if (m.includes('dispensed') || m.includes('completed')) return 'dispensed';
   if (m.includes('cancelled')) return 'cancelled';
   if (m.includes('available')) return 'available';
   return 'announcement';
@@ -49,14 +49,14 @@ export function kindOf(n: SmsNotification): Kind {
 
 /** Title and icon for each kind of notification. */
 export const KIND: Record<Kind, { title: string; icon: string }> = {
-  submitted: { title: 'Request Submitted', icon: ICONS.note },
-  approved: { title: 'Approved — Ready for Pickup', icon: ICONS.check },
-  reminder: { title: 'Pickup Deadline Reminder', icon: ICONS.clock },
-  available: { title: 'Requested Medicine Is Back in Stock', icon: ICONS.box },
-  dispensed: { title: 'Request Completed', icon: ICONS.hand },
-  rejected: { title: 'Request Rejected', icon: ICONS.x },
+  submitted: { title: 'Request Submitted — Under Review', icon: ICONS.note },
+  approved: { title: 'Request Approved — Ready for Pickup', icon: ICONS.check },
+  reminder: { title: 'Pickup Reminder — Claim Before the Deadline', icon: ICONS.clock },
+  available: { title: 'Requested Medicine Now Available', icon: ICONS.box },
+  dispensed: { title: 'Medicine Received — Request Completed', icon: ICONS.hand },
+  rejected: { title: 'Request Not Approved', icon: ICONS.x },
   cancelled: { title: 'Request Cancelled', icon: ICONS.ban },
-  expired: { title: 'Request Expired', icon: ICONS.clock },
+  expired: { title: 'Request Expired — Not Claimed', icon: ICONS.clock },
   announcement: { title: 'Announcement', icon: ICONS.megaphone },
   closure: { title: 'Temporary Pharmacy Closure', icon: ICONS.ban },
   hours: { title: 'Operating Hours Changed', icon: ICONS.clock },
@@ -66,7 +66,7 @@ export const KIND: Record<Kind, { title: string; icon: string }> = {
 /** Title shown on the card (a restock approval is not ready for pickup yet). */
 export function titleOf(n: SmsNotification): string {
   const kind = kindOf(n);
-  if (kind === 'approved' && /restock/i.test(n.message)) return 'Restock Request Approved';
+  if (kind === 'approved' && /restock/i.test(n.message)) return 'Restock Request Approved — Waiting for Stock';
   return KIND[kind].title;
 }
 

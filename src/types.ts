@@ -140,6 +140,10 @@ export interface MedicineRequest {
   fulfilled_at?: string | null;
   /** Approved medicine requests: last day to claim before automatic cancellation. */
   claim_by?: string | null;
+  /** Claim deadline of an approved medicine request, kept after it expires or is cancelled. */
+  pickup_deadline?: string | null;
+  /** Days the resident has to claim it (7). */
+  pickup_days?: number | null;
   items: RequestItem[];
   resident?: Resident;
   reviewer?: { user_id: number; name: string } | null;

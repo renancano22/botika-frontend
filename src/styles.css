@@ -484,6 +484,15 @@ input[type='password']::-ms-reveal, input[type='password']::-ms-clear { display:
 .info-warn { background: #fff7ed; border-color: #fed7aa; color: #9a3412; }
 .info-ok { background: #f1faf3; border-color: #b7e4c1; color: #1d5e2b; }
 .info-tip { background: #f0fdf4; border-color: #bbf7d0; color: #166534; }
+.pickup-dates { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 8px 0; }
+.pickup-dates > div { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border-radius: 10px; background: #fff; border: 1px solid currentColor; border-color: color-mix(in srgb, currentColor 30%, white); }
+.pickup-dates > div > span:first-child { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.03em; opacity: 0.8; }
+.pickup-dates b { font-size: 1.05rem; color: #111827; }
+.pickup-dates .pickup-deadline { border-color: #fca5a5; }
+.pickup-dates .pickup-deadline b { color: #b91c1c; }
+.pickup-dates .countdown { align-self: flex-start; margin-top: 2px; }
+.info-box p.pickup-rule { display: block; }
+@media (max-width: 380px) { .pickup-dates { grid-template-columns: 1fr; } }
 
 .hero { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px; padding: 26px 18px; }
 .hero h2 { font-size: 1.4rem; margin-top: 6px; }

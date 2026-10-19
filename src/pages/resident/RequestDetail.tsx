@@ -6,7 +6,7 @@ import BackButton from '../../components/BackButton';
 import { Loading, Message, Modal } from '../../components/ui';
 import RequestTracker from '../../components/RequestTracker';
 import { ICONS, Svg } from '../../components/RequestCards';
-import { RequestSummaryCard, StatusBox } from '../../components/RequestDetailParts';
+import { PickupDeadlineBox, RequestSummaryCard, StatusBox } from '../../components/RequestDetailParts';
 import { PrescriptionUpload, type PrescriptionFile } from '../../components/Prescription';
 import type { MedicineRequest } from '../../types';
 import { MAX_REQUEST_QUANTITY, quantityWarning } from '../../validation';
@@ -90,7 +90,7 @@ export default function RequestDetail() {
             <span className="submitted-icon"><Svg d={ICONS.check} size={30} width={2.8} /></span>
             <div>
               <strong>Request Submitted!</strong>
-              <p>Your request No. {r.request_id} has been sent to Botika ng Bayan. {r.prescription ? 'The pharmacy staff will check your prescription and review your request.' : 'The pharmacy staff will review it.'} You will get an SMS once it is approved.</p>
+              <p>Your request No. {r.request_id} has been sent to Botika ng Bayan. {r.request_type === 'restock' ? 'The administrator will review it.' : r.prescription ? 'The pharmacy staff will check your prescription and review your request.' : 'The pharmacy staff will review it.'} You will be notified once it is approved or not approved. No action is needed for now.</p>
             </div>
           </div>
         )}
@@ -100,6 +100,7 @@ export default function RequestDetail() {
           </button>
         ) : undefined} />
         <Message type={msg?.type}>{msg?.text}</Message>
+        <PickupDeadlineBox r={r} />
 
         <section>
           <h2 className="section-title">Request Tracking</h2>

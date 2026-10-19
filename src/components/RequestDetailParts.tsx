@@ -1,18 +1,43 @@
 import { useState, type ReactNode } from 'react';
 import { formatDate } from '../api';
 import type { MedicineRequest } from '../types';
-import { statusSummary } from './RequestTracker';
-import { dateTime, ICONS, quantityText, RequestNo, STATUS_COLOR_KEY, statusKey, StatusPill, Svg } from './RequestCards';
+import { pickupPeriod, statusSummary } from './RequestTracker';
+import { dateTime, ICONS, PickupCountdown, quantityText, RequestNo, STATUS_COLOR_KEY, statusKey, StatusPill, Svg } from './RequestCards';
 import { PrescriptionViewer, requiresPrescription, RX_ICON, RxBadge } from './Prescription';
 
 /** "Pickup schedule" row: approval means the medicines are ready at Botika ng Bayan until the claim deadline. */
 export function pickupText(r: MedicineRequest): string {
   if (r.request_type === 'restock') return r.status === 'fulfilled' ? 'Medicine available — you may now request it' : 'Not applicable (restock request)';
-  if (r.status === 'approved') return `Botika ng Bayan, Bulan · on or before ${formatDate(r.claim_by)}`;
+  const p = pickupPeriod(r);
+  if (r.status === 'approved' && p) return `Botika ng Bayan, Bulan · ${p.pickup} to ${p.deadline} (claim on or before ${p.deadline})`;
   if (r.status === 'dispensed') return `Claimed on ${dateTime(r.dispensing?.dispensed_at ?? r.request_date)}`;
-  if (r.status === 'pending') return 'Not yet available';
-  if (r.status === 'expired') return `Deadline passed${r.cancelled_at ? ` (${formatDate(r.cancelled_at)})` : ''}`;
+  if (r.status === 'pending') return 'Not yet available — waiting for approval';
+  if (r.status === 'expired') return p ? `Not claimed — pickup period was ${p.pickup} to ${p.deadline}` : 'Not claimed before the deadline';
   return '—';
+}
+
+/**
+ * Highlighted pickup date and claim deadline of an approved medicine request, with the 7-day rule.
+ * Shown in the resident's notification details and on the request tracking page.
+ */
+export function PickupDeadlineBox({ r, reminder = false }: { r: MedicineRequest; reminder?: boolean }) {
+  const p = pickupPeriod(r);
+  if (!p || r.status !== 'approved') return null;
+  return (
+    <div className={`info-box pickup-box ${reminder ? 'info-warn' : 'info-ok'}`}>
+      <strong><Svg d={ICONS.calendar} size={18} /> {reminder ? 'Pickup Reminder' : 'Pickup Schedule'}</strong>
+      <p><Svg d={ICONS.pin} size={16} /> Botika ng Bayan, Bulan, Sorsogon</p>
+      <div className="pickup-dates">
+        <div><span>Pickup date</span><b>{p.pickup}</b></div>
+        <div className="pickup-deadline"><span>Claim deadline</span><b>{p.deadline}</b><PickupCountdown claimBy={r.claim_by} /></div>
+      </div>
+      <p className="pickup-rule">
+        You must claim your medicine within {p.days} days from the pickup date. If you do not claim it on or before <b>{p.deadline}</b>,
+        the medicine will no longer be given to you and this request will no longer be valid for pickup.
+      </p>
+      {r.resident?.qr_code && <small>Bring your Resident ID / QR code ({r.resident.qr_code}) for verification.</small>}
+    </div>
+  );
 }
 
 export function notesText(r: MedicineRequest): string {
