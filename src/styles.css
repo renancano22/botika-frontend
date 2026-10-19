@@ -223,6 +223,9 @@ select::-ms-expand { display: none; }
 /* ---------- password field with show/hide eye */
 .password-field { position: relative; display: block; }
 .password-field input { width: 100%; padding-right: 44px; }
+/* Only our own eye button: hide the browser's built-in reveal / clear buttons (Microsoft Edge adds a second eye). */
+input[type='password']::-ms-reveal, input[type='password']::-ms-clear { display: none; }
+.password-field input::-ms-reveal, .password-field input::-ms-clear { display: none; }
 .password-toggle {
   position: absolute; top: 0; bottom: 0; right: 0; width: 44px;
   display: grid; place-items: center; padding: 0;
