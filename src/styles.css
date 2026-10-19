@@ -1653,7 +1653,9 @@ a.db-person:hover { background: rgba(255, 255, 255, 0.2); }
   border: 1px dashed color-mix(in srgb, var(--primary) 35%, white); background: var(--primary-50); }
 .rs-forgot-icon, .rs-avatar { width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; flex-shrink: 0; background: var(--primary-soft); color: var(--primary); }
 .rs-forgot-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.rs-back { display: inline-flex; align-items: center; gap: 4px; color: var(--primary); font-weight: 600; }
+.rs-back { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.rs-back svg { flex-shrink: 0; }
+@media (max-width: 600px) { .rs-back { width: 100%; justify-content: center; min-height: 40px; } .card-head:has(.rs-back) .card-actions { width: 100%; } }
 .rs-intro { margin: -4px 0 12px; }
 .rs-req { color: var(--danger); }
 .rs-form { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1.2fr); gap: 10px; align-items: end; }

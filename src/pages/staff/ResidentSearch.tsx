@@ -5,6 +5,8 @@ import { Card, Empty, Message, Modal } from '../../components/ui';
 import { ICONS, Svg } from '../../components/RequestCards';
 import type { Dispensing, MedicineRequest, Resident } from '../../types';
 
+const QR_ICON = 'M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2v2h-2zM18 18h2v2h-2zM18 14h2M14 18h2';
+
 export interface ResidentLookup {
   resident: Resident;
   approved_requests: MedicineRequest[];
@@ -88,8 +90,8 @@ export default function ResidentSearch({ onBack, onVerified }: { onBack: () => v
 
   return (
     <Card title="1. Find resident by name" actions={
-      <button type="button" className="btn btn-ghost rs-back" onClick={onBack}>
-        <Svg d={ICONS.back} size={16} width={2.4} /> Use Resident ID or QR code
+      <button type="button" className="btn btn-outline btn-sm rs-back" onClick={onBack}>
+        <Svg d={QR_ICON} size={16} /> Use Resident ID / QR code
       </button>
     }>
       <p className="muted small rs-intro">For residents who forgot their QR code and Resident ID. Start typing any part of the name they registered with — results appear as you type. Then confirm their identity before dispensing.</p>

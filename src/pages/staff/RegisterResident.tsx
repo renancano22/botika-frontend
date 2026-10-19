@@ -6,6 +6,8 @@ import { ICONS, Svg } from '../../components/RequestCards';
 import { FIELD } from '../../validation';
 import { VerifyIdentity, type Match, type ResidentLookup } from './ResidentSearch';
 
+const QR_ICON = 'M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2v2h-2zM18 18h2v2h-2zM18 14h2M14 18h2';
+
 const EMPTY = { name: '', barangay: '', address_line: '', contact_no: '' };
 
 /**
@@ -44,8 +46,8 @@ export default function RegisterResident({ onBack, onRegistered, onVerified }: {
 
   return (
     <Card title="1. Register resident" actions={
-      <button type="button" className="btn btn-ghost rs-back" onClick={onBack}>
-        <Svg d={ICONS.back} size={16} width={2.4} /> Use Resident ID or QR code
+      <button type="button" className="btn btn-outline btn-sm rs-back" onClick={onBack}>
+        <Svg d={QR_ICON} size={16} /> Use Resident ID / QR code
       </button>
     }>
       <p className="muted small rs-intro">For a resident who is not registered yet, for example because they have no cellphone. After saving, add the medicines you give in <strong>Dispense Medicine</strong> so the inventory is updated.</p>
