@@ -494,12 +494,40 @@ input[type='password']::-ms-reveal, input[type='password']::-ms-clear { display:
 .info-box p.pickup-rule { display: block; }
 @media (max-width: 380px) { .pickup-dates { grid-template-columns: 1fr; } }
 
-.hero { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px; padding: 26px 18px; }
-.hero h2 { font-size: 1.4rem; margin-top: 6px; }
-.hero p { margin: 0; max-width: 420px; }
 .hero-icon { width: 80px; height: 80px; border-radius: 50%; display: grid; place-items: center; box-shadow: 0 0 0 8px color-mix(in srgb, var(--k) 7%, white); }
 .badge-app { background: #e0f2fe; color: #0369a1; }
-.sms-card p { margin: 4px 0 0; }
+
+/* Notification details: header card in the notification's colour + the message as a chat bubble */
+.notif-hero { border-radius: 18px; overflow: hidden; background: var(--card); border: 1.5px solid color-mix(in srgb, var(--k) 45%, white); box-shadow: 0 6px 18px color-mix(in srgb, var(--k) 12%, transparent); }
+.notif-hero-top { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px; padding: 26px 20px 20px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--k) 14%, white) 0%, color-mix(in srgb, var(--k) 4%, white) 70%, #fff 100%); }
+.notif-hero-top .hero-icon { background: #fff; box-shadow: 0 0 0 8px color-mix(in srgb, var(--k) 12%, white), 0 8px 20px color-mix(in srgb, var(--k) 25%, transparent); }
+.notif-hero-top .pill { margin-top: 6px; background: var(--k); color: #fff; box-shadow: none; text-transform: uppercase; letter-spacing: 0.04em; font-size: 0.7rem; }
+.notif-hero-top h2 { font-size: 1.45rem; margin: 0; color: color-mix(in srgb, var(--k) 70%, black); }
+.notif-hero-top p { margin: 0; max-width: 460px; color: #374151; line-height: 1.5; }
+.notif-hero-meta { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; padding: 12px 16px; border-top: 1px dashed color-mix(in srgb, var(--k) 30%, white); }
+.notif-hero-meta span { display: inline-flex; align-items: center; gap: 6px; padding: 5px 11px; border-radius: 999px; font-size: 0.8rem; color: #374151;
+  background: color-mix(in srgb, var(--k) 7%, white); border: 1px solid color-mix(in srgb, var(--k) 20%, white); }
+.notif-hero-meta svg { color: var(--k); flex-shrink: 0; }
+.notif-hero-meta b { color: color-mix(in srgb, var(--k) 75%, black); }
+
+.notif-msg { border-radius: 18px; padding: 16px; background: var(--card); border: 1.5px solid color-mix(in srgb, var(--k) 30%, white); box-shadow: var(--shadow-sm); }
+.notif-msg-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.notif-msg-icon { width: 38px; height: 38px; border-radius: 12px; display: grid; place-items: center; flex-shrink: 0; }
+.notif-msg-head strong { display: block; font-size: 0.95rem; }
+.notif-msg-head small { display: block; font-size: 0.78rem; color: var(--muted, #6b7280); }
+.notif-bubble { position: relative; margin: 0 0 0 6px; padding: 14px 16px; border-radius: 4px 16px 16px 16px; line-height: 1.6; font-size: 0.95rem; color: #1f2937;
+  background: color-mix(in srgb, var(--k) 7%, white); border: 1px solid color-mix(in srgb, var(--k) 18%, white); overflow-wrap: anywhere; }
+.notif-bubble mark { background: none; color: inherit; font-weight: 700; }
+.notif-bubble .hl-date { color: color-mix(in srgb, var(--k) 80%, black); background: color-mix(in srgb, var(--k) 14%, white); padding: 1px 6px; border-radius: 6px; white-space: nowrap; }
+.notif-bubble .hl-status { color: #fff; background: var(--k); padding: 1px 7px; border-radius: 6px; font-size: 0.85em; letter-spacing: 0.03em; }
+.notif-bubble .hl-key { color: color-mix(in srgb, var(--k) 75%, black); white-space: nowrap; }
+.notif-bubble .hl-status { white-space: nowrap; }
+@media (max-width: 480px) {
+  .notif-hero-top { padding: 22px 16px 16px; }
+  .notif-hero-top h2 { font-size: 1.25rem; }
+  .notif-bubble { margin-left: 0; font-size: 0.92rem; }
+}
 
 .detail-actions { display: flex; flex-direction: column; gap: 10px; }
 .btn-block { width: 100%; justify-content: center; display: inline-flex; align-items: center; gap: 8px; text-align: center; text-decoration: none; }

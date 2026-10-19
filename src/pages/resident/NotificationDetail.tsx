@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { notificationsChanged } from '../../api';
 import { useApi } from '../../hooks';
@@ -11,6 +11,25 @@ import { dateTime, ICONS, Svg } from '../../components/RequestCards';
 import type { MedicineRequest, SmsNotification } from '../../types';
 
 interface Detail { notification: SmsNotification; request: MedicineRequest | null }
+
+const PHONE = 'M8 2h8a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zM11 18h2';
+const CHAT = 'M21 12a8 8 0 0 1-11.6 7.1L4 20l1.1-4.6A8 8 0 1 1 21 12z';
+
+/** Highlights the important parts of a message: dates, request numbers, Resident IDs, statuses and "Reason:". */
+const HIGHLIGHT = /(\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.? \d{1,2}, \d{4}\b)|(\b[Rr]equest No\. ?\d+)|(\bBBC-\d+\b)|(\b(?:NOT APPROVED|APPROVED|COMPLETED|EXPIRED|CANCELLED)\b)|(\bReason:)/g;
+function highlight(text: string): ReactNode[] {
+  const out: ReactNode[] = [];
+  let last = 0;
+  for (const m of text.matchAll(HIGHLIGHT)) {
+    const i = m.index ?? 0;
+    if (i > last) out.push(text.slice(last, i));
+    const cls = m[1] ? 'hl-date' : m[4] ? 'hl-status' : 'hl-key';
+    out.push(<mark key={i} className={cls}>{m[0]}</mark>);
+    last = i + m[0].length;
+  }
+  if (last < text.length) out.push(text.slice(last));
+  return out;
+}
 
 const TAG: Record<Kind, string> = {
   submitted: 'Under review', approved: 'Ready for pickup', reminder: 'Pickup reminder', expired: 'Expired',
@@ -153,17 +172,28 @@ export default function NotificationDetail() {
         <h1>Notification Details</h1>
       </header>
 
-      <section className="hero card">
-        <span className={`hero-icon kicon k-${kind}`}><Svg d={KIND[kind].icon} size={34} width={2} /></span>
-        <h2>{hero.title || titleOf(n)}</h2>
-        <p className="muted">{hero.text}</p>
-        <span className={`pill k-${kind}`}>{hero.tag}</span>
-        <small className="muted">{dateTime(n.sent_at)}</small>
+      <section className={`notif-hero k-${kind}`}>
+        <div className="notif-hero-top">
+          <span className="hero-icon kicon"><Svg d={KIND[kind].icon} size={34} width={2} /></span>
+          <span className="pill">{hero.tag}</span>
+          <h2>{hero.title || titleOf(n)}</h2>
+          <p>{hero.text}</p>
+        </div>
+        <div className="notif-hero-meta">
+          {n.request_id && <span><Svg d={ICONS.note} size={15} /> Request No. <b>{n.request_id}</b></span>}
+          <span><Svg d={ICONS.clock} size={15} /> {dateTime(n.sent_at)}</span>
+        </div>
       </section>
 
-      <section className="card sms-card">
-        <small className="muted">{n.channel === 'sms' ? 'Message sent to you (SMS)' : 'Message'}</small>
-        <p>{cleanMessage(n.message)}</p>
+      <section className={`notif-msg k-${kind}`}>
+        <div className="notif-msg-head">
+          <span className="notif-msg-icon kicon"><Svg d={n.channel === 'sms' ? PHONE : CHAT} size={18} /></span>
+          <div>
+            <strong>{n.channel === 'sms' ? 'SMS sent to your phone' : n.channel === 'none' ? 'Message (no mobile number on file)' : 'In-app message'}</strong>
+            <small>From Botika ng Bayan Bulan · BulanBotikaCare</small>
+          </div>
+        </div>
+        <p className="notif-bubble">{highlight(cleanMessage(n.message))}</p>
       </section>
 
       {r && <>
