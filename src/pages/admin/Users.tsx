@@ -8,7 +8,7 @@ import { FIELD } from '../../validation';
 import BackButton from '../../components/BackButton';
 import { confirmAction, LoadError, toast, useFormErrors } from '../../components/feedback';
 
-type Form = { name: string; email: string; password: string; role: Role };
+type Form = { name: string; email: string; password: string; password_confirmation: string; role: Role };
 
 /** Manage User Accounts: create, view, edit, deactivate (Fig. 4.4). */
 export default function Users() {
@@ -18,20 +18,25 @@ export default function Users() {
   const { data, errorInfo, loading, reload } = useApi<User[]>('/users', { role, search });
   const [editing, setEditing] = useState<User | null>(null);
   const [form, setForm] = useState<Form | null>(null);
-  const fe = useFormErrors(['name', 'email', 'password', 'role']);
+  const fe = useFormErrors(['name', 'email', 'password', 'password_confirmation', 'role']);
   const [busy, setBusy] = useState(false);
 
   const open = (u?: User) => {
     setEditing(u ?? null);
     fe.clear();
-    setForm(u ? { name: u.name, email: u.email ?? '', password: '', role: u.role } : { name: '', email: '', password: '', role: 'staff' });
+    setForm(u ? { name: u.name, email: u.email ?? '', password: '', password_confirmation: '', role: u.role }
+      : { name: '', email: '', password: '', password_confirmation: '', role: 'staff' });
   };
 
   const save = async (e: FormEvent) => {
     e.preventDefault();
     if (!form || busy) return;
-    setBusy(true);
     fe.clear();
+    if ((form.password || form.password_confirmation) && form.password !== form.password_confirmation) {
+      fe.setFieldErrors({ password_confirmation: 'The password and its confirmation do not match.' });
+      return;
+    }
+    setBusy(true);
     try {
       if (editing) await api.put(`/users/${editing.user_id}`, form);
       else await api.post('/users', form);
@@ -115,6 +120,11 @@ export default function Users() {
             </label>
             <label>{editing ? 'New password (leave blank to keep)' : 'Password'}
               <PasswordInput {...FIELD.password} value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} autoComplete="new-password" required={!editing} {...fe.invalid('password')} />{fe.error('password')}
+            </label>
+            <label>{editing ? 'Confirm new password' : 'Confirm password'}
+              <PasswordInput value={form.password_confirmation} onChange={(e) => setForm({ ...form, password_confirmation: e.target.value })}
+                autoComplete="new-password" required={!editing || !!form.password} placeholder={editing ? 'Type the new password again' : 'Type the password again'} {...fe.invalid('password_confirmation')} />
+              {fe.error('password_confirmation')}
             </label>
             <p className="field-hint">At least 8 characters, with letters and numbers.</p>
             <label>Role
