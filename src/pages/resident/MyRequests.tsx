@@ -2,11 +2,12 @@ import { useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../auth';
 import { useApi } from '../../hooks';
-import { Empty, Loading, Message } from '../../components/ui';
+import { Empty, Loading } from '../../components/ui';
 import { RequestRow, STATUS_COLOR_KEY, STATUS_LABEL, statusKey, Svg, type StatusKey } from '../../components/RequestCards';
 import StatusDropdown from '../../components/StatusDropdown';
 import type { MedicineRequest } from '../../types';
 import BackButton from '../../components/BackButton';
+import { LoadError } from '../../components/feedback';
 
 const FILTERS: ('all' | StatusKey)[] = ['all', 'review', 'claim', 'stock', 'claimed', 'available', 'cancelled', 'expired', 'rejected'];
 
@@ -18,7 +19,7 @@ function greeting(): string {
 /** Resident: list of their requests with search and status filters. Tapping one opens its status timeline. */
 export default function MyRequests() {
   const { user } = useAuth();
-  const { data, error, loading } = useApi<MedicineRequest[]>('/requests', undefined, 30000);
+  const { data, errorInfo, loading, reload } = useApi<MedicineRequest[]>('/requests', undefined, 30000);
   // ?status=review / claim / claimed … opens the list already filtered (e.g. from the dashboard tiles).
   // '' = no status chosen yet (shows "Select status", lists everything); 'all' = "All requests" chosen.
   const [filter, setFilter] = useState<'' | 'all' | StatusKey>(() => {
@@ -53,7 +54,7 @@ export default function MyRequests() {
         </div>
         <Link className="btn" to="/medicines">+ New request</Link>
       </header>
-      <Message>{error}</Message>
+      <LoadError error={errorInfo} onRetry={() => reload()} />
 
       <div className="req-toolbar">
         <div className="search-box">
@@ -79,7 +80,7 @@ export default function MyRequests() {
             {shown.length} {shown.length === 1 ? 'request' : 'requests'}{filter !== '' && filter !== 'all' && <> · {STATUS_LABEL[filter]} <button type="button" className="link-button" onClick={() => changeFilter('')}>Show all</button></>}
           </span>
         </div>
-        {loading && !data ? <Loading /> : shown.length === 0 ? (
+        {loading && !data ? <Loading /> : !data ? null : shown.length === 0 ? (
           <div className="card"><Empty>{data?.length ? 'No requests match your search or filter.' : 'You have no requests yet. Tap "+ New request" to request medicines.'}</Empty></div>
         ) : (
           <div className="req-rows">

@@ -9,6 +9,7 @@ import { MAX_REQUEST_QUANTITY, quantityWarning } from '../../validation';
 import { PrescriptionUpload, PrescriptionViewer, RX_ICON, RxBadge, type PrescriptionFile } from '../../components/Prescription';
 import { jumpToTop } from '../../scroll';
 import BackButton from '../../components/BackButton';
+import { LoadError, toast } from '../../components/feedback';
 
 type CartItem = { medicine: Medicine; quantity: number };
 
@@ -42,7 +43,7 @@ export default function ResidentMedicines() {
     const a = new URLSearchParams(window.location.search).get('availability'); // e.g. from the dashboard tiles
     return a === 'in_stock' || a === 'out_of_stock' ? a : 'all';
   });
-  const { data, error, loading } = useApi<Medicine[]>('/medicines', { search, category }, 30000);
+  const { data, errorInfo, loading, reload } = useApi<Medicine[]>('/medicines', { search, category }, 30000);
   const { data: categories } = useApi<string[]>('/medicines/categories');
   // The resident's open requests (pending, or approved and not finished yet): one per medicine at a time.
   //  - restock: they wait for the SMS;  - medicine: they edit that request instead of making a new one.
@@ -64,7 +65,6 @@ export default function ResidentMedicines() {
   const [restockFor, setRestockFor] = useState<Medicine | null>(null);
   const [restockQty, setRestockQty] = useState(1);
   const [sheetError, setSheetError] = useState('');
-  const [toast, setToast] = useState('');
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState('');
   const [restockNote, setRestockNote] = useState('');
@@ -86,12 +86,6 @@ export default function ResidentMedicines() {
   useEffect(() => {
     if (step && cart.length === 0) setParams({}, { replace: true }); // e.g. after refreshing the page
   }, [step, cart.length, setParams]);
-
-  useEffect(() => {
-    if (!toast) return;
-    const id = window.setTimeout(() => setToast(''), 2600);
-    return () => window.clearTimeout(id);
-  }, [toast]);
 
   const inCart = (m: Medicine) => cart.find((c) => c.medicine.medicine_id === m.medicine_id);
   const cartWarnings = cart.map((c) => quantityWarning(c.quantity, unitPlural(c.medicine.unit), { available: c.medicine.available_stock }));
@@ -115,11 +109,12 @@ export default function ResidentMedicines() {
     setCart(exists
       ? cart.map((c) => (c.medicine.medicine_id === adding.medicine.medicine_id ? adding : c))
       : [...cart, adding]);
-    setToast(`${adding.medicine.medicine_name} ${exists ? 'updated in' : 'added to'} your request`);
+    toast.success(exists ? 'Request updated' : 'Added to your request', { description: `${adding.medicine.medicine_name} × ${adding.quantity}`, duration: 2600 });
     setAdding(null);
   };
 
   const submitRequest = async () => {
+    if (busy) return;
     setBusy(true);
     setSheetError('');
     try {
@@ -152,14 +147,14 @@ export default function ResidentMedicines() {
   };
 
   const submitRestock = async () => {
-    if (!restockFor) return;
+    if (!restockFor || busy) return;
     setBusy(true);
     setSheetError('');
     try {
       await api.post('/requests', { request_type: 'restock', note: restockNote.trim() || null, items: [{ medicine_id: restockFor.medicine_id, quantity: restockQty }] });
       setRestockFor(null);
       reloadMine(true);
-      setToast('Restock request sent. You will get an SMS once the medicine is available.');
+      toast.success('Restock request sent', { description: `You will be notified once ${restockFor.medicine_name} is available. You can follow it in My Requests.` });
     } catch (err) {
       setSheetError(errorMessage(err));
     } finally { setBusy(false); }
@@ -345,8 +340,8 @@ export default function ResidentMedicines() {
               <span className="count-pill">{shown.length} item{shown.length === 1 ? '' : 's'}</span>
             </div>
           </div>
-          {error && <Message>{error}</Message>}
-          {loading && !data ? <Loading /> : !shown.length ? <div className="card"><Empty>No medicines match your search or filters.</Empty></div> : (
+          <LoadError error={errorInfo} onRetry={() => reload()} />
+          {loading && !data ? <Loading /> : !data ? null : !shown.length ? <div className="card"><Empty>No medicines match your search or filters.</Empty></div> : (
             <div className="med-grid">
               {shown.map((m) => {
                 const added = inCart(m);
@@ -418,7 +413,6 @@ export default function ResidentMedicines() {
         </button>
       )}
 
-      {toast && <div className="toast" role="status"><Svg d={ICONS.check} size={18} width={2.6} /> {toast}</div>}
 
       {cartOpen && (
         <Modal title="My medicine request" onClose={() => setCartOpen(false)}>

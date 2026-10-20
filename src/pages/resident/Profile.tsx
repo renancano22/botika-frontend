@@ -10,6 +10,7 @@ import type { User } from '../../types';
 import { FIELD } from '../../validation';
 import { jumpTo, jumpToTop } from '../../scroll';
 import BackButton from '../../components/BackButton';
+import { LoadError, toast } from '../../components/feedback';
 
 interface ProfileData {
   user: User;
@@ -104,7 +105,7 @@ const normalizePhone = (v: string) => {
  */
 export default function Profile() {
   const { setUser } = useAuth();
-  const { data, error, loading, setData } = useApi<ProfileData>('/profile');
+  const { data, errorInfo, loading, setData, reload } = useApi<ProfileData>('/profile');
   const { data: barangays } = useApi<string[]>('/barangays');
   const [params, setParams] = useSearchParams();
   const location = useLocation();
@@ -254,9 +255,11 @@ export default function Profile() {
         : (await api.delete<ProfileData>('/profile/photo')).data;
       setData(res);
       setUser(res.user); // updates the picture in the top bar and menu
-      setNotice({ type: 'success', text: action === 'change' ? 'Your profile picture has been updated.' : 'Your profile picture has been deleted.' });
+      toast.success(action === 'change' ? 'Profile picture updated' : 'Profile picture deleted', {
+        description: action === 'change' ? 'Your new picture is now shown on your profile.' : 'Your profile now shows your initial instead of a picture.',
+      });
     } catch (err) {
-      setNotice({ type: 'error', text: `${action === 'change' ? 'Your picture was not changed.' : 'Your picture was not deleted.'} ${errorMessage(err)}` });
+      toast.fromError(err, { title: action === 'change' ? 'Your picture was not changed' : 'Your picture was not deleted' });
     } finally {
       setNewPhoto(null);
       setConfirmDelete(false);
@@ -326,7 +329,7 @@ export default function Profile() {
       setConfirming(false);
       setData(res);
       setUser(res.user); // updates the name and picture in the top bar and menu
-      setNotice({ type: 'success', text: res.password_changed ? 'Your profile and password have been updated.' : 'Your profile has been updated.' });
+      toast.success('Profile updated', { description: res.password_changed ? 'Your profile and password were updated. Use your new password the next time you log in.' : 'Your changes were saved.' });
       closeEdit();
     } catch (err) {
       setConfirming(false);
@@ -338,7 +341,7 @@ export default function Profile() {
   };
 
   if (loading && !data) return <Loading />;
-  if (!data || !resident) return <Message>{error}</Message>;
+  if (!data || !resident) return <div className="page"><LoadError error={errorInfo} onRetry={() => reload()} /></div>;
   const { user } = data;
   const editPhoto = photo.kind === 'new' ? photo.data : photo.kind === 'remove' ? null : resident.photo;
 

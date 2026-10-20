@@ -3,10 +3,11 @@ import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Too
 import { formatDate } from '../../api';
 import { useAuth } from '../../auth';
 import { useApi } from '../../hooks';
-import { Badge, Card, Empty, Loading, Message } from '../../components/ui';
+import { Badge, Card, Empty, Loading } from '../../components/ui';
 import type { Alerts, MedicineRequest } from '../../types';
 import { ExpiryBanner, expiryText } from '../../components/ExpiryAlerts';
 import { ICONS, PickupCountdown, Svg } from '../../components/RequestCards';
+import { LoadError } from '../../components/feedback';
 
 interface OpsDashboard {
   counts: Record<string, number>;
@@ -31,11 +32,11 @@ const monthLabel = (m: string) => new Date(`${m}-01`).toLocaleDateString('en-PH'
 /** Dashboard for the administrator and pharmacy staff. Refreshes every 30 seconds. */
 export default function OperationsDashboard() {
   const { user } = useAuth();
-  const { data, error, loading } = useApi<OpsDashboard>('/dashboard', undefined, 30000);
+  const { data, errorInfo, loading, reload } = useApi<OpsDashboard>('/dashboard', undefined, 30000);
   const isAdmin = user?.role === 'admin';
 
   if (loading && !data) return <Loading />;
-  if (!data) return <Message>{error}</Message>;
+  if (!data) return <div className="page"><LoadError error={errorInfo} onRetry={() => reload()} /></div>;
   const c = data.counts;
   const today = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD in local time
 

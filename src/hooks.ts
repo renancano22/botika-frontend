@@ -1,16 +1,24 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { api, errorMessage } from './api';
+import { api, describeError, type ErrorInfo } from './api';
+import { RECONNECTED, toast } from './components/feedback';
 
 /**
  * Loads data from the API and refreshes it every `refreshMs` (real-time monitoring).
  * Pass refreshMs = 0 to disable auto refresh.
+ *  - First load fails: `error` / `errorInfo` are set (pages show LoadError with "Try again").
+ *  - Data is already shown and a refresh fails: the data stays on screen. A refresh the user asked
+ *    for (e.g. a new search) shows an error toast; background refreshes stay quiet, because the
+ *    connection notice already tells the user when they are offline.
+ *  - When the internet connection comes back, the data is refreshed.
  */
 export function useApi<T>(url: string | null, params?: Record<string, unknown>, refreshMs = 0) {
   const [data, setData] = useState<T | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [errorInfo, setErrorInfo] = useState<ErrorInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const key = JSON.stringify(params ?? {});
+  const hasData = useRef(false);
+  hasData.current = data !== null;
 
   const load = useCallback(async (silent = false) => {
     if (!url) return;
@@ -18,9 +26,10 @@ export function useApi<T>(url: string | null, params?: Record<string, unknown>, 
     try {
       const res = await api.get<T>(url, { params: JSON.parse(key) });
       setData(res.data);
-      setError(null);
+      setErrorInfo(null);
     } catch (err) {
-      setError(errorMessage(err));
+      if (!hasData.current) setErrorInfo(describeError(err));
+      else if (!silent) toast.fromError(err, { title: 'Unable to refresh', retry: () => load() });
     } finally {
       setLoading(false);
     }
@@ -28,12 +37,16 @@ export function useApi<T>(url: string | null, params?: Record<string, unknown>, 
 
   useEffect(() => {
     load();
-    if (!refreshMs) return;
-    const id = window.setInterval(() => load(true), refreshMs);
-    return () => window.clearInterval(id);
+    const again = () => load(true);
+    window.addEventListener(RECONNECTED, again);
+    const id = refreshMs ? window.setInterval(again, refreshMs) : 0;
+    return () => {
+      window.removeEventListener(RECONNECTED, again);
+      if (id) window.clearInterval(id);
+    };
   }, [load, refreshMs]);
 
-  return { data, error, loading, reload: load, setData };
+  return { data, error: errorInfo?.message ?? null, errorInfo, loading, reload: load, setData };
 }
 
 /**

@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
-import { api, errorMessage } from '../../api';
+import { api } from '../../api';
+import { useFormErrors } from '../../components/feedback';
 import { useApi } from '../../hooks';
 import { Card, Message } from '../../components/ui';
 import { ICONS, Svg } from '../../components/RequestCards';
@@ -22,16 +23,16 @@ export default function RegisterResident({ onBack, onRegistered, onVerified }: {
   const { data: barangays } = useApi<string[]>('/barangays');
   const [form, setForm] = useState(EMPTY);
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState('');
+  const fe = useFormErrors(['name', 'barangay', 'address_line', 'contact_no']);
   // Already registered in the barangay: the same name (blocked = cannot be registered again) or a similar name.
   const [matches, setMatches] = useState<{ list: Match[]; blocked: boolean; message: string } | null>(null);
   const [picked, setPicked] = useState<Match | null>(null);
-  const set = (k: keyof typeof EMPTY) => (e: { target: { value: string } }) => { setForm({ ...form, [k]: e.target.value }); setMatches(null); };
+  const set = (k: keyof typeof EMPTY) => (e: { target: { value: string } }) => { setForm({ ...form, [k]: e.target.value }); setMatches(null); fe.clear(k); };
 
   const save = async (confirmNew = false) => {
     if (busy) return;
     setBusy(true);
-    setError('');
+    fe.clear();
     try {
       const res = await api.post<ResidentLookup>('/residents', { ...form, confirm_new: confirmNew });
       onRegistered(res.data);
@@ -39,7 +40,7 @@ export default function RegisterResident({ onBack, onRegistered, onVerified }: {
       const e = err as { response?: { status?: number; data?: { matches?: Match[]; blocked?: boolean; message?: string } } };
       const d = e.response?.data;
       if (e.response?.status === 409 && d?.matches) setMatches({ list: d.matches, blocked: !!d.blocked, message: d.message ?? '' });
-      else setError(errorMessage(err));
+      else fe.fromError(err);
     } finally { setBusy(false); }
   };
   const submit = (e: FormEvent) => { e.preventDefault(); save(false); };
@@ -53,22 +54,22 @@ export default function RegisterResident({ onBack, onRegistered, onVerified }: {
       <p className="muted small rs-intro">For a resident who is not registered yet, for example because they have no cellphone. After saving, add the medicines you give in <strong>Dispense Medicine</strong> so the inventory is updated.</p>
       <form className="rr-form" onSubmit={submit}>
         <label>Full name
-          <input value={form.name} onChange={set('name')} placeholder="e.g. Juan Dela Cruz" required maxLength={100} autoFocus autoComplete="off" spellCheck={false} {...FIELD.name} />
+          <input value={form.name} onChange={set('name')} placeholder="e.g. Juan Dela Cruz" required maxLength={100} autoFocus autoComplete="off" spellCheck={false} {...FIELD.name} {...fe.invalid('name')} />{fe.error('name')}
         </label>
         <label>Barangay
-          <select value={form.barangay} onChange={set('barangay')} required>
+          <select value={form.barangay} onChange={set('barangay')} required {...fe.invalid('barangay')}>
             <option value="">Select barangay…</option>
             {barangays?.map((b) => <option key={b} value={b}>{b}</option>)}
-          </select>
+          </select>{fe.error('barangay')}
         </label>
         <label><span>House no. / Street / Purok <span className="muted small">(optional)</span></span>
-          <input value={form.address_line} onChange={set('address_line')} placeholder="e.g. Purok 3, Rizal St." maxLength={120} autoComplete="off" />
+          <input value={form.address_line} onChange={set('address_line')} placeholder="e.g. Purok 3, Rizal St." maxLength={120} autoComplete="off" {...fe.invalid('address_line')} />{fe.error('address_line')}
         </label>
         <label><span>Mobile number <span className="muted small">(optional)</span></span>
-          <input type="tel" inputMode="tel" value={form.contact_no} onChange={set('contact_no')} placeholder="Leave blank if none" maxLength={16} autoComplete="off" {...FIELD.mobile} />
+          <input type="tel" inputMode="tel" value={form.contact_no} onChange={set('contact_no')} placeholder="Leave blank if none" maxLength={16} autoComplete="off" {...FIELD.mobile} {...fe.invalid('contact_no')} />{fe.error('contact_no')}
           <span className="field-hint">Without a mobile number, no SMS is sent; tell the resident in person.</span>
         </label>
-        {error && <Message>{error}</Message>}
+        <Message>{fe.general}</Message>
         {!matches && (
           <div className="rr-actions">
             <button className="btn" disabled={busy}>{busy ? 'Saving…' : 'Register resident'}</button>

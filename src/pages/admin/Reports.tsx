@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { api, errorMessage } from '../../api';
 import { useApi } from '../../hooks';
+import { toast } from '../../components/feedback';
 import { Empty, Loading, Message } from '../../components/ui';
 import { Svg } from '../../components/RequestCards';
 import { jumpTo } from '../../scroll';
@@ -101,12 +102,14 @@ export default function Reports() {
   const badRange = needsDates && (!from || !to || from > to);
 
   const generate = async () => {
+    if (busy) return;
     setBusy(true);
     setError('');
     try {
       const res = await api.get<ReportData>(`/reports/${type}`, { params: needsDates ? { from, to } : {} });
       setReport(res.data);
       history.reload(true);
+      toast.success('Report generated', { description: `${TYPES[type] ?? 'The report'} is ready below. You can print or download it.` });
       requestAnimationFrame(() => jumpTo('report-result'));
     } catch (err) {
       setError(errorMessage(err));

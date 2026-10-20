@@ -1,9 +1,10 @@
 import { Link } from 'react-router-dom';
 import { useApi } from '../../hooks';
-import { Empty, Loading, Message } from '../../components/ui';
+import { Empty, Loading } from '../../components/ui';
 import { NotificationItem } from '../../components/Notifications';
 import { ICONS, RequestRow, Svg } from '../../components/RequestCards';
 import type { MedicineRequest, Resident, SmsNotification } from '../../types';
+import { LoadError } from '../../components/feedback';
 
 interface ResidentDash {
   resident: Resident;
@@ -17,10 +18,10 @@ const QR_ICON = 'M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2v2h-2zM18 18h2v2h-2
 
 /** Resident dashboard: the same layout as the administrator / staff dashboard (green header + summary panels). */
 export default function ResidentDashboard() {
-  const { data, error, loading } = useApi<ResidentDash>('/dashboard', undefined, 30000);
+  const { data, errorInfo, loading, reload } = useApi<ResidentDash>('/dashboard', undefined, 30000);
 
   if (loading && !data) return <Loading />;
-  if (!data) return <Message>{error}</Message>;
+  if (!data) return <div className="page"><LoadError error={errorInfo} onRetry={() => reload()} /></div>;
   const { resident, counts } = data;
 
   const activity = [

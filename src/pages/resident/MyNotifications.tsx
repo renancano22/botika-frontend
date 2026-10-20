@@ -1,25 +1,31 @@
 import { useState } from 'react';
 import { useApi } from '../../hooks';
-import { Empty, Loading, Message } from '../../components/ui';
+import { Empty, Loading } from '../../components/ui';
 import { markAllRead, NotificationItem } from '../../components/Notifications';
 import type { SmsNotification } from '../../types';
 import BackButton from '../../components/BackButton';
+import { LoadError, toast } from '../../components/feedback';
 
 /**
  * Resident notifications: every SMS sent to them (request updates and the administrator's
  * announcements) is kept here as history. Unread ones are highlighted.
  */
 export default function MyNotifications() {
-  const { data, error, loading, setData } = useApi<SmsNotification[]>('/notifications', undefined, 30000);
+  const { data, errorInfo, loading, setData, reload } = useApi<SmsNotification[]>('/notifications', undefined, 30000);
   const [tab, setTab] = useState<'all' | 'unread'>('all');
 
   const unread = data?.filter((n) => !n.read_at).length ?? 0;
   const shown = tab === 'unread' ? data?.filter((n) => !n.read_at) : data;
 
   const readAll = async () => {
-    await markAllRead();
-    const now = new Date().toISOString();
-    setData((list) => list?.map((x) => ({ ...x, read_at: x.read_at ?? now })) ?? null);
+    try {
+      await markAllRead();
+      const now = new Date().toISOString();
+      setData((list) => list?.map((x) => ({ ...x, read_at: x.read_at ?? now })) ?? null);
+      toast.success('All notifications marked as read');
+    } catch (err) {
+      toast.fromError(err, { title: 'Notifications were not marked as read', retry: readAll });
+    }
   };
 
   return (
@@ -31,7 +37,7 @@ export default function MyNotifications() {
           <p className="muted">Stay updated on your medicine requests. SMS messages sent to you are also kept here.</p>
         </div>
       </header>
-      <Message>{error}</Message>
+      <LoadError error={errorInfo} onRetry={() => reload()} />
 
       <div className="section-head">
         <h2 className="section-title">Recent Notifications</h2>
@@ -46,7 +52,7 @@ export default function MyNotifications() {
         </button>
       </div>
 
-      {loading && !data ? <Loading /> : !shown?.length ? (
+      {loading && !data ? <Loading /> : !data ? null : !shown?.length ? (
         <div className="card"><Empty>{tab === 'unread' ? 'You have read all your notifications.' : 'No notifications yet.'}</Empty></div>
       ) : (
         <ul className="notif-list">

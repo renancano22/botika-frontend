@@ -2,10 +2,11 @@ import { useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../auth';
 import { useApi } from '../../hooks';
-import { Empty, Loading, Message } from '../../components/ui';
+import { Empty, Loading } from '../../components/ui';
 import { ICONS, RequestNo, Svg, unitPlural } from '../../components/RequestCards';
 import type { Dispensing } from '../../types';
 import BackButton from '../../components/BackButton';
+import { LoadError } from '../../components/feedback';
 
 /** YYYY-MM-DD in local time. */
 const ymd = (d: Date) => d.toLocaleDateString('en-CA');
@@ -40,7 +41,7 @@ export default function DispensingRecords() {
   };
   const [search, setSearch] = useState('');
   const badRange = !!from && !!to && from > to;
-  const { data, error, loading } = useApi<Dispensing[]>('/dispensing', badRange ? { from: to, to: from } : { from, to }, 30000);
+  const { data, errorInfo, loading, reload } = useApi<Dispensing[]>('/dispensing', badRange ? { from: to, to: from } : { from, to }, 30000);
 
   const activePreset = PRESETS.find((p) => { const [f, t] = p.range(); return f === from && t === to; })?.key;
   const rangeText = from && to ? (from === to ? longDate(from) : `${longDate(from)} – ${longDate(to)}`)
@@ -68,7 +69,7 @@ export default function DispensingRecords() {
           </p>
         </div>
       </header>
-      <Message>{error}</Message>
+      <LoadError error={errorInfo} onRetry={() => reload()} />
 
       <section className="card dr-filters" aria-label="Filters">
         <div className="dr-presets" role="group" aria-label="Quick date range">
@@ -117,7 +118,7 @@ export default function DispensingRecords() {
       </div>
 
       <section className="card dr-card">
-        {loading && !data ? <Loading /> : rows.length === 0 ? (
+        {loading && !data ? <Loading /> : !data ? null : rows.length === 0 ? (
           <Empty>{filtered ? 'No dispensing records match these filters. Try another date range or clear the filters.' : 'No dispensing records yet.'}</Empty>
         ) : (
           <table className="dr-table">

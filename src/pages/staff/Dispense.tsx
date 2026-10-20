@@ -1,5 +1,6 @@
 import { useCallback, useState, type FormEvent } from 'react';
-import { api, errorMessage, formatDate } from '../../api';
+import { api, describeError, errorMessage, formatDate } from '../../api';
+import { alertDialog, toast } from '../../components/feedback';
 import { useApi } from '../../hooks';
 import { Badge, Card, Empty, Message, Modal } from '../../components/ui';
 import { PrescriptionViewer, requiresPrescription, RX_ICON, RxBadge } from '../../components/Prescription';
@@ -8,7 +9,7 @@ import { ICONS, Svg, unitPlural } from '../../components/RequestCards';
 import type { Medicine, MedicineRequest } from '../../types';
 import { MAX_REQUEST_QUANTITY, quantityWarning } from '../../validation';
 import QrScanner from './QrScanner';
-import { jumpTo, jumpWhenReady } from '../../scroll';
+import { jumpWhenReady } from '../../scroll';
 import BackButton from '../../components/BackButton';
 import ResidentSearch, { type ResidentLookup as Lookup } from './ResidentSearch';
 import RegisterResident from './RegisterResident';
@@ -27,7 +28,8 @@ export default function Dispense() {
   // 'register': a walk-in resident who is not registered yet (e.g. no cellphone) is registered by the staff.
   const [mode, setMode] = useState<'id' | 'search' | 'register'>('id');
   const [found, setFound] = useState<Lookup | null>(null);
-  const [msg, setMsg] = useState<{ type: 'error' | 'success'; text: string } | null>(null);
+  // Message under "Verify resident" (Resident ID not found, newly registered resident's ID).
+  const [msg, setMsg] = useState<{ type: 'error' | 'success' | 'info'; title?: string; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
   const [walkIn, setWalkIn] = useState<{ medicine_id: number; quantity: number }[]>([]);
   const { data: medicines, reload: reloadMedicines } = useApi<Medicine[]>('/medicines');
@@ -51,10 +53,12 @@ export default function Dispense() {
     } catch (err) {
       setFound(null);
       const notFound = (err as { response?: { status?: number } }).response?.status === 404;
+      const info = describeError(err);
       setMsg({
         type: 'error',
+        title: notFound ? 'Resident not found' : info.title,
         text: notFound
-          ? `No resident found with Resident ID "${value}". Check the Resident ID on the resident's My Profile page or QR code.`
+          ? `No resident is registered with Resident ID "${value}". Check the ID on the resident's QR code or My Profile page, or search by name.`
           : errorMessage(err),
       });
     }
@@ -72,7 +76,7 @@ export default function Dispense() {
     setCode(record.resident.qr_code);
     setWalkIn([]);
     setMode('id');
-    setMsg({ type: 'success', text: `${record.resident.name} is registered with Resident ID ${record.resident.qr_code}. Write this ID down for the resident's next visit, then add the medicines given in Dispense Medicine.` });
+    setMsg({ type: 'success', title: 'Resident registered', text: `${record.resident.name} is registered with Resident ID ${record.resident.qr_code}. Write this ID down for the resident's next visit, then add the medicines given in Dispense Medicine.` });
     jumpWhenReady('dispense-resident');
   };
 
@@ -81,7 +85,8 @@ export default function Dispense() {
     setCode(record.resident.qr_code);
     setWalkIn([]);
     setMode('id');
-    setMsg({ type: 'success', text: `Identity of ${record.resident.name} (${record.resident.qr_code}) confirmed by staff.` });
+    setMsg(null);
+    toast.success('Resident verified', { description: `Identity of ${record.resident.name} (${record.resident.qr_code}) confirmed by staff.` });
     jumpWhenReady('dispense-resident');
   };
 
@@ -94,38 +99,53 @@ export default function Dispense() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const afterDispense = async (text: string) => {
-    setMsg({ type: 'success', text });
+  const afterDispense = async (title: string, description: string) => {
+    toast.success(title, { description });
     reloadMedicines(true);
-    if (found) await lookup(found.resident.qr_code);
-    setMsg({ type: 'success', text });
-    requestAnimationFrame(() => jumpTo('dispense-msg')); // show the result right away
+    if (found) await lookup(found.resident.qr_code); // refresh the resident's requests and history
   };
 
+  /**
+   * The server did not answer in time: the medicine may or may not have been recorded, so it must not be
+   * sent again blindly (it would be deducted twice).
+   */
+  const uncertain = () => alertDialog({
+    tone: 'warning',
+    title: 'Dispensing not confirmed',
+    message: 'The connection was lost before the server confirmed the dispensing, so it may or may not have been recorded.',
+    details: 'Check this resident\'s dispensing history below before trying again, so the medicine is not deducted twice.',
+    buttonLabel: 'Check history',
+  }).then(() => { if (found) lookup(found.resident.qr_code); });
+
   const dispenseRequest = async (r: MedicineRequest) => {
-    if (!found) return;
+    if (!found || busy) return;
     setBusy(true);
     try {
       await api.post('/dispensing', { request_id: r.request_id, qr_code: found.resident.qr_code, prescription_checked: requiresPrescription(r) ? rxChecked : false });
       setConfirming(null);
-      await afterDispense(`Request No. ${r.request_id} dispensed. Inventory updated and SMS sent.`);
+      await afterDispense(`Request No. ${r.request_id} dispensed`,
+        `The medicines were released to ${found.resident.name}. Inventory updated${found.resident.contact_no ? ' and SMS sent' : ''}.`);
     } catch (err) {
-      setConfirming(null);
-      setMsg({ type: 'error', text: errorMessage(err) });
+      // Releasing an approved request twice is refused by the server, so trying again is safe.
+      toast.fromError(err, { title: `Request No. ${r.request_id} was not dispensed`, retry: () => dispenseRequest(r) });
     } finally { setBusy(false); }
   };
 
   const dispenseWalkIn = async (e: FormEvent) => {
     e.preventDefault();
-    if (!found) return;
+    if (!found || busy) return;
     setBusy(true);
     try {
       await api.post('/dispensing/walk-in', { qr_code: found.resident.qr_code, items: walkIn, prescription_checked: walkInRx.length > 0 && walkInRxChecked });
+      const count = walkIn.length;
       setWalkIn([]);
       setWalkInRxChecked(false);
-      await afterDispense('Medicines dispensed. Inventory updated and SMS sent.');
+      await afterDispense('Medicines dispensed',
+        `${count} ${count === 1 ? 'medicine was' : 'medicines were'} released to ${found.resident.name}. Inventory updated${found.resident.contact_no ? ' and SMS sent' : ''}.`);
     } catch (err) {
-      setMsg({ type: 'error', text: errorMessage(err) });
+      const info = describeError(err);
+      if (info.kind === 'timeout') uncertain();
+      else toast.fromError(err, { title: 'Medicines were not dispensed' }); // the list is kept so it can be sent again
     } finally { setBusy(false); }
   };
 
@@ -193,7 +213,7 @@ export default function Dispense() {
         </Card>
       )}
 
-      <div id="dispense-msg">{msg && <Message type={msg.type}>{msg.text}</Message>}</div>
+      <div id="dispense-msg">{msg && <Message type={msg.type} title={msg.title}>{msg.text}</Message>}</div>
 
       {found && (
         <>

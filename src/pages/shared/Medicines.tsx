@@ -1,6 +1,6 @@
 import { useMemo, useState, type FormEvent } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { api, errorMessage, formatDate } from '../../api';
+import { api, formatDate } from '../../api';
 import { useAuth } from '../../auth';
 import { useApi } from '../../hooks';
 import { Badge, Card, Empty, Loading, Message, Modal } from '../../components/ui';
@@ -9,6 +9,7 @@ import type { Medicine } from '../../types';
 import { RxBadge } from '../../components/Prescription';
 import BackButton from '../../components/BackButton';
 import { FIELD } from '../../validation';
+import { confirmAction, LoadError, toast, useFormErrors } from '../../components/feedback';
 
 const EMPTY = { generic_name: '', strength: '', dosage_form: '', category: '', unit: '', reorder_level: 20, requires_prescription: false };
 type Form = typeof EMPTY;
@@ -35,7 +36,7 @@ export default function Medicines() {
     if (value) next.set(key, value); else next.delete(key);
     setParams(next, { replace: true });
   };
-  const { data, error, loading, reload } = useApi<Medicine[]>('/medicines', { search }, 30000);
+  const { data, errorInfo, loading, reload } = useApi<Medicine[]>('/medicines', { search }, 30000);
   const { data: categories } = useApi<string[]>('/medicines/categories');
   const { data: forms } = useApi<Record<string, string>>('/medicines/dosage-forms');
   const shown = useMemo(() => (data ?? []).filter((m) => (!status || m.status === status) && (!category || m.category === category)), [data, status, category]);
@@ -43,14 +44,12 @@ export default function Medicines() {
 
   const [editing, setEditing] = useState<Medicine | null>(null);
   const [form, setForm] = useState<Form | null>(null);
-  const [formError, setFormError] = useState('');
-  const [pageError, setPageError] = useState('');
-  const [notice, setNotice] = useState('');
+  const fe = useFormErrors(['generic_name', 'strength', 'dosage_form', 'category', 'unit', 'reorder_level', 'requires_prescription']);
   const [busy, setBusy] = useState(false);
 
   const open = (m?: Medicine) => {
     setEditing(m ?? null);
-    setFormError('');
+    fe.clear();
     setForm(m ? {
       generic_name: m.generic_name ?? m.medicine_name, strength: m.strength ?? '', dosage_form: m.dosage_form ?? '',
       category: m.category, unit: m.unit, reorder_level: m.reorder_level ?? 20,
@@ -65,35 +64,47 @@ export default function Medicines() {
     e.preventDefault();
     if (!form || busy) return;
     setBusy(true);
+    fe.clear();
     try {
       if (editing) await api.put(`/medicines/${editing.medicine_id}`, form);
       else await api.post('/medicines', form);
-      setNotice(`${displayName(form)} ${editing ? 'updated' : 'added'}.`);
+      toast.success(editing ? 'Medicine updated' : 'Medicine added', {
+        description: editing ? `The changes to ${displayName(form)} were saved.` : `${displayName(form)} was added to the medicine list. Record its stock in Stock & Batches.`,
+      });
       setForm(null);
-      reload();
+      reload(true);
     } catch (err) {
-      setFormError(errorMessage(err));
+      fe.fromError(err);
     } finally { setBusy(false); }
   };
 
-  const confirmNoStock = async (m: Medicine) => {
-    if (!confirm(`Confirm that there is no stock of ${m.medicine_name} right now? It will be shown as "Out of stock" and residents can request a restock.`)) return;
-    try {
+  const confirmNoStock = (m: Medicine) => confirmAction({
+    tone: 'warning',
+    title: 'Confirm no stock?',
+    message: <>Confirm that there is no stock of <strong>{m.medicine_name}</strong> right now.</>,
+    details: 'It will be shown as "Out of stock" and residents can send a restock request.',
+    confirmLabel: 'Yes, no stock',
+    busyLabel: 'Saving…',
+    onConfirm: async () => {
       await api.post(`/medicines/${m.medicine_id}/confirm-no-stock`);
-      setNotice(`${m.medicine_name} marked as out of stock.`);
-      reload();
-    } catch (err) { setPageError(errorMessage(err)); }
-  };
+      toast.success('Marked as out of stock', { description: `${m.medicine_name} is now shown as out of stock.` });
+      reload(true);
+    },
+  });
 
-  const remove = async (m: Medicine) => {
-    if (!confirm(`Delete ${m.medicine_name}? This also removes its records.`)) return;
-    try {
+  const remove = (m: Medicine) => confirmAction({
+    tone: 'danger',
+    title: 'Delete this medicine?',
+    message: <>You are about to delete <strong>{m.medicine_name}</strong>.</>,
+    details: 'This also removes its stock batches and records. This cannot be undone.',
+    confirmLabel: 'Delete medicine',
+    busyLabel: 'Deleting…',
+    onConfirm: async () => {
       await api.delete(`/medicines/${m.medicine_id}`);
-      reload();
-    } catch (err) {
-      setPageError(errorMessage(err));
-    }
-  };
+      toast.success('Medicine deleted', { description: `${m.medicine_name} was removed from the medicine list.` });
+      reload(true);
+    },
+  });
 
   return (
     <div className="page">
@@ -108,8 +119,7 @@ export default function Medicines() {
           <button className="btn" onClick={() => open()}>+ Add medicine</button>
         </div>
       </header>
-      <Message type="success">{notice}</Message>
-      <Message>{pageError || error}</Message>
+      <LoadError error={errorInfo} onRetry={() => reload()} />
 
       {unrecorded > 0 && status !== 'unrecorded' && (
         <div className="mi-verify" role="note">
@@ -135,7 +145,7 @@ export default function Medicines() {
           <input className="search" placeholder="Search name or category…" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
       }>
-        {loading && !data ? <Loading /> : !data?.length ? <Empty>No medicines yet.</Empty> : !shown.length ? <Empty>No medicines match these filters.</Empty> : (
+        {loading && !data ? <Loading /> : !data ? null : !data?.length ? <Empty>No medicines yet.</Empty> : !shown.length ? <Empty>No medicines match these filters.</Empty> : (
           <table className="mi-table">
             <thead>
               <tr>
@@ -186,35 +196,35 @@ export default function Medicines() {
       {form && (
         <Modal title={editing ? 'Edit medicine' : 'Add medicine'} onClose={() => setForm(null)}>
           <form onSubmit={save}>
-            <Message>{formError}</Message>
+            <Message>{fe.general}</Message>
             <label>Generic name
-              <input value={form.generic_name} onChange={(e) => setForm({ ...form, generic_name: e.target.value })} placeholder="e.g. Amoxicillin" required minLength={2} maxLength={150} {...FIELD.medicineName} />
+              <input value={form.generic_name} onChange={(e) => setForm({ ...form, generic_name: e.target.value })} placeholder="e.g. Amoxicillin" required minLength={2} maxLength={150} {...FIELD.medicineName} {...fe.invalid('generic_name')} />{fe.error('generic_name')}
             </label>
             <div className="row">
               <label>Strength
-                <input value={form.strength} onChange={(e) => setForm({ ...form, strength: e.target.value })} placeholder="e.g. 500mg or 100mg/5ml" maxLength={50} {...FIELD.strength} />
+                <input value={form.strength} onChange={(e) => setForm({ ...form, strength: e.target.value })} placeholder="e.g. 500mg or 100mg/5ml" maxLength={50} {...FIELD.strength} {...fe.invalid('strength')} />{fe.error('strength')}
               </label>
               <label>Dosage form
-                <select value={form.dosage_form} onChange={(e) => chooseForm(e.target.value)}>
+                <select value={form.dosage_form} onChange={(e) => chooseForm(e.target.value)} {...fe.invalid('dosage_form')}>
                   <option value="">Not specified</option>
                   {Object.keys(forms ?? {}).map((f) => <option key={f} value={f}>{f}</option>)}
-                </select>
+                </select>{fe.error('dosage_form')}
               </label>
             </div>
             <div className="row">
               <label>Category
-                <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} required>
+                <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} required {...fe.invalid('category')}>
                   <option value="">Select category…</option>
                   {categories?.map((c) => <option key={c} value={c}>{c}</option>)}
-                </select>
+                </select>{fe.error('category')}
               </label>
               <label>Counted per (unit)
-                <input value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })} placeholder="tablet, capsule, bottle, tube…" required maxLength={50} {...FIELD.unit} />
+                <input value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })} placeholder="tablet, capsule, bottle, tube…" required maxLength={50} {...FIELD.unit} {...fe.invalid('unit')} />{fe.error('unit')}
               </label>
             </div>
             {displayName(form) && <p className="mi-preview">Shown to residents and in records as <strong>{displayName(form)}</strong></p>}
             <label>Reorder level (alert when stock is at or below)
-              <input type="number" min={0} max={100000} step={1} value={form.reorder_level} onChange={(e) => setForm({ ...form, reorder_level: Number(e.target.value) })} required />
+              <input type="number" min={0} max={100000} step={1} value={form.reorder_level} onChange={(e) => setForm({ ...form, reorder_level: Number(e.target.value) })} required {...fe.invalid('reorder_level')} />{fe.error('reorder_level')}
             </label>
             <label className="rx-check">
               <input type="checkbox" checked={form.requires_prescription} onChange={(e) => setForm({ ...form, requires_prescription: e.target.checked })} />

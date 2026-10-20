@@ -1,4 +1,4 @@
-import { useState, type InputHTMLAttributes, type ReactNode } from 'react';
+import { useEffect, useState, type InputHTMLAttributes, type ReactNode } from 'react';
 
 export function StatCard({ label, value, tone = 'default', hint }: {
   label: string; value: number | string; tone?: 'default' | 'warn' | 'danger' | 'ok'; hint?: string;
@@ -39,9 +39,15 @@ export function Card({ title, actions, children }: { title?: string; actions?: R
 }
 
 export function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }) {
+  // Escape closes the window (pages ignore it while something is being saved).
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [onClose]);
   return (
     <div className="modal-backdrop" onMouseDown={onClose}>
-      <div className="modal" onMouseDown={(e) => e.stopPropagation()} role="dialog" aria-label={title}>
+      <div className="modal" onMouseDown={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label={title}>
         <div className="card-head">
           <h2>{title}</h2>
           <button className="btn-ghost" onClick={onClose} aria-label="Close">✕</button>
@@ -52,9 +58,24 @@ export function Modal({ title, onClose, children }: { title: string; onClose: ()
   );
 }
 
-export function Message({ type = 'error', children }: { type?: 'error' | 'success' | 'info'; children: ReactNode }) {
+const MSG_ICON = {
+  error: 'M12 8v5M12 16.5v.01M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z',
+  success: 'M20 6 9 17l-5-5',
+  info: 'M12 16v-5M12 8v.01M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z',
+  warning: 'M12 9v4M12 17v.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z',
+};
+
+/** Message inside a page or form (errors are announced to screen readers right away). */
+export function Message({ type = 'error', title, children }: { type?: 'error' | 'success' | 'info' | 'warning'; title?: string; children: ReactNode }) {
   if (!children) return null;
-  return <div className={`msg msg-${type}`}>{children}</div>;
+  return (
+    <div className={`msg msg-${type}`} role={type === 'error' ? 'alert' : 'status'}>
+      <svg className="msg-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d={MSG_ICON[type]} />
+      </svg>
+      <div className="msg-text">{title && <strong>{title}</strong>}{children}</div>
+    </div>
+  );
 }
 
 export function Empty({ children }: { children: ReactNode }) {
@@ -92,8 +113,8 @@ export function PasswordInput(props: Omit<InputHTMLAttributes<HTMLInputElement>,
   );
 }
 
-export function Loading() {
-  return <p className="empty">Loading…</p>;
+export function Loading({ text = 'Loading…' }: { text?: string }) {
+  return <p className="empty loading" role="status"><span className="spinner" aria-hidden="true" /> {text}</p>;
 }
 
 /** Round profile picture, or the first letter of the name when there is no picture. */

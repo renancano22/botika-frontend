@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { api, NOTIFICATIONS_CHANGED, notificationsChanged, timeAgo } from '../api';
+import { api, describeError, NOTIFICATIONS_CHANGED, notificationsChanged, timeAgo, type ErrorInfo } from '../api';
 import { ICONS, Svg } from './RequestCards';
 import type { SmsNotification } from '../types';
+import { LoadError, toast } from './feedback';
 
 const BELL = 'M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10 21h4';
 
@@ -128,6 +129,7 @@ export function NotificationBell() {
   const unread = useUnreadCount();
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<SmsNotification[] | null>(null);
+  const [failed, setFailed] = useState<ErrorInfo | null>(null);
   const ref = useRef<HTMLDivElement>(null);
   const location = useLocation();
 
@@ -135,7 +137,8 @@ export function NotificationBell() {
 
   useEffect(() => {
     if (!open) return;
-    api.get<SmsNotification[]>('/notifications').then((res) => setItems(res.data.slice(0, 8))).catch(() => setItems([]));
+    setFailed(null);
+    api.get<SmsNotification[]>('/notifications').then((res) => setItems(res.data.slice(0, 8))).catch((err) => setFailed(describeError(err)));
     const onDown = (e: MouseEvent | TouchEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
     };
@@ -151,9 +154,13 @@ export function NotificationBell() {
   }, [open]);
 
   const readAll = async () => {
-    await markAllRead();
-    const now = new Date().toISOString();
-    setItems((list) => list?.map((x) => ({ ...x, read_at: x.read_at ?? now })) ?? null);
+    try {
+      await markAllRead();
+      const now = new Date().toISOString();
+      setItems((list) => list?.map((x) => ({ ...x, read_at: x.read_at ?? now })) ?? null);
+    } catch (err) {
+      toast.fromError(err, { title: 'Notifications were not marked as read', retry: readAll });
+    }
   };
 
   return (
@@ -175,7 +182,7 @@ export function NotificationBell() {
             <strong>Notifications</strong>
             {unread > 0 && <button type="button" className="link-button" onClick={readAll}>Mark all as read</button>}
           </div>
-          {items === null ? <p className="empty">Loading…</p> : items.length === 0 ? <p className="empty">No notifications yet.</p> : (
+          {failed ? <LoadError error={failed} compact /> : items === null ? <p className="empty">Loading…</p> : items.length === 0 ? <p className="empty">No notifications yet.</p> : (
             <ul className="notif-list">
               {items.map((n) => <NotificationItem key={n.notification_id} n={n} compact />)}
             </ul>

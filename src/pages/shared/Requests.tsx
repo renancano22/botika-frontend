@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api, errorMessage, formatDate } from '../../api';
+import { LoadError, toast } from '../../components/feedback';
 import { useAuth } from '../../auth';
 import { useApi } from '../../hooks';
 import { Badge, Card, Empty, Loading, Message, Modal } from '../../components/ui';
@@ -11,6 +12,11 @@ import { PickupCountdown, Svg } from '../../components/RequestCards';
 import type { MedicineRequest } from '../../types';
 import BackButton from '../../components/BackButton';
 
+/** Same short list as in the SMS: "Paracetamol 500mg x10, Amoxicillin x21 and 1 more". */
+const itemsSummary = (r: MedicineRequest) => {
+  const parts = r.items.map((i) => `${i.medicine.medicine_name} x${i.quantity}`);
+  return parts.slice(0, 2).join(', ') + (parts.length > 2 ? ` and ${parts.length - 2} more` : '');
+};
 const itemsText = (r: MedicineRequest) => r.items.map((i) => `${i.medicine.medicine_name} ×${i.quantity}`).join(', ');
 
 /** Common reasons for not approving a request (shown in the Reject dropdown). Sent to the resident by SMS after "Reason:". */
@@ -69,50 +75,53 @@ export default function Requests() {
     const st = next.status ?? apiStatus;
     setParams({ type: t || 'all', status: st || 'all' }, { replace: true });
   };
-  const { data, error, loading, reload: reloadList } = useApi<MedicineRequest[]>('/requests', { type: apiType, status: apiStatus }, 30000);
+  const { data, errorInfo, loading, reload: reloadList } = useApi<MedicineRequest[]>('/requests', { type: apiType, status: apiStatus }, 30000);
   const counts = useApi<Record<string, number>>('/requests/counts', { type: apiType }, 30000);
   const reload = (silent = false) => { reloadList(silent); counts.reload(true); };
-  const [msg, setMsg] = useState<{ type: 'error' | 'success'; text: string } | null>(null);
+  // Request being approved or rejected right now: its buttons are disabled so it cannot be sent twice.
+  const [actingId, setActingId] = useState<number | null>(null);
   const [rejecting, setRejecting] = useState<MedicineRequest | null>(null);
   const [reason, setReason] = useState('');            // a reason from the list, or OTHER
   const [otherReason, setOtherReason] = useState('');  // typed by hand when "Other reason" is chosen
   const [rejectError, setRejectError] = useState('');
   const remarks = reason === OTHER ? otherReason.trim() : reason;
   const openReject = (r: MedicineRequest) => { setRejecting(r); setReason(''); setOtherReason(''); setRejectError(''); };
+  const [rejectBusy, setRejectBusy] = useState(false);
   const [viewingId, setViewingId] = useState<number | null>(null);
   const viewing = data?.find((r) => r.request_id === viewingId) ?? null;
   const [rxChecked, setRxChecked] = useState(false);
   const [viewRxId, setViewRxId] = useState<number | null>(null);
-  const openDetails = (r: MedicineRequest) => { setRxChecked(false); setMsg(null); setViewingId(r.request_id); };
-
-  const act = async (fn: () => Promise<unknown>, success: string) => {
-    setMsg(null);
-    try {
-      await fn();
-      setMsg({ type: 'success', text: success });
-      reload(true);
-      return true;
-    } catch (err) {
-      setMsg({ type: 'error', text: errorMessage(err) });
-      return false;
-    }
-  };
+  const openDetails = (r: MedicineRequest) => { setRxChecked(false); setViewingId(r.request_id); };
 
   const canReview = (r: MedicineRequest) =>
     r.status === 'pending' && (r.request_type === 'medicine' || user?.role === 'admin');
 
   const approve = async (r: MedicineRequest) => {
+    if (actingId) return;
     const rx = requiresPrescription(r);
-    if (await act(() => api.post(`/requests/${r.request_id}/approve`, rx ? { prescription_verified: true } : {}),
-      `Request No. ${r.request_id} approved${rx ? ' (prescription checked)' : ''}. SMS sent to the resident.`)) setViewingId(null);
+    setActingId(r.request_id);
+    try {
+      await api.post(`/requests/${r.request_id}/approve`, rx ? { prescription_verified: true } : {});
+      toast.success(`Request No. ${r.request_id} approved`, {
+        description: r.request_type === 'restock'
+          ? `${r.resident?.name ?? 'The resident'} will be notified when the medicine is available.`
+          : `${rx ? 'Prescription checked. ' : ''}The medicine is set aside and ${r.resident?.name ?? 'the resident'} was notified to claim it within 7 days.`,
+      });
+      setViewingId(null);
+      reload(true);
+    } catch (err) {
+      toast.fromError(err, { title: `Request No. ${r.request_id} was not approved`, retry: () => approve(r) });
+    } finally { setActingId(null); }
   };
 
   /** Prescription medicines: approving is only possible inside Details, after viewing and confirming the prescription. */
   const reviewButtons = (r: MedicineRequest, inDetails = false) => canReview(r) && <>
     {requiresPrescription(r) && !inDetails
       ? <button className="btn btn-sm" onClick={() => openDetails(r)}>Check & approve</button>
-      : <button className="btn btn-sm" disabled={requiresPrescription(r) && (!rxChecked || !r.prescription)} onClick={() => approve(r)}>Approve</button>}{' '}
-    <button className="btn btn-danger btn-sm" onClick={() => openReject(r)}>Reject</button>
+      : <button className="btn btn-sm" disabled={actingId !== null || (requiresPrescription(r) && (!rxChecked || !r.prescription))} onClick={() => approve(r)}>
+        {actingId === r.request_id ? 'Approving…' : 'Approve'}
+      </button>}{' '}
+    <button className="btn btn-danger btn-sm" disabled={actingId !== null} onClick={() => openReject(r)}>Reject</button>
   </>;
 
   // On phones the status tabs are one swipeable row: keep the selected tab in view.
@@ -132,8 +141,7 @@ export default function Requests() {
           <p className="muted">Pharmacy staff review medicine requests. The administrator reviews restock requests. Residents are notified by SMS.</p>
         </div>
       </header>
-      {msg && <Message type={msg.type}>{msg.text}</Message>}
-      <Message>{error}</Message>
+      <LoadError error={errorInfo} onRetry={() => reload()} />
 
       <Card actions={
         <div className="filters">
@@ -155,7 +163,7 @@ export default function Requests() {
         {apiStatus === 'approved' && apiType !== 'restock' && (
           <p className="muted small tab-hint">Approved medicine requests waiting to be claimed. The medicines are set aside for these residents until the deadline; after that the request is cancelled automatically.</p>
         )}
-        {loading && !data ? <Loading /> : !data?.length ? <Empty>No requests found.</Empty> : (
+        {loading && !data ? <Loading /> : !data ? null : !data?.length ? <Empty>No requests found.</Empty> : (
           <div className="req-table-wrap">
           <table className="req-table">
             <thead>
@@ -241,7 +249,6 @@ export default function Requests() {
             </div>
           )}
           <RequestTracker request={viewing} forResident={false} />
-          {msg?.type === 'error' && <Message>{msg.text}</Message>}
           <div className="modal-actions">
             {reviewButtons(viewing, true)}
             <button className="btn btn-outline" onClick={() => setViewingId(null)}>Close</button>
@@ -270,23 +277,26 @@ export default function Requests() {
           {remarks && (
             <div className="reject-preview">
               <small>The resident will receive:</small>
-              <p>BulanBotikaCare: Your {rejecting.request_type === 'restock' ? 'restock' : 'medicine'} request No. {rejecting.request_id} was not approved. Reason: {remarks}</p>
+              <p>BulanBotikaCare: Your {rejecting.request_type === 'restock' ? 'restock' : 'medicine'} request No. {rejecting.request_id} ({itemsSummary(rejecting)}) was NOT APPROVED. Reason: {remarks.replace(/\.+$/, '')}. You may submit a new request if you still need the medicine.</p>
             </div>
           )}
           {rejectError && <Message>{rejectError}</Message>}
           <div className="modal-actions">
-            <button className="btn btn-outline" onClick={() => setRejecting(null)}>Cancel</button>
-            <button className="btn btn-danger" disabled={remarks.length < 3} onClick={async () => {
+            <button className="btn btn-outline" onClick={() => setRejecting(null)} disabled={rejectBusy}>Cancel</button>
+            <button className="btn btn-danger" disabled={remarks.length < 3 || rejectBusy} onClick={async () => {
+              if (rejectBusy) return;
+              setRejectBusy(true);
+              setRejectError('');
               try {
                 await api.post(`/requests/${rejecting.request_id}/reject`, { remarks });
-                setMsg({ type: 'success', text: `Request No. ${rejecting.request_id} rejected. SMS sent to the resident.` });
+                toast.success(`Request No. ${rejecting.request_id} rejected`, { description: `${rejecting.resident?.name ?? 'The resident'} was notified with the reason.` });
                 setRejecting(null);
                 setViewingId(null);
                 reload(true);
               } catch (err) {
                 setRejectError(errorMessage(err));
-              }
-            }}>Reject request</button>
+              } finally { setRejectBusy(false); }
+            }}>{rejectBusy ? 'Rejecting…' : 'Reject request'}</button>
           </div>
         </Modal>
       )}

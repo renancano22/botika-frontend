@@ -3,12 +3,13 @@ import { Link, useParams } from 'react-router-dom';
 import { notificationsChanged } from '../../api';
 import { useApi } from '../../hooks';
 import BackButton from '../../components/BackButton';
-import { Loading, Message } from '../../components/ui';
+import { Loading } from '../../components/ui';
 import { cleanMessage, KIND, kindOf, titleOf, type Kind } from '../../components/Notifications';
 import RequestTracker, { pickupPeriod } from '../../components/RequestTracker';
 import { PickupDeadlineBox, RequestSummaryCard } from '../../components/RequestDetailParts';
 import { dateTime, ICONS, Svg } from '../../components/RequestCards';
 import type { MedicineRequest, SmsNotification } from '../../types';
+import { LoadError } from '../../components/feedback';
 
 interface Detail { notification: SmsNotification; request: MedicineRequest | null }
 
@@ -152,13 +153,13 @@ function nextStep(r: MedicineRequest | null): string | null {
 /** Resident: details of one notification (opened from the bell, the dashboard or the Notifications page). */
 export default function NotificationDetail() {
   const { id } = useParams();
-  const { data, error, loading } = useApi<Detail>(`/notifications/${id}`);
+  const { data, errorInfo, loading, reload } = useApi<Detail>(`/notifications/${id}`);
 
   // Opening the notification marks it as read: update the bell count.
   useEffect(() => { if (data) notificationsChanged(); }, [data]);
 
   if (loading && !data) return <Loading />;
-  if (!data) return <Message>{error}</Message>;
+  if (!data) return <div className="page page-narrow"><LoadError error={errorInfo} onRetry={() => reload()} back={{ to: '/notifications', label: 'Go to Notifications' }} /></div>;
 
   const { notification: n, request: r } = data;
   const kind = kindOf(n);

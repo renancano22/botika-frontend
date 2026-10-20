@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { api, errorMessage, formatDate } from '../../api';
+import { api, formatDate } from '../../api';
 import { useApi } from '../../hooks';
 import { Badge, Card, Empty, Loading, Message, Modal } from '../../components/ui';
 import type { InventoryBatch, Medicine, StockTransaction } from '../../types';
 import { MAX_STOCK_IN, maxExpiry, tomorrow } from '../../validation';
+import { unitPlural } from '../../components/RequestCards';
 import { jumpWhenReady } from '../../scroll';
 import BackButton from '../../components/BackButton';
+import { LoadError, toast, useFormErrors } from '../../components/feedback';
 
 const STOCK_OUT_REASONS = ['Expired', 'Damaged', 'Lost', 'Returned to supplier', 'Other'];
 const TX_LABEL: Record<StockTransaction['type'], string> = { stock_in: 'Stock-in', stock_out: 'Stock-out', dispensed: 'Dispensed' };
@@ -17,11 +19,11 @@ export default function Inventory() {
   // ?expiry=near_expiry / expired (dashboard tiles, expiry alerts) opens the batches already filtered;
   // &batch=<id> (an expiry alert) also jumps to that batch and highlights it.
   const [expiry, setExpiry] = useState(() => new URLSearchParams(window.location.search).get('expiry') ?? '');
-  const { data, error, loading, reload } = useApi<InventoryBatch[]>('/inventory', { search }, 30000);
+  const { data, errorInfo, loading, reload } = useApi<InventoryBatch[]>('/inventory', { search }, 30000);
   const { data: medicines } = useApi<Medicine[]>('/medicines');
   const batches = (data ?? []).filter((b) => !expiry || (b.expiry_status ?? 'ok') === expiry);
   const [stockIn, setStockIn] = useState<{ medicine_id: string; quantity: number; expiration_date: string } | null>(null);
-  const openStockIn = (medicineId = '') => { setFormError(''); setStockIn({ medicine_id: medicineId, quantity: 1, expiration_date: '' }); };
+  const openStockIn = (medicineId = '') => { fe.clear(); setStockIn({ medicine_id: medicineId, quantity: 1, expiration_date: '' }); };
   // ?stockin=<medicine id> (Medicine List → "Record stock") or ?stockin=new opens the stock-in form.
   const [params, setParams] = useSearchParams();
   const batchParam = params.get('batch');
@@ -57,22 +59,24 @@ export default function Inventory() {
   const [stockOut, setStockOut] = useState<{ batch: InventoryBatch; quantity: number; reason: string; details: string } | null>(null);
   const [txType, setTxType] = useState('');
   const tx = useApi<StockTransaction[]>('/inventory/transactions', { type: txType }, 30000);
-  const [formError, setFormError] = useState('');
+  const fe = useFormErrors(['medicine_id', 'quantity', 'expiration_date', 'reason']);
   // While a stock-in / stock-out is being saved its button is disabled, so a double click cannot save it twice.
   const [saving, setSaving] = useState(false);
-  const [notice, setNotice] = useState('');
 
   const submitIn = async (e: FormEvent) => {
     e.preventDefault();
     if (saving) return;
     setSaving(true);
+    fe.clear();
     try {
       await api.post('/inventory/stock-in', stockIn);
+      toast.success('Stock-in recorded', {
+        description: `${stockIn?.quantity} ${chosen ? (stockIn?.quantity === 1 ? chosen.unit : unitPlural(chosen.unit)) : 'items'} of ${chosen?.medicine_name ?? 'the medicine'} added as a new batch.`,
+      });
       setStockIn(null);
-      setNotice('Stock-in recorded.');
-      reload();
+      reload(true);
       tx.reload(true);
-    } catch (err) { setFormError(errorMessage(err)); }
+    } catch (err) { fe.fromError(err); }
     finally { setSaving(false); }
   };
 
@@ -84,11 +88,11 @@ export default function Inventory() {
       const details = stockOut.details.trim();
       const reason = stockOut.reason === 'Other' ? details : details ? `${stockOut.reason} - ${details}` : stockOut.reason;
       await api.post(`/inventory/${stockOut.batch.inventory_id}/stock-out`, { quantity: stockOut.quantity, reason });
+      toast.success('Stock-out recorded', { description: `${stockOut.quantity} removed from batch #${stockOut.batch.inventory_id} (${stockOut.batch.medicine.medicine_name}).` });
       setStockOut(null);
-      setNotice('Stock-out recorded.');
-      reload();
+      reload(true);
       tx.reload(true);
-    } catch (err) { setFormError(errorMessage(err)); }
+    } catch (err) { fe.fromError(err); }
     finally { setSaving(false); }
   };
 
@@ -102,8 +106,7 @@ export default function Inventory() {
         </div>
         <button className="btn" onClick={() => openStockIn()}>+ Stock-in</button>
       </header>
-      <Message type="success">{notice}</Message>
-      <Message>{error}</Message>
+      <LoadError error={errorInfo} onRetry={() => reload()} />
 
       <Card title="Stock batches" actions={
         <div className="filters">
@@ -116,7 +119,7 @@ export default function Inventory() {
           <input className="search" placeholder="Search medicine…" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
       }>
-        {loading && !data ? <Loading /> : !data?.length ? <Empty>No stock yet. Record a stock-in.</Empty> : !batches.length ? <Empty>No batches with this expiry status.</Empty> : (
+        {loading && !data ? <Loading /> : !data ? null : !data?.length ? <Empty>No stock yet. Record a stock-in.</Empty> : !batches.length ? <Empty>No batches with this expiry status.</Empty> : (
           <table>
             <thead><tr><th>Batch #</th><th>Medicine</th><th>Quantity</th><th>Expiration date</th><th>Expiry status</th><th>Last updated</th><th></th></tr></thead>
             <tbody>
@@ -128,7 +131,7 @@ export default function Inventory() {
                   <td>{formatDate(b.expiration_date)}</td>
                   <td><Badge value={b.expiry_status ?? 'ok'} /></td>
                   <td>{formatDate(b.last_updated, true)}</td>
-                  <td className="right"><button className="btn btn-outline btn-sm" onClick={() => { setFormError(''); setStockOut({ batch: b, quantity: b.quantity, reason: b.expiry_status === 'expired' ? 'Expired' : '', details: '' }); }}>Stock-out</button></td>
+                  <td className="right"><button className="btn btn-outline btn-sm" onClick={() => { fe.clear(); setStockOut({ batch: b, quantity: b.quantity, reason: b.expiry_status === 'expired' ? 'Expired' : '', details: '' }); }}>Stock-out</button></td>
                 </tr>
               ))}
             </tbody>
@@ -167,21 +170,21 @@ export default function Inventory() {
       {stockIn && (
         <Modal title="Stock-in (new batch)" onClose={() => setStockIn(null)}>
           <form onSubmit={submitIn}>
-            <Message>{formError}</Message>
+            <Message>{fe.general}</Message>
             <label>Medicine
-              <select value={stockIn.medicine_id} onChange={(e) => setStockIn({ ...stockIn, medicine_id: e.target.value })} required>
+              <select value={stockIn.medicine_id} onChange={(e) => setStockIn({ ...stockIn, medicine_id: e.target.value })} required {...fe.invalid('medicine_id')}>
                 <option value="">Select medicine…</option>
                 {grouped.map(([cat, list]) => (
                   <optgroup key={cat} label={cat}>
                     {list.map((m) => <option key={m.medicine_id} value={m.medicine_id}>{m.medicine_name} ({m.unit}){m.status === 'unrecorded' ? ' — not recorded yet' : ''}</option>)}
                   </optgroup>
                 ))}
-              </select>
+              </select>{fe.error('medicine_id')}
             </label>
             {chosen?.status === 'unrecorded' && <p className="field-hint">This is the first stock record for this medicine. After saving it is no longer marked "Not recorded".</p>}
             <div className="row">
-              <label>Quantity<input type="number" min={1} max={MAX_STOCK_IN} step={1} value={stockIn.quantity} onChange={(e) => setStockIn({ ...stockIn, quantity: Number(e.target.value) })} required /></label>
-              <label>Expiration date<input type="date" min={tomorrow()} max={maxExpiry()} value={stockIn.expiration_date} onChange={(e) => setStockIn({ ...stockIn, expiration_date: e.target.value })} required /></label>
+              <label>Quantity<input type="number" min={1} max={MAX_STOCK_IN} step={1} value={stockIn.quantity} onChange={(e) => setStockIn({ ...stockIn, quantity: Number(e.target.value) })} required {...fe.invalid('quantity')} />{fe.error('quantity')}</label>
+              <label>Expiration date<input type="date" min={tomorrow()} max={maxExpiry()} value={stockIn.expiration_date} onChange={(e) => setStockIn({ ...stockIn, expiration_date: e.target.value })} required {...fe.invalid('expiration_date')} />{fe.error('expiration_date')}</label>
             </div>
             <div className="modal-actions">
               <button type="button" className="btn btn-outline" onClick={() => setStockIn(null)}>Cancel</button>
@@ -194,17 +197,17 @@ export default function Inventory() {
       {stockOut && (
         <Modal title="Stock-out" onClose={() => setStockOut(null)}>
           <form onSubmit={submitOut}>
-            <Message>{formError}</Message>
+            <Message>{fe.general}</Message>
             <p>Remove items from batch #{stockOut.batch.inventory_id} — <strong>{stockOut.batch.medicine.medicine_name}</strong>, expires {formatDate(stockOut.batch.expiration_date)} ({stockOut.batch.quantity} left). Use this for expired, damaged or lost items.</p>
             <label>Quantity to remove
-              <input type="number" min={1} max={stockOut.batch.quantity} step={1} value={stockOut.quantity} onChange={(e) => setStockOut({ ...stockOut, quantity: Number(e.target.value) })} required />
+              <input type="number" min={1} max={stockOut.batch.quantity} step={1} value={stockOut.quantity} onChange={(e) => setStockOut({ ...stockOut, quantity: Number(e.target.value) })} required {...fe.invalid('quantity')} />{fe.error('quantity')}
             </label>
             <div className="row">
               <label>Reason
-                <select value={stockOut.reason} onChange={(e) => setStockOut({ ...stockOut, reason: e.target.value })} required>
+                <select value={stockOut.reason} onChange={(e) => setStockOut({ ...stockOut, reason: e.target.value })} required {...fe.invalid('reason')}>
                   <option value="">Select reason…</option>
                   {STOCK_OUT_REASONS.map((r) => <option key={r} value={r}>{r}</option>)}
-                </select>
+                </select>{fe.error('reason')}
               </label>
               <label>Details {stockOut.reason === 'Other' ? '(required)' : '(optional)'}
                 <input value={stockOut.details} onChange={(e) => setStockOut({ ...stockOut, details: e.target.value })}

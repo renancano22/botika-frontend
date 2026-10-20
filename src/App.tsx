@@ -1,5 +1,6 @@
-import type { ReactElement } from 'react';
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { useEffect, type ReactElement } from 'react';
+import { Link, Navigate, Route, Routes } from 'react-router-dom';
+import { LoadError, toast } from './components/feedback';
 import { useAuth } from './auth';
 import Layout from './components/Layout';
 import type { Role } from './types';
@@ -25,16 +26,47 @@ import Inventory from './pages/shared/Inventory';
 import Requests from './pages/shared/Requests';
 import DispensingRecords from './pages/shared/DispensingRecords';
 
+/** A page the user's role cannot open: explain it, then go to the dashboard. */
+function NoAccess() {
+  useEffect(() => {
+    toast.warning('Access denied', { description: 'You do not have permission to open that page, so you were taken to your dashboard.' });
+  }, []);
+  return <Navigate to="/dashboard" replace />;
+}
+
 function Guard({ roles, children }: { roles: Role[]; children: ReactElement }) {
   const { user } = useAuth();
   if (!user) return <Navigate to="/login" replace />;
-  if (!roles.includes(user.role)) return <Navigate to="/dashboard" replace />;
+  if (!roles.includes(user.role)) return <NoAccess />;
   return children;
 }
 
+/** Address that does not exist in the system. */
+function NotFound() {
+  return (
+    <div className="page page-narrow">
+      <div className="card status-page">
+        <span className="status-page-code">404</span>
+        <h1>Page not found</h1>
+        <p className="muted">The page you are looking for does not exist or may have been moved. Check the address, or go back to your dashboard.</p>
+        <Link className="btn" to="/dashboard">Go to dashboard</Link>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
-  const { user, loading } = useAuth();
-  if (loading) return <p className="empty">Loading…</p>;
+  const { user, loading, connectionError, retry } = useAuth();
+  if (loading) return <div className="app-loading" role="status"><span className="spinner spinner-lg" aria-hidden="true" /> Loading BulanBotikaCare…</div>;
+  if (connectionError) {
+    return (
+      <div className="auth-page">
+        <div className="auth-card status-page">
+          <LoadError error={connectionError} onRetry={retry} compact />
+        </div>
+      </div>
+    );
+  }
 
   const ALL: Role[] = ['admin', 'staff', 'resident'];
   const OPS: Role[] = ['admin', 'staff'];
@@ -42,6 +74,7 @@ export default function App() {
 
   return (
     <Routes>
+      <Route path="/" element={<Navigate to={user ? '/dashboard' : '/login'} replace />} />
       <Route path="/login" element={user ? <Navigate to="/dashboard" replace /> : <Login />} />
       <Route path="/register" element={user ? <Navigate to="/dashboard" replace /> : <Register />} />
       <Route path="/forgot-password" element={user ? <Navigate to="/dashboard" replace /> : <ForgotPassword />} />
@@ -65,9 +98,8 @@ export default function App() {
         <Route path="/users" element={<Guard roles={['admin']}><Users /></Guard>} />
         <Route path="/reports" element={<Guard roles={['admin']}><Reports /></Guard>} />
         <Route path="/forecasting" element={<Guard roles={['admin']}><Forecasting /></Guard>} />
+        <Route path="*" element={<NotFound />} />
       </Route>
-
-      <Route path="*" element={<Navigate to={user ? '/dashboard' : '/login'} replace />} />
     </Routes>
   );
 }

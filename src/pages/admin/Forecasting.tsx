@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { CartesianGrid, LabelList, Line, LineChart, ReferenceArea, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { api, errorMessage, formatDate } from '../../api';
+import { api, formatDate } from '../../api';
+import { LoadError, toast } from '../../components/feedback';
 import { useApi } from '../../hooks';
-import { Empty, Loading, Message, Modal } from '../../components/ui';
+import { Empty, Loading, Modal } from '../../components/ui';
 import { ICONS, quantityText, Svg, unitPlural } from '../../components/RequestCards';
 import type { ForecastMethod, ForecastMethodResult, ForecastReport, ForecastResult } from '../../types';
 import { jumpTo } from '../../scroll';
@@ -212,14 +213,12 @@ export default function Forecasting() {
     if (method) p.method = method;
     return p;
   }, [months, horizon, method]);
-  const { data, error, loading, setData } = useApi<ForecastReport>('/forecasts', params);
+  const { data, errorInfo, loading, setData, reload } = useApi<ForecastReport>('/forecasts', params);
 
   const [medicineId, setMedicineId] = useState<number | null>(null);
   const [tableFilter, setTableFilter] = useState<TableFilter>('restock');
   const [details, setDetails] = useState<ForecastResult | null>(null);
   const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState<{ type: 'error' | 'success'; text: string } | null>(null);
-  const [toast, setToast] = useState('');
   const chartRef = useRef<HTMLElement>(null);
   const tableRef = useRef<HTMLElement>(null);
 
@@ -228,11 +227,6 @@ export default function Forecasting() {
     if (data && method && data.requested_method === method && data.method !== method) setMethod(null);
   }, [data, method]);
 
-  useEffect(() => {
-    if (!toast) return;
-    const id = window.setTimeout(() => setToast(''), 3000);
-    return () => window.clearTimeout(id);
-  }, [toast]);
 
   const results = data?.results ?? [];
   const selectedMedicine = medicineId ? results.find((r) => r.medicine_id === medicineId) ?? null : null;
@@ -301,15 +295,14 @@ export default function Forecasting() {
   };
 
   const generate = async () => {
-    if (!data) return;
+    if (!data || busy) return;
     setBusy(true);
-    setMsg(null);
     try {
       const res = await api.post<ForecastReport>('/forecasts/generate', { months: data.history_months, horizon: data.horizon, method: data.method });
       setData(res.data);
-      setToast(`Forecast for ${periodText(res.data.forecast_keys)} generated and saved.`);
+      toast.success('Forecast generated', { description: `The forecast for ${periodText(res.data.forecast_keys)} was generated and saved.` });
     } catch (err) {
-      setMsg({ type: 'error', text: errorMessage(err) });
+      toast.fromError(err, { title: 'Forecast was not generated', retry: generate });
     } finally { setBusy(false); }
   };
 
@@ -359,8 +352,7 @@ export default function Forecasting() {
           {generateButton()}
         </div>
       </header>
-      {msg && <Message type={msg.type}>{msg.text}</Message>}
-      <Message>{error}</Message>
+      <LoadError error={errorInfo} onRetry={() => reload()} />
 
       {loading && !data ? <Loading /> : !data ? null : !results.length ? <div className="card"><Empty>No medicines to forecast yet. Add medicines first.</Empty></div> : (
         <div className={`fc-body ${loading ? 'is-updating' : ''}`}>
@@ -617,7 +609,6 @@ export default function Forecasting() {
         </div>
       )}
 
-      {toast && <div className="toast" role="status"><Svg d={ICONS.check} size={18} width={2.6} /> {toast}</div>}
 
       {details && data && (
         <Modal title={details.medicine_name} onClose={() => setDetails(null)}>
