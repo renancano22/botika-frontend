@@ -81,7 +81,7 @@ export default function Register() {
             {fe.error('password_confirmation')}
           </label>
         </div>
-        <p className="field-hint">Password: at least 8 characters, with at least one letter and one number.</p>
+        <p className="field-hint">Password: at least 8 characters with letters and numbers. Avoid common passwords and your name, email or mobile number.</p>
 
         <button className="btn" disabled={busy}>{busy ? 'Creating account…' : 'Register'}</button>
         <p className="muted center">Already registered? <Link to="/login">Log in</Link></p>

@@ -7,7 +7,7 @@ import { useApi } from '../../hooks';
 import { Avatar, Loading, Message, Modal, PasswordInput } from '../../components/ui';
 import { Svg } from '../../components/RequestCards';
 import type { User } from '../../types';
-import { FIELD } from '../../validation';
+import { FIELD, passwordHasPersonalInfo } from '../../validation';
 import { jumpTo, jumpToTop } from '../../scroll';
 import BackButton from '../../components/BackButton';
 import { LoadError, toast } from '../../components/feedback';
@@ -181,6 +181,7 @@ export default function Profile() {
     { ok: pw.password.length >= 8, text: 'At least 8 characters' },
     { ok: /[A-Za-z]/.test(pw.password), text: 'At least one letter' },
     { ok: /[0-9]/.test(pw.password), text: 'At least one number' },
+    { ok: pw.password !== '' && !passwordHasPersonalInfo(pw.password, [form.name, form.email, form.contact_no, data?.user.name, data?.user.email]), text: 'No name, email, mobile number or "Botika"' },
     { ok: pw.password !== '' && pw.password === pw.password_confirmation, text: 'New password and confirmation match' },
   ];
 

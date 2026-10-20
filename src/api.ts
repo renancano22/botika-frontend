@@ -58,7 +58,9 @@ api.interceptors.response.use(
       window.location.href = '/login';
     }
     // A feature was turned off by the administrator: refresh the user's permissions (menu and buttons).
-    if (error.response?.status === 403 && (error.response.data as { permission?: string } | undefined)?.permission) {
+    // (Also when the account must first change its temporary password: the change-password page is shown.)
+    const denied = error.response?.data as { permission?: string; code?: string } | undefined;
+    if (error.response?.status === 403 && (denied?.permission || denied?.code === 'password_change_required')) {
       window.dispatchEvent(new Event('botika:permission-denied'));
     }
     return Promise.reject(error);

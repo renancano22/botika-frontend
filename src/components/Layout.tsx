@@ -3,7 +3,9 @@ import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { ROLE_LABEL } from '../api';
 import { useAuth } from '../auth';
 import type { Role } from '../types';
-import { Avatar } from './ui';
+import { Avatar, Modal } from './ui';
+import ChangePasswordForm from './ChangePasswordForm';
+import { toast } from './feedback';
 import { NAV_STATE } from './BackButton';
 import { NotificationBell } from './Notifications';
 import { ExpiryBell } from './ExpiryAlerts';
@@ -25,6 +27,7 @@ const ICONS: Record<string, string> = {
   logout: 'M9 21H5V3h4M16 17l5-5-5-5M21 12H9',
   user: 'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8',
   shield: 'M12 3 4 6v6c0 5 3.4 8.3 8 9 4.6-.7 8-4 8-9V6zM9 12l2 2 4-4',
+  key: 'M15 7a4 4 0 1 1-3.9 4.9L3 20v-3h3v-3h3l2.1-2.1A4 4 0 0 1 15 7z',
 };
 
 function Icon({ name }: { name: string }) {
@@ -94,9 +97,10 @@ const NAV: Record<Role, Section[]> = {
  * dimmed area, with the ✕ button, or with the Esc key.
  */
 export default function Layout() {
-  const { user, logout, can } = useAuth();
+  const { user, logout, can, setUser } = useAuth();
   const location = useLocation();
   const [open, setOpen] = useState(false);
+  const [changingPassword, setChangingPassword] = useState(false);
 
   // Close the menu after moving to another page.
   useEffect(() => { setOpen(false); }, [location.pathname]);
@@ -198,6 +202,12 @@ export default function Layout() {
           ))}
         </nav>
 
+        {/* Residents change their password in Edit Profile; staff and the administrator here. */}
+        {user.role !== 'resident' && (
+          <button className="drawer-item drawer-action" onClick={() => { setOpen(false); setChangingPassword(true); }} tabIndex={open ? 0 : -1}>
+            <Icon name="key" /> Change password
+          </button>
+        )}
         <button className="drawer-logout" onClick={logout} tabIndex={open ? 0 : -1}>
           <Icon name="logout" /> Log out
         </button>
@@ -206,6 +216,17 @@ export default function Layout() {
       <main className="content">
         <Outlet />
       </main>
+
+      {changingPassword && (
+        <Modal title="Change password" onClose={() => setChangingPassword(false)}>
+          <p className="muted small">For your security, enter your current password. You will stay logged in here; other devices will be logged out.</p>
+          <ChangePasswordForm temporary={false} submitLabel="Change password" onCancel={() => setChangingPassword(false)} onDone={(u) => {
+            setUser(u);
+            setChangingPassword(false);
+            toast.success('Password changed', { description: 'Use your new password the next time you log in. Other devices were logged out.' });
+          }} />
+        </Modal>
+      )}
     </div>
   );
 }

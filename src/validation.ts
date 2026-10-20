@@ -69,3 +69,23 @@ export function quantityWarning(quantity: number, unit: string, opts: { availabl
   if (opts.available !== undefined && quantity > opts.available) return `Only ${opts.available} ${unit} available right now. Lower the quantity, or send a restock request for more.`;
   return null;
 }
+
+/** Words about the system that must not be in a password (the backend refuses the same). */
+const SYSTEM_WORDS = ['botika', 'bulan', 'sorsogon', 'bayan', 'pharmacy'];
+
+/**
+ * True when the password contains the person's own details (name parts, the part of the email before "@",
+ * the mobile number — 4+ characters) or the name of the Botika. Mirrors the backend's NotGuessablePassword
+ * rule so the checklist matches; the backend also refuses very common passwords.
+ */
+export function passwordHasPersonalInfo(password: string, details: (string | null | undefined)[]): boolean {
+  const pw = password.toLowerCase();
+  const words = details.flatMap((d) => {
+    const v = (d ?? '').trim().toLowerCase();
+    if (!v) return [];
+    if (v.includes('@')) return [v.split('@')[0]];
+    if (/^\+?\d[\d\s-]*$/.test(v)) return [v.replace(/\D/g, '')];
+    return v.split(/[\s.'-]+/);
+  }).filter((w) => w.length >= 4);
+  return [...SYSTEM_WORDS, ...words].some((w) => pw.includes(w));
+}

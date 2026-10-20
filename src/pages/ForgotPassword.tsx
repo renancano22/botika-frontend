@@ -89,7 +89,7 @@ export default function ForgotPassword() {
             <PasswordInput value={confirm} onChange={(e) => { setConfirm(e.target.value); fe.clear('password_confirmation'); }} autoComplete="new-password" required {...fe.invalid('password_confirmation')} />
             {fe.error('password_confirmation')}
           </label>
-          <p className="field-hint">At least 8 characters, with at least one letter and one number.</p>
+          <p className="field-hint">At least 8 characters with letters and numbers. Avoid common passwords and your name, email or mobile number.</p>
           <button className="btn" disabled={busy}>{busy ? 'Saving…' : 'Change password'}</button>
           <p className="muted center">
             Didn't get a code? <button type="button" className="link-button" onClick={() => sendCode()} disabled={busy}>Send again</button>

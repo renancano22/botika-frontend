@@ -23,6 +23,10 @@ export interface User {
   resident?: Resident | null;
   /** Features this user may use (Admin → User Permissions). The administrator has all of them. */
   permissions?: string[];
+  /** Still using the temporary default password given by the administrator: must change it first. */
+  must_change_password?: boolean;
+  /** When the temporary password stops working if it is not changed. */
+  temp_password_expires_at?: string | null;
 }
 
 /** One feature in Admin → User Permissions. */

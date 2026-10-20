@@ -3,6 +3,7 @@ import { Link, Navigate, Route, Routes } from 'react-router-dom';
 import { LoadError } from './components/feedback';
 import AccessDenied from './components/AccessDenied';
 import Permissions from './pages/admin/Permissions';
+import ChangePasswordRequired from './pages/ChangePasswordRequired';
 import { useAuth } from './auth';
 import Layout from './components/Layout';
 import type { Role } from './types';
@@ -72,6 +73,9 @@ export default function App() {
   const ALL: Role[] = ['admin', 'staff', 'resident'];
   const OPS: Role[] = ['admin', 'staff'];
   const role = user?.role;
+
+  // Temporary default password (first log-in): nothing else opens until the user changes it.
+  if (user?.must_change_password) return <ChangePasswordRequired />;
 
   return (
     <Routes>

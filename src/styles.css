@@ -2007,3 +2007,24 @@ a.db-person:hover { background: rgba(255, 255, 255, 0.2); }
   .perm-savebar { flex-direction: column; align-items: stretch; text-align: center; }
   .perm-savebar > div .btn { flex: 1; justify-content: center; }
 }
+
+/* ---------- temporary default password */
+.temp-badge { display: inline-block; margin-top: 4px; padding: 2px 8px; border-radius: 999px; font-size: 0.72rem; font-weight: 700; background: #fef3c7; color: #92400e; border: 1px solid #fde68a; white-space: nowrap; }
+.temp-pw-note { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; margin: 4px 0 12px; padding: 12px 14px; border-radius: 12px; background: #fff7ed; border: 1px solid #fed7aa; color: #9a3412; font-size: 0.86rem; }
+.temp-pw-note strong { font-size: 0.92rem; }
+.temp-pw-note .btn { margin-top: 4px; }
+.temp-login { display: flex; flex-direction: column; gap: 8px; text-align: left; }
+.temp-login > div { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 10px; background: #f6f8f7; border: 1px solid var(--border); flex-wrap: wrap; }
+.temp-login span { font-size: 0.8rem; color: var(--muted); }
+.temp-login strong { color: var(--text); overflow-wrap: anywhere; }
+.temp-login-pw { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 1.05rem; letter-spacing: 0.06em; }
+.temp-login p { margin: 2px 0 0; font-size: 0.84rem; }
+.cp-card { text-align: left; }
+.cp-icon { width: 60px; height: 60px; border-radius: 50%; display: grid; place-items: center; margin: 4px auto 6px; background: #fef3c7; color: #b45309; box-shadow: 0 0 0 7px #fffbeb; }
+.cp-card h1 { text-align: center; }
+.cp-who { text-align: center; margin: -4px 0 4px; font-size: 0.86rem; }
+.cp-card .pf-pw-rules { margin: -2px 0 14px; }
+.temp-badge-expired { background: var(--danger-soft); color: #9f1239; border-color: #fecdd3; }
+.temp-login-warn { padding: 8px 10px; border-radius: 8px; background: #fff7ed; color: #9a3412; font-weight: 600; }
+.drawer-action { margin: 0 12px; width: calc(100% - 24px); border: none; background: none; font: inherit; cursor: pointer; text-align: left; }
+.cp-form .btn-block { margin-top: 12px; }
