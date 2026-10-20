@@ -57,6 +57,10 @@ api.interceptors.response.use(
       try { sessionStorage.setItem(SESSION_NOTICE_KEY, 'expired'); } catch { /* storage blocked */ }
       window.location.href = '/login';
     }
+    // A feature was turned off by the administrator: refresh the user's permissions (menu and buttons).
+    if (error.response?.status === 403 && (error.response.data as { permission?: string } | undefined)?.permission) {
+      window.dispatchEvent(new Event('botika:permission-denied'));
+    }
     return Promise.reject(error);
   },
 );

@@ -1942,3 +1942,68 @@ a.db-person:hover { background: rgba(255, 255, 255, 0.2); }
 .rs-sent { display: flex; align-items: center; gap: 8px; margin: 0 0 4px; color: var(--primary-dark); font-weight: 600; font-size: 0.92rem; }
 .rs-sent svg { flex-shrink: 0; }
 @media (hover: hover) { .med-card:hover { border-color: var(--st, var(--primary)); } }
+
+/* ---------- Access Denied page */
+.access-denied { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px; padding: 40px 24px 32px; border-top: 4px solid #e11d48; }
+.access-denied-icon { width: 84px; height: 84px; border-radius: 50%; display: grid; place-items: center; color: #e11d48; background: #ffe4e6; box-shadow: 0 0 0 9px #fff1f2; margin-bottom: 10px; }
+.access-denied-code { font-size: 0.75rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: #be123c; }
+.access-denied h1 { margin: 0; font-size: 1.6rem; }
+.access-denied p { margin: 4px 0 0; max-width: 460px; color: #374151; line-height: 1.55; }
+.access-denied p.muted { color: var(--muted); }
+.access-denied-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 16px; }
+.access-denied-actions .btn { min-width: 150px; justify-content: center; }
+
+/* ---------- Admin → User Permissions */
+.perm-page { padding-bottom: 90px; }
+.perm-admin-note { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 14px; background: var(--primary-50); border: 1px solid color-mix(in srgb, var(--primary) 25%, white); }
+.perm-admin-note p { margin: 2px 0 0; font-size: 0.86rem; color: var(--muted); }
+.perm-admin-icon { width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center; flex-shrink: 0; background: var(--primary); color: #fff; }
+.perm-roles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.perm-role { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 14px; background: #fff; border: 1.5px solid var(--border);
+  cursor: pointer; font: inherit; text-align: left; color: inherit; transition: border-color 0.15s, box-shadow 0.15s; }
+.perm-role:hover { border-color: color-mix(in srgb, var(--primary) 40%, white); }
+.perm-role.active { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-soft); }
+.perm-role-icon { width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center; flex-shrink: 0; background: var(--primary-50); color: var(--primary); }
+.perm-role.active .perm-role-icon { background: var(--primary); color: #fff; }
+.perm-role-text { display: flex; flex-direction: column; min-width: 0; }
+.perm-role-text small { color: var(--muted); font-size: 0.8rem; }
+.perm-card { padding: 0; overflow: hidden; }
+.perm-card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 18px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.perm-card-head h2 { margin: 0; font-size: 1.1rem; }
+.perm-card-head p { margin: 2px 0 0; }
+.perm-group { padding: 6px 18px 4px; }
+.perm-group + .perm-group { border-top: 1px solid var(--border); }
+.perm-group h3 { margin: 12px 0 4px; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--primary-dark); }
+.perm-group ul, .perm-locked { list-style: none; margin: 0; padding: 0; }
+.perm-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 0; }
+.perm-row + .perm-row { border-top: 1px dashed var(--border); }
+.perm-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.perm-text strong { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 0.95rem; }
+.perm-text span { font-size: 0.84rem; color: var(--muted); line-height: 1.4; }
+.perm-row.is-off .perm-text strong { color: #6b7280; }
+.perm-changed { font-size: 0.68rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; padding: 2px 7px; border-radius: 999px; background: #fef3c7; color: #92400e; }
+.switch { position: relative; flex-shrink: 0; display: inline-flex; align-items: center; gap: 8px; padding: 0; border: none; background: none; cursor: pointer; font: inherit; }
+.switch::before { content: ''; width: 46px; height: 26px; border-radius: 999px; background: #cbd5e1; transition: background 0.15s; }
+.switch-knob { position: absolute; left: 3px; top: 50%; width: 20px; height: 20px; margin-top: -10px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25); transition: transform 0.15s; }
+.switch.on::before { background: var(--primary); }
+.switch.on .switch-knob { transform: translateX(20px); }
+.switch-label { min-width: 52px; font-size: 0.8rem; font-weight: 700; color: #6b7280; }
+.switch.on .switch-label { color: var(--primary-dark); }
+.switch:focus-visible { outline: 3px solid var(--primary-soft); outline-offset: 3px; border-radius: 999px; }
+.switch:disabled { opacity: 0.6; cursor: default; }
+.perm-locked { padding: 6px 18px 14px; display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 4px 16px; }
+.perm-locked li { display: flex; align-items: center; gap: 8px; padding: 8px 0; color: #374151; font-size: 0.9rem; }
+.perm-locked svg { color: #94a3b8; flex-shrink: 0; }
+.perm-savebar { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 45; width: min(720px, calc(100vw - 24px));
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px 12px 18px; border-radius: 16px;
+  background: #0f1f1b; color: #fff; box-shadow: 0 14px 34px rgba(0, 0, 0, 0.28); animation: fb-in 0.2s ease-out; }
+.perm-savebar > div { display: flex; gap: 8px; }
+.perm-savebar .btn-outline { background: transparent; color: #fff; border-color: rgba(255, 255, 255, 0.45); }
+.perm-summary p { margin: 4px 0; text-align: left; }
+@media (max-width: 560px) {
+  .perm-roles { grid-template-columns: 1fr; }
+  .perm-row { align-items: flex-start; }
+  .switch-label { display: none; }
+  .perm-savebar { flex-direction: column; align-items: stretch; text-align: center; }
+  .perm-savebar > div .btn { flex: 1; justify-content: center; }
+}

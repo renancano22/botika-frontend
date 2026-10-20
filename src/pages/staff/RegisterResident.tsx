@@ -16,7 +16,8 @@ const EMPTY = { name: '', barangay: '', address_line: '', contact_no: '' };
  * so the medicines given can be recorded (walk-in dispensing) and taken out of the inventory.
  */
 export default function RegisterResident({ onBack, onRegistered, onVerified }: {
-  onBack: () => void;
+  /** Back to Resident ID / QR code (not shown when the staff can only register residents). */
+  onBack?: () => void;
   onRegistered: (record: ResidentLookup) => void;
   onVerified: (record: ResidentLookup) => void;
 }) {
@@ -46,11 +47,11 @@ export default function RegisterResident({ onBack, onRegistered, onVerified }: {
   const submit = (e: FormEvent) => { e.preventDefault(); save(false); };
 
   return (
-    <Card title="1. Register resident" actions={
+    <Card title="1. Register resident" actions={onBack && (
       <button type="button" className="btn btn-outline btn-sm rs-back" onClick={onBack}>
         <Svg d={QR_ICON} size={16} /> Use Resident ID / QR code
       </button>
-    }>
+    )}>
       <p className="muted small rs-intro">For a resident who is not registered yet, for example because they have no cellphone. After saving, add the medicines you give in <strong>Dispense Medicine</strong> so the inventory is updated.</p>
       <form className="rr-form" onSubmit={submit}>
         <label>Full name

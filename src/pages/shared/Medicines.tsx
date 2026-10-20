@@ -25,7 +25,9 @@ const qty = (n: number, unit: string) => `${n} ${n === 1 ? unit : unitPlural(uni
  * or confirm there is no stock. Delete is admin only.
  */
 export default function Medicines() {
-  const { user } = useAuth();
+  const { user, can } = useAuth();
+  const canManage = can('medicines.manage');
+  const canStock = can('inventory.manage');
   const [params, setParams] = useSearchParams();
   const [search, setSearch] = useState('');
   // ?status=low_stock / out_of_stock / unrecorded (from the dashboard tiles) opens the list already filtered.
@@ -115,8 +117,8 @@ export default function Medicines() {
           <p className="muted">Botika ng Bayan medicine list, stock on hand, batches and expiration dates.</p>
         </div>
         <div className="mi-head-actions">
-          <Link className="btn btn-outline" to="/inventory?stockin=new">+ Stock-in</Link>
-          <button className="btn" onClick={() => open()}>+ Add medicine</button>
+          {canStock && <Link className="btn btn-outline" to="/inventory?stockin=new">+ Stock-in</Link>}
+          {canManage && <button className="btn" onClick={() => open()}>+ Add medicine</button>}
         </div>
       </header>
       <LoadError error={errorInfo} onRetry={() => reload()} />
@@ -179,11 +181,11 @@ export default function Medicines() {
                   <td className="right nowrap">
                     {m.status === 'unrecorded' && (
                       <>
-                        <Link className="btn btn-sm" to={`/inventory?stockin=${m.medicine_id}`}>Record stock</Link>{' '}
-                        <button className="btn btn-outline btn-sm" onClick={() => confirmNoStock(m)}>No stock</button>{' '}
+                        {canStock && <><Link className="btn btn-sm" to={`/inventory?stockin=${m.medicine_id}`}>Record stock</Link>{' '}</>}
+                        {canManage && <><button className="btn btn-outline btn-sm" onClick={() => confirmNoStock(m)}>No stock</button>{' '}</>}
                       </>
                     )}
-                    <button className="btn btn-outline btn-sm" onClick={() => open(m)}>Edit</button>{' '}
+                    {canManage && <><button className="btn btn-outline btn-sm" onClick={() => open(m)}>Edit</button>{' '}</>}
                     {user?.role === 'admin' && <button className="btn btn-danger btn-sm" onClick={() => remove(m)}>Delete</button>}
                   </td>
                 </tr>

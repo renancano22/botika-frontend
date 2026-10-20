@@ -63,7 +63,7 @@ function statusTabs(type: RequestType): [string, string][] {
 
 /** Staff/admin: review medicine and restock requests. (Residents use My Requests.) */
 export default function Requests() {
-  const { user } = useAuth();
+  const { user, can } = useAuth();
   // The type and status are kept in the address (e.g. /requests?status=approved from the dashboard).
   const [params, setParams] = useSearchParams();
   const rawType = params.get('type') ?? 'medicine';
@@ -94,7 +94,7 @@ export default function Requests() {
   const openDetails = (r: MedicineRequest) => { setRxChecked(false); setViewingId(r.request_id); };
 
   const canReview = (r: MedicineRequest) =>
-    r.status === 'pending' && (r.request_type === 'medicine' || user?.role === 'admin');
+    r.status === 'pending' && can('requests.review') && (r.request_type === 'medicine' || user?.role === 'admin');
 
   const approve = async (r: MedicineRequest) => {
     if (actingId) return;

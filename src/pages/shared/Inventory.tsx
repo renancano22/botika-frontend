@@ -9,12 +9,15 @@ import { unitPlural } from '../../components/RequestCards';
 import { jumpWhenReady } from '../../scroll';
 import BackButton from '../../components/BackButton';
 import { LoadError, toast, useFormErrors } from '../../components/feedback';
+import { useAuth } from '../../auth';
 
 const STOCK_OUT_REASONS = ['Expired', 'Damaged', 'Lost', 'Returned to supplier', 'Other'];
 const TX_LABEL: Record<StockTransaction['type'], string> = { stock_in: 'Stock-in', stock_out: 'Stock-out', dispensed: 'Dispensed' };
 
 /** Inventory: stock-in batches, stock-out, real-time stock and expiration monitoring. */
 export default function Inventory() {
+  const { can } = useAuth();
+  const canManage = can('inventory.manage');
   const [search, setSearch] = useState('');
   // ?expiry=near_expiry / expired (dashboard tiles, expiry alerts) opens the batches already filtered;
   // &batch=<id> (an expiry alert) also jumps to that batch and highlights it.
@@ -43,7 +46,7 @@ export default function Inventory() {
   useEffect(() => {
     const id = params.get('stockin');
     if (id === null) return;
-    openStockIn(id === 'new' ? '' : id);
+    if (canManage) openStockIn(id === 'new' ? '' : id);
     const next = new URLSearchParams(params);
     next.delete('stockin');
     setParams(next, { replace: true });
@@ -104,7 +107,7 @@ export default function Inventory() {
           <div className="page-title"><h1>Stock &amp; Batches</h1></div>
           <p className="muted">Each stock-in is saved as a batch with its own expiration date. Dispensing uses the earliest-expiring batch first and never uses expired batches.</p>
         </div>
-        <button className="btn" onClick={() => openStockIn()}>+ Stock-in</button>
+        {canManage && <button className="btn" onClick={() => openStockIn()}>+ Stock-in</button>}
       </header>
       <LoadError error={errorInfo} onRetry={() => reload()} />
 
@@ -131,7 +134,7 @@ export default function Inventory() {
                   <td>{formatDate(b.expiration_date)}</td>
                   <td><Badge value={b.expiry_status ?? 'ok'} /></td>
                   <td>{formatDate(b.last_updated, true)}</td>
-                  <td className="right"><button className="btn btn-outline btn-sm" onClick={() => { fe.clear(); setStockOut({ batch: b, quantity: b.quantity, reason: b.expiry_status === 'expired' ? 'Expired' : '', details: '' }); }}>Stock-out</button></td>
+                  <td className="right">{canManage && <button className="btn btn-outline btn-sm" onClick={() => { fe.clear(); setStockOut({ batch: b, quantity: b.quantity, reason: b.expiry_status === 'expired' ? 'Expired' : '', details: '' }); }}>Stock-out</button>}</td>
                 </tr>
               ))}
             </tbody>

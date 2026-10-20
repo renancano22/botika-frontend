@@ -11,6 +11,7 @@ import { FIELD } from '../../validation';
 import { jumpTo, jumpToTop } from '../../scroll';
 import BackButton from '../../components/BackButton';
 import { LoadError, toast } from '../../components/feedback';
+import AccessDenied from '../../components/AccessDenied';
 
 interface ProfileData {
   user: User;
@@ -104,7 +105,8 @@ const normalizePhone = (v: string) => {
  * the information, an optional password change and the picture are then saved together in one request.
  */
 export default function Profile() {
-  const { setUser } = useAuth();
+  const { setUser, can } = useAuth();
+  const canEdit = can('profile.edit');
   const { data, errorInfo, loading, setData, reload } = useApi<ProfileData>('/profile');
   const { data: barangays } = useApi<string[]>('/barangays');
   const [params, setParams] = useSearchParams();
@@ -342,6 +344,7 @@ export default function Profile() {
 
   if (loading && !data) return <Loading />;
   if (!data || !resident) return <div className="page"><LoadError error={errorInfo} onRetry={() => reload()} /></div>;
+  if (editing && !canEdit) return <AccessDenied feature="profile.edit" />;
   const { user } = data;
   const editPhoto = photo.kind === 'new' ? photo.data : photo.kind === 'remove' ? null : resident.photo;
 
@@ -514,8 +517,10 @@ export default function Profile() {
         <section className="card fb-sec fb-photo-sec">
           {photoControl(resident.photo, user.name, [
             { key: 'view', icon: ICON.eye, label: 'View Profile Picture', onClick: () => setPreview(true) },
-            { key: 'change', icon: ICON.camera, label: 'Change Profile Picture', onClick: () => viewFileInput.current?.click() },
-            { key: 'delete', icon: ICON.trash, label: 'Delete Profile Picture', danger: true, disabled: !resident.photo, onClick: () => setConfirmDelete(true) },
+            ...(canEdit ? [
+              { key: 'change', icon: ICON.camera, label: 'Change Profile Picture', onClick: () => viewFileInput.current?.click() },
+              { key: 'delete', icon: ICON.trash, label: 'Delete Profile Picture', danger: true, disabled: !resident.photo, onClick: () => setConfirmDelete(true) },
+            ] : []),
           ], preparingPhoto || photoSaving)}
           {/* gallery or camera (the phone offers both for image/*) */}
           <input ref={viewFileInput} type="file" accept="image/*" hidden onChange={chooseNewPhoto} />
@@ -551,9 +556,11 @@ export default function Profile() {
           </div>
         </section>
 
-        <div className="fb-actions">
-          <button type="button" className="btn btn-lg" onClick={openEdit}><Svg d={ICON.edit} size={18} /> Edit Profile</button>
-        </div>
+        {canEdit && (
+          <div className="fb-actions">
+            <button type="button" className="btn btn-lg" onClick={openEdit}><Svg d={ICON.edit} size={18} /> Edit Profile</button>
+          </div>
+        )}
       </div>
 
       {/* Printed copy (only on paper): QR code, Resident ID, name and address. */}

@@ -18,7 +18,7 @@ function greeting(): string {
 
 /** Resident: list of their requests with search and status filters. Tapping one opens its status timeline. */
 export default function MyRequests() {
-  const { user } = useAuth();
+  const { user, can } = useAuth();
   const { data, errorInfo, loading, reload } = useApi<MedicineRequest[]>('/requests', undefined, 30000);
   // ?status=review / claim / claimed … opens the list already filtered (e.g. from the dashboard tiles).
   // '' = no status chosen yet (shows "Select status", lists everything); 'all' = "All requests" chosen.
@@ -52,7 +52,7 @@ export default function MyRequests() {
           <div className="page-title"><h1>{greeting()}, {user?.name.split(' ')[0]}!</h1></div>
           <p className="muted">Here are your medicine requests.</p>
         </div>
-        <Link className="btn" to="/medicines">+ New request</Link>
+        {can('medicines.view') && can('requests.create') && <Link className="btn" to="/medicines">+ New request</Link>}
       </header>
       <LoadError error={errorInfo} onRetry={() => reload()} />
 

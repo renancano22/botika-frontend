@@ -10,6 +10,7 @@ import { PickupDeadlineBox, RequestSummaryCard } from '../../components/RequestD
 import { dateTime, ICONS, Svg } from '../../components/RequestCards';
 import type { MedicineRequest, SmsNotification } from '../../types';
 import { LoadError } from '../../components/feedback';
+import { useAuth } from '../../auth';
 
 interface Detail { notification: SmsNotification; request: MedicineRequest | null }
 
@@ -152,6 +153,7 @@ function nextStep(r: MedicineRequest | null): string | null {
 
 /** Resident: details of one notification (opened from the bell, the dashboard or the Notifications page). */
 export default function NotificationDetail() {
+  const { can } = useAuth();
   const { id } = useParams();
   const { data, errorInfo, loading, reload } = useApi<Detail>(`/notifications/${id}`);
 
@@ -216,7 +218,7 @@ export default function NotificationDetail() {
         </div>
       )}
 
-      {r?.status === 'fulfilled' && (
+      {r?.status === 'fulfilled' && can('medicines.view') && can('requests.create') && (
         <div className="detail-actions">
           <Link className="btn btn-block" to="/medicines">Request this medicine</Link>
         </div>

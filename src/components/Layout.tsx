@@ -24,6 +24,7 @@ const ICONS: Record<string, string> = {
   bell: 'M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10 21h4',
   logout: 'M9 21H5V3h4M16 17l5-5-5-5M21 12H9',
   user: 'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8',
+  shield: 'M12 3 4 6v6c0 5 3.4 8.3 8 9 4.6-.7 8-4 8-9V6zM9 12l2 2 4-4',
 };
 
 function Icon({ name }: { name: string }) {
@@ -35,7 +36,8 @@ function Icon({ name }: { name: string }) {
   );
 }
 
-type Item = { to: string; label: string; icon: string };
+/** perm: shown only when the user has that permission (Admin → User Permissions). */
+type Item = { to: string; label: string; icon: string; perm?: string };
 type Section = { title?: string; items: Item[] };
 
 const NAV: Record<Role, Section[]> = {
@@ -57,29 +59,30 @@ const NAV: Record<Role, Section[]> = {
     { title: 'Administration', items: [
       { to: '/notifications', label: 'SMS Notifications', icon: 'sms' },
       { to: '/users', label: 'User Accounts', icon: 'users' },
+      { to: '/permissions', label: 'User Permissions', icon: 'shield' },
     ] },
   ],
   staff: [
     { items: [{ to: '/dashboard', label: 'Dashboard', icon: 'home' }] },
     { title: 'Distribution', items: [
-      { to: '/dispense', label: 'Dispense', icon: 'hand' },
-      { to: '/requests', label: 'Requests', icon: 'clipboard' },
-      { to: '/dispensing', label: 'Dispensing Records', icon: 'history' },
+      { to: '/dispense', label: 'Dispense', icon: 'hand', perm: 'dispensing.dispense|residents.register' },
+      { to: '/requests', label: 'Requests', icon: 'clipboard', perm: 'requests.view' },
+      { to: '/dispensing', label: 'Dispensing Records', icon: 'history', perm: 'dispensing.records' },
     ] },
     { title: 'Inventory', items: [
-      { to: '/inventory', label: 'Stock & Batches', icon: 'box' },
-      { to: '/medicines', label: 'Medicine List', icon: 'pill' },
+      { to: '/inventory', label: 'Stock & Batches', icon: 'box', perm: 'inventory.view|inventory.manage' },
+      { to: '/medicines', label: 'Medicine List', icon: 'pill', perm: 'medicines.view' },
     ] },
   ],
   resident: [
     { items: [{ to: '/dashboard', label: 'Dashboard', icon: 'home' }] },
     { title: 'Medicines', items: [
-      { to: '/medicines', label: 'Check Medicines', icon: 'search' },
-      { to: '/requests', label: 'My Requests', icon: 'clipboard' },
-      { to: '/dispensing', label: 'My Medicine History', icon: 'history' },
+      { to: '/medicines', label: 'Check Medicines', icon: 'search', perm: 'medicines.view' },
+      { to: '/requests', label: 'My Requests', icon: 'clipboard', perm: 'requests.view' },
+      { to: '/dispensing', label: 'My Medicine History', icon: 'history', perm: 'history.view' },
     ] },
     { title: 'Account', items: [
-      { to: '/notifications', label: 'Notifications', icon: 'bell' },
+      { to: '/notifications', label: 'Notifications', icon: 'bell', perm: 'notifications.view' },
       { to: '/profile', label: 'My Profile', icon: 'user' },
     ] },
   ],
@@ -91,7 +94,7 @@ const NAV: Record<Role, Section[]> = {
  * dimmed area, with the ✕ button, or with the Esc key.
  */
 export default function Layout() {
-  const { user, logout } = useAuth();
+  const { user, logout, can } = useAuth();
   const location = useLocation();
   const [open, setOpen] = useState(false);
 
@@ -111,7 +114,10 @@ export default function Layout() {
   }, [open]);
 
   if (!user) return null;
-  const sections = NAV[user.role];
+  // Menu items the administrator turned off in User Permissions are not shown.
+  const sections = NAV[user.role]
+    .map((s) => ({ ...s, items: s.items.filter((i) => !i.perm || can(i.perm)) }))
+    .filter((s) => s.items.length > 0);
 
   return (
     <div className="app">
@@ -132,14 +138,14 @@ export default function Layout() {
             <small>Botika ng Bayan · Bulan</small>
           </div>
         </NavLink>
-        {user.role !== 'resident' && (
+        {user.role !== 'resident' && can('inventory.view|inventory.manage') && (
           <div className="topbar-actions">
             <ExpiryBell />
           </div>
         )}
         {user.role === 'resident' && (
           <div className="topbar-actions">
-            <NotificationBell />
+            {can('notifications.view') && <NotificationBell />}
             <Link to="/profile" state={NAV_STATE} className={`topbar-profile ${location.pathname === '/profile' ? 'is-current' : ''}`} aria-label="Open my profile" title="My profile"
               aria-current={location.pathname === '/profile' ? 'page' : undefined}>
               <Avatar name={user.name} photo={user.resident?.photo} size={36} />

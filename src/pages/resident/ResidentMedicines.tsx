@@ -10,6 +10,7 @@ import { PrescriptionUpload, PrescriptionViewer, RX_ICON, RxBadge, type Prescrip
 import { jumpToTop } from '../../scroll';
 import BackButton from '../../components/BackButton';
 import { LoadError, toast } from '../../components/feedback';
+import { useAuth } from '../../auth';
 
 type CartItem = { medicine: Medicine; quantity: number };
 
@@ -72,6 +73,9 @@ export default function ResidentMedicines() {
   const [prescription, setPrescription] = useState<PrescriptionFile | null>(null);
   const [viewRx, setViewRx] = useState(false);
   const navigate = useNavigate();
+  const { can } = useAuth();
+  const canRequest = can('requests.create');
+  const canRestock = can('restock.create');
 
   // Steps: browse medicines → "Medicine Request Form" (quantities + reason) → review → submit.
   // The step is kept in the address (?step=form / ?step=review) so the phone's back button works.
@@ -367,14 +371,14 @@ export default function ResidentMedicines() {
                         : <span className="med-stock"><b>{m.available_stock}</b> {m.available_stock === 1 ? m.unit : unitPlural(m.unit)} available</span>}
                       <div className="med-actions">
                         {/* Low stock: the resident may need more than what is left, so restock can be requested too. */}
-                        {m.status !== 'available' && (openRestock.has(m.medicine_id) ? (
+                        {m.status !== 'available' && canRestock && (openRestock.has(m.medicine_id) ? (
                           <button className="btn btn-sm btn-added" onClick={() => startRestock(m)} title="You already asked for a restock of this medicine">
                             <Svg d={ICONS.check} size={16} width={2.6} /> Restock requested
                           </button>
                         ) : (
                           <button className="btn btn-outline btn-sm" onClick={() => startRestock(m)}>Request restock</button>
                         ))}
-                        {!noStock(m) && (
+                        {!noStock(m) && canRequest && (
                           openMedicineReq.has(m.medicine_id) && !added ? (
                             <button className="btn btn-sm btn-added" onClick={() => openAdd(m)} title="Already in one of your requests">
                               <Svg d={ICONS.note} size={16} width={2.2} /> In request No. {openMedicineReq.get(m.medicine_id)?.requestId}
@@ -438,9 +442,9 @@ export default function ResidentMedicines() {
           <div className="review-row"><span>Available stock</span><strong>{details.status === 'unrecorded' ? 'Not yet confirmed' : quantityText(details.available_stock, details.unit)}</strong></div>
           <div className="modal-actions">
             <button className="btn btn-outline" onClick={() => setDetails(null)}>Close</button>
-            {noStock(details) ? (
+            {noStock(details) ? canRestock && (
               <button className="btn" onClick={() => startRestock(details)}>{openRestock.has(details.medicine_id) ? 'Restock requested' : 'Request restock'}</button>
-            ) : (
+            ) : canRequest && (
               <button className="btn" onClick={() => openAdd(details)}>
                 {inCart(details) ? 'Change quantity'
                   : openMedicineReq.has(details.medicine_id) ? `In request No. ${openMedicineReq.get(details.medicine_id)?.requestId}`

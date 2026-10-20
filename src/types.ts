@@ -21,6 +21,26 @@ export interface User {
   is_active: boolean;
   created_at: string;
   resident?: Resident | null;
+  /** Features this user may use (Admin → User Permissions). The administrator has all of them. */
+  permissions?: string[];
+}
+
+/** One feature in Admin → User Permissions. */
+export interface PermissionItem {
+  key: string;
+  module: string;
+  label: string;
+  description: string;
+  default: boolean;
+  allowed: boolean;
+}
+
+export interface RolePermissions {
+  role: 'staff' | 'resident';
+  label: string;
+  permissions: PermissionItem[];
+  updated_at: string | null;
+  updated_by: string | null;
 }
 
 /** unrecorded = staff have not recorded the stock yet (never shown as available). */

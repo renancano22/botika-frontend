@@ -12,9 +12,11 @@ import { PrescriptionUpload, type PrescriptionFile } from '../../components/Pres
 import type { MedicineRequest } from '../../types';
 import { MAX_REQUEST_QUANTITY, quantityWarning } from '../../validation';
 import { unitPlural } from '../../components/RequestCards';
+import { useAuth } from '../../auth';
 
 /** Resident: one request with its tracking timeline (opened from My Requests). */
 export default function RequestDetail() {
+  const { can } = useAuth();
   const { id } = useParams();
   const { data: r, errorInfo, loading, setData, reload } = useApi<MedicineRequest>(`/requests/${id}`, undefined, 30000);
   // Error inside the "Update request" / "Replace prescription" windows (what was entered is kept).
@@ -103,7 +105,7 @@ export default function RequestDetail() {
             </div>
           </div>
         )}
-        <RequestSummaryCard r={r} prescriptionAction={r.status === 'pending' && r.request_type === 'medicine' && (r.prescription || r.items.some((i) => i.medicine.requires_prescription)) ? (
+        <RequestSummaryCard r={r} prescriptionAction={r.status === 'pending' && r.request_type === 'medicine' && can('requests.create') && (r.prescription || r.items.some((i) => i.medicine.requires_prescription)) ? (
           <button type="button" className="btn btn-outline btn-sm" disabled={busy} onClick={() => { setNewRx(null); setMsg(null); setReplacingRx(true); }}>
             {r.prescription ? 'Replace' : 'Upload'}
           </button>
@@ -118,8 +120,8 @@ export default function RequestDetail() {
         <StatusBox r={r} />
 
         <div className="detail-actions">
-          {r.status === 'pending' && <button className="btn btn-outline btn-block" disabled={busy} onClick={() => { setMsg(null); setEditing(structuredClone(r)); }}>Update Request</button>}
-          {(r.status === 'pending' || r.status === 'approved') && (
+          {r.status === 'pending' && can('requests.create') && <button className="btn btn-outline btn-block" disabled={busy} onClick={() => { setMsg(null); setEditing(structuredClone(r)); }}>Update Request</button>}
+          {(r.status === 'pending' || r.status === 'approved') && can('requests.cancel') && (
             <button className="btn btn-outline-danger btn-block" disabled={busy} onClick={cancel}>
               <Svg d={ICONS.trash} size={18} /> Cancel Request
             </button>

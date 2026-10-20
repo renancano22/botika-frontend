@@ -1,6 +1,8 @@
-import { useEffect, type ReactElement } from 'react';
+import type { ReactElement } from 'react';
 import { Link, Navigate, Route, Routes } from 'react-router-dom';
-import { LoadError, toast } from './components/feedback';
+import { LoadError } from './components/feedback';
+import AccessDenied from './components/AccessDenied';
+import Permissions from './pages/admin/Permissions';
 import { useAuth } from './auth';
 import Layout from './components/Layout';
 import type { Role } from './types';
@@ -26,19 +28,18 @@ import Inventory from './pages/shared/Inventory';
 import Requests from './pages/shared/Requests';
 import DispensingRecords from './pages/shared/DispensingRecords';
 
-/** A page the user's role cannot open: explain it, then go to the dashboard. */
-function NoAccess() {
-  useEffect(() => {
-    toast.warning('Access denied', { description: 'You do not have permission to open that page, so you were taken to your dashboard.' });
-  }, []);
-  return <Navigate to="/dashboard" replace />;
-}
-
+/** Pages for some roles only: other roles see Access Denied. */
 function Guard({ roles, children }: { roles: Role[]; children: ReactElement }) {
   const { user } = useAuth();
   if (!user) return <Navigate to="/login" replace />;
-  if (!roles.includes(user.role)) return <NoAccess />;
+  if (!roles.includes(user.role)) return <AccessDenied />;
   return children;
+}
+
+/** Pages the administrator can turn off in User Permissions ("a|b" = any of them). */
+function Need({ perm, children }: { perm: string; children: ReactElement }) {
+  const { can } = useAuth();
+  return can(perm) ? children : <AccessDenied feature={perm} />;
 }
 
 /** Address that does not exist in the system. */
@@ -83,18 +84,19 @@ export default function App() {
         <Route path="/dashboard" element={
           role === 'admin' ? <AdminDashboard /> : role === 'staff' ? <StaffDashboard /> : <ResidentDashboard />
         } />
-        <Route path="/medicines" element={role === 'resident' ? <ResidentMedicines /> : <Medicines />} />
-        <Route path="/requests" element={role === 'resident' ? <MyRequests /> : <Requests />} />
-        <Route path="/requests/:id" element={<Guard roles={['resident']}><RequestDetail /></Guard>} />
-        <Route path="/notifications/:id" element={<Guard roles={['resident']}><NotificationDetail /></Guard>} />
-        <Route path="/dispensing" element={<DispensingRecords />} />
-        <Route path="/notifications" element={role === 'admin' ? <Announcements /> : <Guard roles={['resident']}><MyNotifications /></Guard>} />
+        <Route path="/medicines" element={<Need perm="medicines.view">{role === 'resident' ? <ResidentMedicines /> : <Medicines />}</Need>} />
+        <Route path="/requests" element={<Need perm="requests.view">{role === 'resident' ? <MyRequests /> : <Requests />}</Need>} />
+        <Route path="/requests/:id" element={<Guard roles={['resident']}><Need perm="requests.view"><RequestDetail /></Need></Guard>} />
+        <Route path="/notifications/:id" element={<Guard roles={['resident']}><Need perm="notifications.view"><NotificationDetail /></Need></Guard>} />
+        <Route path="/dispensing" element={<Need perm={role === 'resident' ? 'history.view' : 'dispensing.records'}><DispensingRecords /></Need>} />
+        <Route path="/notifications" element={role === 'admin' ? <Announcements /> : <Guard roles={['resident']}><Need perm="notifications.view"><MyNotifications /></Need></Guard>} />
 
         <Route path="/profile" element={<Guard roles={['resident']}><Profile /></Guard>} />
 
-        <Route path="/inventory" element={<Guard roles={OPS}><Inventory /></Guard>} />
-        <Route path="/dispense" element={<Guard roles={OPS}><Dispense /></Guard>} />
+        <Route path="/inventory" element={<Guard roles={OPS}><Need perm="inventory.view|inventory.manage"><Inventory /></Need></Guard>} />
+        <Route path="/dispense" element={<Guard roles={OPS}><Need perm="dispensing.dispense|residents.register"><Dispense /></Need></Guard>} />
 
+        <Route path="/permissions" element={<Guard roles={['admin']}><Permissions /></Guard>} />
         <Route path="/users" element={<Guard roles={['admin']}><Users /></Guard>} />
         <Route path="/reports" element={<Guard roles={['admin']}><Reports /></Guard>} />
         <Route path="/forecasting" element={<Guard roles={['admin']}><Forecasting /></Guard>} />

@@ -13,6 +13,7 @@ import { jumpWhenReady } from '../../scroll';
 import BackButton from '../../components/BackButton';
 import ResidentSearch, { type ResidentLookup as Lookup } from './ResidentSearch';
 import RegisterResident from './RegisterResident';
+import { useAuth } from '../../auth';
 
 const initials = (name: string) => name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]?.toUpperCase()).join('');
 const ID_ICON = 'M3 6h18v12H3zM7 10h4M7 14h6M15 10h2';
@@ -22,6 +23,10 @@ const RR_ICON = 'M15 19v-1a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v1M8.5 10a3.5 3.5 0 1 0 
 
 /** QR Code / Resident ID verification and medicine dispensing. */
 export default function Dispense() {
+  // User Permissions: dispensing and registering walk-in residents can be allowed separately.
+  const { can } = useAuth();
+  const canDispense = can('dispensing.dispense');
+  const canRegister = can('residents.register');
   const [code, setCode] = useState('');
   const [scanning, setScanning] = useState(false);
   // 'search': the resident forgot their QR code and Resident ID, so they are found by name and verified another way.
@@ -174,8 +179,13 @@ export default function Dispense() {
         </div>
       </header>
 
-      {mode === 'search' ? <ResidentSearch onBack={() => setMode('id')} onVerified={verifiedBySearch} />
-        : mode === 'register' ? <RegisterResident onBack={() => setMode('id')} onRegistered={registered} onVerified={verifiedBySearch} /> : (
+      {!canDispense ? (
+        <>
+          <Message type="info" title="Registration only">Your account can register walk-in residents. Dispensing medicines is not allowed for your account; ask the administrator if you need it.</Message>
+          <RegisterResident onRegistered={registered} onVerified={verifiedBySearch} />
+        </>
+      ) : mode === 'search' ? <ResidentSearch onBack={() => setMode('id')} onVerified={verifiedBySearch} />
+        : mode === 'register' && canRegister ? <RegisterResident onBack={() => setMode('id')} onRegistered={registered} onVerified={verifiedBySearch} /> : (
         <Card title="1. Verify resident">
           <form className="lookup dv-lookup" onSubmit={(e) => { e.preventDefault(); lookup(code); }}>
             <span className="dv-id-input">
@@ -200,14 +210,14 @@ export default function Dispense() {
                 </span>
                 <Svg d={ICONS.chevron} size={18} />
               </button>
-              <button type="button" className="dv-alt-tile" onClick={() => openMode('register')}>
+              {canRegister && <button type="button" className="dv-alt-tile" onClick={() => openMode('register')}>
                 <span className="dv-alt-icon" aria-hidden="true"><Svg d={RR_ICON} size={20} /></span>
                 <span className="dv-alt-text">
                   <strong>Register resident</strong>
                   <small>Not registered yet, e.g. no cellphone</small>
                 </span>
                 <Svg d={ICONS.chevron} size={18} />
-              </button>
+              </button>}
             </div>
           </div>
         </Card>
@@ -215,7 +225,7 @@ export default function Dispense() {
 
       <div id="dispense-msg">{msg && <Message type={msg.type} title={msg.title}>{msg.text}</Message>}</div>
 
-      {found && (
+      {found && canDispense && (
         <>
           <div id="dispense-resident" />
           <section className="card dv-resident" aria-label="Verified resident">
