@@ -2148,3 +2148,7 @@ td.col-no { font-weight: 600; }
   .db-req.db-req-n3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 .da-table td:nth-child(2) { min-width: 170px; }
+/* Demand Forecasting: restock breakdown */
+.fc-sub { display: block; font-size: 0.74rem; }
+.fc-calc table td { padding: 7px 10px; }
+.fc-calc .fc-calc-total td { font-weight: 700; border-top: 2px solid var(--border); background: var(--primary-50); }

@@ -258,10 +258,22 @@ export interface ForecastResult {
   best_method: ForecastMethod;
   /** total for the whole forecast period, chosen method */
   predicted_demand: number;
+  /** quantity in batches that have not expired */
   available_stock: number;
+  /** set aside for approved requests (not dispensed yet) */
+  reserved_stock: number;
+  /** available_stock − reserved_stock */
+  free_stock: number;
+  /** quantity in pending medicine requests (request records, as of now) */
+  pending_requests: number;
+  /** quantity in restock requests still waiting: residents who asked while it was out of stock */
+  restock_requests: number;
+  /** pending_requests + restock_requests: demand not in the dispensing records yet */
+  waiting_demand: number;
   reorder_level: number;
   /** false = staff have not recorded this medicine's stock yet (no restock is suggested) */
   stock_recorded?: boolean;
+  /** predicted demand + waiting demand + reorder level − free stock (never below 0) */
   recommended_restock: number;
   /** high = stock runs out within the period, medium = falls below the reorder level, null = enough stock */
   priority: 'high' | 'medium' | null;
@@ -291,6 +303,8 @@ export interface ForecastReport {
   months_with_data: number;
   /** months the methods learned from: complete months, or only this month so far (partial) when there is none yet */
   basis: { months: string[]; complete_months: number; partial: boolean };
+  /** medicines with dispensing records in the basis months (the average errors are based on these) */
+  medicines_with_records: number;
   /** all medicines together: quantity per basis month and each method's calculation */
   overall: { series: Record<string, number>; methods: Record<ForecastMethod, ForecastMethodResult | null> };
   summary: { medicines_analyzed: number; potential_stockouts: number; restock_recommendations: number };

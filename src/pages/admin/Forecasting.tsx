@@ -312,10 +312,12 @@ export default function Forecasting() {
 
   const exportReport = () => {
     if (!data) return;
-    const head = ['Medicine', 'Category', 'Unit', 'Current Stock', `Predicted Demand (Next ${monthsText(data.horizon)})`, 'Suggested Restock', 'Priority', 'Forecasting Method', 'Forecast Period', 'Based On'];
+    const head = ['Medicine', 'Category', 'Unit', 'Current Stock', 'Set Aside (Approved Requests)', 'Pending Requests', 'Restock Requests Waiting',
+      `Predicted Demand (Next ${monthsText(data.horizon)})`, 'Reorder Level', 'Suggested Restock', 'Priority', 'Forecasting Method', 'Forecast Period', 'Based On'];
     const status = !data.data_start ? 'No dispensing records yet'
       : `${basisText}${provisional ? ' (provisional)' : ''}`;
-    const rows = tableRows.map((r) => [r.medicine_name, r.category, r.unit, r.available_stock, r.predicted_demand, r.recommended_restock,
+    const rows = tableRows.map((r) => [r.medicine_name, r.category, r.unit, r.stock_recorded === false ? 'Not recorded' : r.available_stock,
+      r.reserved_stock, r.pending_requests, r.restock_requests, r.predicted_demand, r.reorder_level, r.recommended_restock,
       r.stock_recorded === false ? 'Stock not recorded' : r.priority === 'high' ? 'High' : r.priority === 'medium' ? 'Medium' : 'Enough stock', METHOD_LABEL[data.method], periodText(data.forecast_keys), status]);
     const esc = (v: unknown) => `"${String(v ?? '').replace(/"/g, '""')}"`;
     const csv = [head, ...rows].map((r) => r.map(esc).join(',')).join('\r\n');
@@ -554,7 +556,7 @@ export default function Forecasting() {
                 })}
               </fieldset>
               <p className="fc-note">{hasHistory
-                ? '"Most accurate" = the method whose past forecasts came closest to what was actually given out.'
+                ? `"Most accurate" = the method whose past forecasts came closest to what was actually given out. Average error over the ${data.medicines_with_records} ${data.medicines_with_records === 1 ? 'medicine' : 'medicines'} with dispensing records.`
                 : 'The most accurate method will be shown once there are at least 4 months of dispensing records to test the methods on.'}</p>
             </section>
           </div>
@@ -580,7 +582,7 @@ export default function Forecasting() {
                 ) : (
                   <table className="fc-table">
                     <thead>
-                      <tr><th className="col-no">No.</th><th>Medicine</th><th className="center">Current Stock</th><th className="center">Predicted Demand<br /><small>({horizonText})</small></th><th className="center">Suggested Restock</th><th>Priority</th><th aria-label="Details" /></tr>
+                      <tr><th className="col-no">No.</th><th>Medicine</th><th className="center">Current Stock</th><th className="center">Waiting Requests<br /><small>(as of now)</small></th><th className="center">Predicted Demand<br /><small>({horizonText})</small></th><th className="center">Suggested Restock</th><th>Priority</th><th aria-label="Details" /></tr>
                     </thead>
                     <tbody>
                       {fcPages.rows.map((r, i) => (
@@ -592,7 +594,14 @@ export default function Forecasting() {
                               <span><strong>{r.medicine_name}</strong><small className="muted">{r.unit}</small></span>
                             </span>
                           </td>
-                          <td className="center">{r.stock_recorded === false ? <span className="mi-missing">Not recorded</span> : r.available_stock}</td>
+                          <td className="center">
+                            {r.stock_recorded === false ? <span className="mi-missing">Not recorded</span> : r.available_stock}
+                            {r.reserved_stock > 0 && <small className="muted fc-sub">{r.reserved_stock} set aside</small>}
+                          </td>
+                          <td className="center">
+                            {r.waiting_demand}
+                            {r.restock_requests > 0 && <small className="muted fc-sub">{r.restock_requests} in restock requests</small>}
+                          </td>
                           <td className="center">{r.predicted_demand}</td>
                           <td className="center"><strong>{r.recommended_restock}</strong></td>
                           <td><PriorityBadge priority={r.priority} recorded={r.stock_recorded !== false} /></td>
@@ -609,7 +618,7 @@ export default function Forecasting() {
                 {generateButton()}
               </div>
             </div>
-            <p className="fc-info"><Svg d={ICONS.info} size={16} /> Forecasts are estimates based on historical dispensing records. Review recommendations before restocking.
+            <p className="fc-info"><Svg d={ICONS.info} size={16} /> Forecasts are estimates based on historical dispensing records. The suggested restock also counts the requests still waiting (pending medicine requests and restock requests) and the stock set aside for approved requests. Review recommendations before restocking.
               {' '}Method: {METHOD_LABEL[data.method]} · last run {formatDate(data.generated_at, true)}.</p>
           </section>
         </div>
@@ -625,10 +634,23 @@ export default function Forecasting() {
             <div><small>Predicted demand ({horizonText.toLowerCase()})</small><strong>{details.predicted_demand}</strong></div>
             <div><small>Suggested restock</small><strong>{details.recommended_restock}</strong></div>
           </div>
-          <p className="muted small">
-            Suggested restock = predicted demand ({details.predicted_demand}) + reorder level ({details.reorder_level}) − current stock ({details.available_stock})
-            {details.recommended_restock === 0 ? ' → no restock needed.' : '.'}
-          </p>
+          {details.stock_recorded === false ? (
+            <p className="muted small">The stock of this medicine was never recorded, so no restock can be worked out. Record a stock-in or confirm there is no stock first.</p>
+          ) : (
+            <div className="fc-calc" aria-label="How the suggested restock is calculated">
+              <h3 className="fc-detail-title">How the suggested restock is calculated</h3>
+              <table>
+                <tbody>
+                  <tr><td>Predicted demand, {horizonText.toLowerCase()} <small className="muted">(from dispensing records)</small></td><td className="right">{details.predicted_demand}</td></tr>
+                  <tr><td>+ Pending medicine requests <small className="muted">(not reviewed yet)</small></td><td className="right">{details.pending_requests}</td></tr>
+                  <tr><td>+ Restock requests waiting <small className="muted">(residents who asked while it was out of stock)</small></td><td className="right">{details.restock_requests}</td></tr>
+                  <tr><td>+ Reorder level <small className="muted">(stock to keep on hand)</small></td><td className="right">{details.reorder_level}</td></tr>
+                  <tr><td>− Free stock <small className="muted">({details.available_stock} not expired{details.reserved_stock ? ` − ${details.reserved_stock} set aside for approved requests` : ''})</small></td><td className="right">{details.free_stock}</td></tr>
+                  <tr className="fc-calc-total"><td>Suggested restock {details.recommended_restock === 0 && <small className="muted">(the stock is enough)</small>}</td><td className="right">{details.recommended_restock}</td></tr>
+                </tbody>
+              </table>
+            </div>
+          )}
           <PriorityBadge priority={details.priority} recorded={details.stock_recorded !== false} />
 
           <h3 className="fc-detail-title">Monthly forecast ({METHOD_LABEL[data.method]}{provisional ? ', provisional' : ''})</h3>
@@ -655,7 +677,7 @@ export default function Forecasting() {
               })}
             </tbody>
           </table>
-          <p className="muted small">Average error = how far each method's forecast was from the actual dispensed quantity when tested month by month on the past records.</p>
+          <p className="muted small">Average error = how far each method's forecast was from the actual dispensed quantity of this medicine when tested month by month on its past records.</p>
           <div className="modal-actions">
             <button className="btn btn-outline" onClick={() => setDetails(null)}>Close</button>
           </div>
