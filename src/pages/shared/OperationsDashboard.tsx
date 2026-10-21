@@ -1,5 +1,6 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { formatDate } from '../../api';
 import { useAuth } from '../../auth';
 import { useApi } from '../../hooks';
@@ -9,13 +10,35 @@ import { ExpiryBanner, expiryText } from '../../components/ExpiryAlerts';
 import { ICONS, PickupCountdown, Svg } from '../../components/RequestCards';
 import { LoadError } from '../../components/feedback';
 
+interface Sections { requests: boolean; stock: boolean; dispensing: boolean }
+
+/** One medicine in "Most requested medicines" (counted by the server, see DashboardController). */
+interface TopMedicine {
+  medicine_id: number; medicine_name: string; unit: string | null;
+  requests: number; quantity_requested: number; quantity_dispensed: number; restock_requests: number;
+  available_stock: number; status: string | null;
+}
+
+interface Analytics {
+  period: { from: string; to: string; group: 'day' | 'month' };
+  records_since: string | null;
+  requests: {
+    total: number; walk_in: number; demand: number; quantity_requested: number;
+    by_status: Record<'pending' | 'approved' | 'dispensed' | 'rejected' | 'cancelled' | 'expired', number>;
+    restock: { total: number; pending: number };
+  } | null;
+  dispensing: { releases: number; quantity: number; residents: number } | null;
+  trend: { period: string; requests: number; releases: number; quantity: number }[];
+  top_medicines: TopMedicine[];
+}
+
 interface OpsDashboard {
+  sections: Sections;
   counts: Record<string, number>;
-  alerts: Alerts;
-  recent_requests: MedicineRequest[];
-  ready_for_pickup: MedicineRequest[];
-  monthly_dispensing: { month: string; quantity: number }[];
-  top_medicines?: { medicine_name: string; total: number }[];
+  alerts?: Alerts;
+  recent_requests?: MedicineRequest[];
+  ready_for_pickup?: MedicineRequest[];
+  analytics?: Analytics;
 }
 
 const plural = (n: number, one: string, many = `${one}s`) => (n === 1 ? one : many);
@@ -26,26 +49,52 @@ const ICON = {
   staff: 'M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M4 21v-2a6 6 0 0 1 12 0v2M19 8v6M16 11h6',
   question: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6V14M12 17h.01',
   alert: 'M12 3 2 20h20zM12 10v4M12 17h.01',
+  chart: 'M4 20V10M10 20V4M16 20v-7M22 20H2',
 };
-const monthLabel = (m: string) => new Date(`${m}-01`).toLocaleDateString('en-PH', { month: 'short', year: '2-digit' });
+
+/** YYYY-MM-DD in local time. */
+const ymd = (d: Date) => d.toLocaleDateString('en-CA');
+const monthsBack = (n: number) => { const d = new Date(); return ymd(new Date(d.getFullYear(), d.getMonth() - n, 1)); };
+const daysBack = (n: number) => { const d = new Date(); d.setDate(d.getDate() - n); return ymd(d); };
+const niceDate = (v: string) => new Date(`${v}T00:00:00`).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' });
+/** Trend labels: "Oct 6" for days, "Oct 2026" for months. */
+const periodLabel = (p: string, group: 'day' | 'month') => (group === 'day'
+  ? new Date(`${p}T00:00:00`).toLocaleDateString('en-PH', { month: 'short', day: 'numeric' })
+  : new Date(`${p}-01T00:00:00`).toLocaleDateString('en-PH', { month: 'short', year: 'numeric' }));
+
+/** Period of the demand analysis. "6m" sends no dates: the server's default (the last 6 months). */
+type Preset = '30d' | '3m' | '6m' | '12m' | 'custom';
+const PRESETS: { key: Exclude<Preset, 'custom'>; label: string; range: () => { from?: string; to?: string } }[] = [
+  { key: '30d', label: 'Last 30 days', range: () => ({ from: daysBack(29), to: ymd(new Date()) }) },
+  { key: '3m', label: 'Last 3 months', range: () => ({ from: monthsBack(2), to: ymd(new Date()) }) },
+  { key: '6m', label: 'Last 6 months', range: () => ({}) },
+  { key: '12m', label: 'Last 12 months', range: () => ({ from: monthsBack(11), to: ymd(new Date()) }) },
+];
 
 /** Dashboard for the administrator and pharmacy staff. Refreshes every 30 seconds. */
 export default function OperationsDashboard() {
   const { user } = useAuth();
-  const { data, errorInfo, loading, reload } = useApi<OpsDashboard>('/dashboard', undefined, 30000);
   const isAdmin = user?.role === 'admin';
+  const [preset, setPreset] = useState<Preset>('6m');
+  const [custom, setCustom] = useState({ from: '', to: '' });
+  const badRange = preset === 'custom' && !!custom.from && !!custom.to && custom.from > custom.to;
+  const range = preset === 'custom'
+    ? (badRange ? { from: custom.to, to: custom.from } : { from: custom.from || undefined, to: custom.to || undefined })
+    : PRESETS.find((p) => p.key === preset)!.range();
+  const { data, errorInfo, loading, reload } = useApi<OpsDashboard>('/dashboard', range, 30000);
 
   if (loading && !data) return <Loading />;
   if (!data) return <div className="page"><LoadError error={errorInfo} onRetry={() => reload()} /></div>;
   const c = data.counts;
-  const today = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD in local time
+  const sec = data.sections;
+  const today = ymd(new Date());
 
   return (
     <div className="page">
       <header className="page-head hero-head db-hero">
         <div>
           <h1>{isAdmin ? 'Administrator Dashboard' : 'Pharmacy Staff Dashboard'}</h1>
-          <p className="muted">Live overview · updates every 30 seconds</p>
+          <p className="muted">Live overview from the BulanBotikaCare records · updates every 30 seconds</p>
           <People residents={c.residents} staff={c.staff ?? 0} links={isAdmin} />
         </div>
         <div className="actions">
@@ -53,83 +102,239 @@ export default function OperationsDashboard() {
           {isAdmin && <Link className="btn btn-outline" to="/forecasting">Demand forecast</Link>}
         </div>
       </header>
+      {/* A failed refresh keeps the last numbers on screen and says so. */}
+      <LoadError error={errorInfo} onRetry={() => reload()} />
 
-      <ExpiryBanner alerts={data.alerts} />
+      {sec.stock && data.alerts && <ExpiryBanner alerts={data.alerts} />}
 
-      <RequestsPanel c={c} today={today} />
-      <StockOverview c={c} />
+      {(sec.requests || sec.dispensing) && <RequestsPanel c={c} today={today} sections={sec} />}
+      {sec.stock && <StockOverview c={c} />}
 
-      <ReadyForPickup requests={data.ready_for_pickup ?? []} total={c.approved_to_dispense} />
+      {sec.requests && <ReadyForPickup requests={data.ready_for_pickup ?? []} total={c.approved_to_dispense} />}
 
-      <div className="grid-2">
-        <Card title="Medicines dispensed per month">
-          <ResponsiveContainer width="100%" height={240}>
-            <LineChart data={data.monthly_dispensing.map((m) => ({ ...m, label: monthLabel(m.month) }))}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-              <XAxis dataKey="label" fontSize={12} />
-              <YAxis fontSize={12} allowDecimals={false} />
-              <Tooltip />
-              <Line type="monotone" dataKey="quantity" name="Quantity" stroke="#228b39" strokeWidth={2} />
-            </LineChart>
-          </ResponsiveContainer>
-        </Card>
+      {data.analytics && (
+        <DemandAnalysis a={data.analytics} preset={preset} custom={custom} badRange={badRange} busy={loading} isAdmin={isAdmin}
+          onPreset={(p) => setPreset(p)} onCustom={(next) => { setCustom(next); setPreset('custom'); }} />
+      )}
 
-        {isAdmin ? (
-          <Card title="Top dispensed medicines (last 30 days)">
-            {data.top_medicines?.length ? (
-              <ResponsiveContainer width="100%" height={240}>
-                <BarChart data={data.top_medicines} layout="vertical" margin={{ left: 40 }}>
-                  <XAxis type="number" fontSize={12} allowDecimals={false} />
-                  <YAxis type="category" dataKey="medicine_name" width={140} fontSize={12} />
-                  <Tooltip />
-                  <Bar dataKey="total" name="Quantity" fill="#228b39" />
-                </BarChart>
-              </ResponsiveContainer>
-            ) : <Empty>No dispensing in the last 30 days.</Empty>}
+      {sec.stock && data.alerts && (
+        <div className="grid-2">
+          <Card title="Stock alerts" actions={<Link to="/medicines">Open Medicine List</Link>}>
+            {data.alerts.low_stock.length === 0 ? <Empty>All medicines are above their reorder level.</Empty> : (
+              <table>
+                <thead><tr><th>Medicine</th><th>Available</th><th>Reorder level</th><th>Status</th></tr></thead>
+                <tbody>
+                  {data.alerts.low_stock.map((m) => (
+                    <tr key={m.medicine_id}>
+                      <td>{m.medicine_name}</td><td>{m.available_stock} {m.unit}</td><td>{m.reorder_level}</td><td><Badge value={m.status} /></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </Card>
-        ) : (
-          <PendingRequests requests={data.recent_requests} />
-        )}
+
+          <Card title="Expiration alerts (within 1 month)">
+            {data.alerts.expired.length + data.alerts.near_expiry.length === 0 ? <Empty>No medicine will expire within 1 month.</Empty> : (
+              <table>
+                <thead><tr><th>Medicine</th><th>Qty</th><th>Expires</th><th>Status</th></tr></thead>
+                <tbody>
+                  {[...data.alerts.expired, ...data.alerts.near_expiry].map((b) => {
+                    const expired = data.alerts!.expired.includes(b);
+                    return (
+                      <tr key={b.inventory_id}>
+                        <td>{b.medicine.medicine_name}</td><td>{b.quantity}</td><td>{formatDate(b.expiration_date)}<div className="muted small">{expiryText(b).replace(/ \(.*\)$/, '')}</div></td>
+                        <td><Badge value={expired ? 'expired' : 'near_expiry'} /></td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
+          </Card>
+        </div>
+      )}
+
+      {sec.requests && <PendingRequests requests={data.recent_requests ?? []} />}
+    </div>
+  );
+}
+
+const STATUS_PARTS: { key: keyof NonNullable<Analytics['requests']>['by_status']; label: string; tone: string }[] = [
+  { key: 'pending', label: 'Pending', tone: 'pending' },
+  { key: 'approved', label: 'Ready for pickup', tone: 'approved' },
+  { key: 'dispensed', label: 'Completed', tone: 'dispensed' },
+  { key: 'rejected', label: 'Rejected', tone: 'rejected' },
+  { key: 'cancelled', label: 'Cancelled', tone: 'cancelled' },
+  { key: 'expired', label: 'Expired (not claimed)', tone: 'expired' },
+];
+
+/**
+ * Demand Analysis: medicine requests and dispensing within a period, the request trend and the most
+ * requested medicines (the same records the Demand Forecasting module uses). Every number comes from the server.
+ */
+function DemandAnalysis({ a, preset, custom, badRange, busy, isAdmin, onPreset, onCustom }: {
+  a: Analytics; preset: Preset; custom: { from: string; to: string }; badRange: boolean; busy: boolean; isAdmin: boolean;
+  onPreset: (p: Preset) => void; onCustom: (r: { from: string; to: string }) => void;
+}) {
+  const { period, requests: r, dispensing: d } = a;
+  const periodText = period.from === period.to ? niceDate(period.from) : `${niceDate(period.from)} – ${niceDate(period.to)}`;
+  const nothing = (r?.total ?? 0) === 0 && (d?.releases ?? 0) === 0 && (r?.restock.total ?? 0) === 0;
+  const chart = a.trend.map((t) => ({ ...t, label: periodLabel(t.period, period.group) }));
+  const fromInput = preset === 'custom' ? custom.from : period.from;
+  const toInput = preset === 'custom' ? custom.to : period.to;
+
+  return (
+    <section className={`card db-panel da-panel ${busy ? 'tbl-updating' : ''}`} aria-labelledby="da-title">
+      <div className="db-panel-head da-head">
+        <div>
+          <h2 id="da-title">Demand Analysis</h2>
+          <p className="muted small da-sub">Medicine requests and dispensing · <b>{periodText}</b> · grouped by {period.group === 'day' ? 'day' : 'month'}</p>
+        </div>
+        {isAdmin && <Link to="/forecasting" className="db-more">Demand Forecasting <Svg d={ICONS.chevron} size={16} /></Link>}
       </div>
 
-      <div className="grid-2">
-        <Card title="Stock alerts" actions={<Link to="/medicines">Open Medicine List</Link>}>
-          {data.alerts.low_stock.length === 0 ? <Empty>All medicines are above their reorder level.</Empty> : (
-            <table>
-              <thead><tr><th>Medicine</th><th>Available</th><th>Reorder level</th><th>Status</th></tr></thead>
+      <div className="da-filters" role="group" aria-label="Period">
+        <div className="chips">
+          {PRESETS.map((p) => (
+            <button key={p.key} type="button" className={`chip ${preset === p.key ? 'active' : ''}`} onClick={() => onPreset(p.key)}>{p.label}</button>
+          ))}
+        </div>
+        <div className="da-dates">
+          <label className="tbl-date">From <input type="date" value={fromInput} max={toInput || undefined} onChange={(e) => onCustom({ from: e.target.value, to: toInput })} aria-label="From date" /></label>
+          <label className="tbl-date">To <input type="date" value={toInput} min={fromInput || undefined} onChange={(e) => onCustom({ from: fromInput, to: e.target.value })} aria-label="To date" /></label>
+        </div>
+      </div>
+      {badRange && <p className="field-warning">The "From" date is after the "To" date, so the dates were swapped.</p>}
+
+      {nothing ? (
+        <Empty>
+          No medicine requests or dispensing records from {periodText}.
+          {a.records_since ? ` Records start on ${niceDate(a.records_since)}.` : ' No requests or dispensing have been recorded yet.'}
+        </Empty>
+      ) : (<>
+        <div className="da-kpis">
+          {r && (
+            <div className="da-kpi">
+              <small>Medicine requests</small>
+              <strong>{r.total.toLocaleString('en-PH')}</strong>
+              <span>{(r.total - r.walk_in).toLocaleString('en-PH')} online · {r.walk_in.toLocaleString('en-PH')} walk-in</span>
+            </div>
+          )}
+          {r && (
+            <div className="da-kpi">
+              <small>Quantity requested</small>
+              <strong>{r.quantity_requested.toLocaleString('en-PH')}</strong>
+              <span>from {r.demand} active or completed {plural(r.demand, 'request')}</span>
+            </div>
+          )}
+          {d && (
+            <div className="da-kpi">
+              <small>Quantity dispensed</small>
+              <strong>{d.quantity.toLocaleString('en-PH')}</strong>
+              <span>{d.releases} {plural(d.releases, 'release')} · {d.residents} {plural(d.residents, 'resident')}</span>
+            </div>
+          )}
+          {r && (
+            <div className="da-kpi">
+              <small>Restock requests</small>
+              <strong>{r.restock.total.toLocaleString('en-PH')}</strong>
+              <span>{r.restock.pending ? `${r.restock.pending} waiting for review` : 'Out-of-stock medicines asked for'}</span>
+            </div>
+          )}
+        </div>
+
+        {r && r.total > 0 && (
+          <div className="da-status" aria-label="Medicine requests by status">
+            <div className="da-status-bar" role="img" aria-label={STATUS_PARTS.map((p) => `${p.label} ${r.by_status[p.key]}`).join(', ')}>
+              {STATUS_PARTS.filter((p) => r.by_status[p.key] > 0).map((p) => (
+                <span key={p.key} className={`da-seg da-${p.tone}`} style={{ flexGrow: r.by_status[p.key] }} title={`${p.label}: ${r.by_status[p.key]}`} />
+              ))}
+            </div>
+            <ul className="da-status-list">
+              {STATUS_PARTS.map((p) => (
+                <li key={p.key}><span className={`da-dot da-${p.tone}`} aria-hidden="true" />{p.label} <b>{r.by_status[p.key]}</b></li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        <div className="grid-2 da-charts">
+          <div className="da-chart">
+            <h3>{r && d ? 'Requests submitted and releases dispensed' : r ? 'Requests submitted' : 'Releases dispensed'}</h3>
+            <ResponsiveContainer width="100%" height={230}>
+              <BarChart data={chart} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
+                <XAxis dataKey="label" fontSize={11} interval="preserveStartEnd" minTickGap={12} />
+                <YAxis fontSize={11} allowDecimals={false} />
+                <Tooltip />
+                <Legend wrapperStyle={{ fontSize: 12 }} />
+                {r && <Bar dataKey="requests" name="Requests submitted" fill="#8fc79d" radius={[3, 3, 0, 0]} />}
+                {d && <Bar dataKey="releases" name="Releases dispensed" fill="#228b39" radius={[3, 3, 0, 0]} />}
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+          {d && (
+            <div className="da-chart">
+              <h3>Quantity dispensed</h3>
+              <ResponsiveContainer width="100%" height={230}>
+                <LineChart data={chart} margin={{ top: 8, right: 12, left: -18, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
+                  <XAxis dataKey="label" fontSize={11} interval="preserveStartEnd" minTickGap={12} />
+                  <YAxis fontSize={11} allowDecimals={false} />
+                  <Tooltip />
+                  <Line type="monotone" dataKey="quantity" name="Quantity dispensed" stroke="#228b39" strokeWidth={2} dot={period.group === 'month'} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </div>
+
+        <h3 className="da-table-title">Most requested medicines</h3>
+        {a.top_medicines.length === 0 ? <Empty>No medicine was requested or dispensed in this period.</Empty> : (
+          <div className="da-table-wrap">
+            <table className="da-table">
+              <thead>
+                <tr>
+                  <th className="col-no">No.</th><th>Medicine</th>
+                  {r && <th className="right">Requests</th>}
+                  {r && <th className="right">Qty requested</th>}
+                  {d && <th className="right">Qty dispensed</th>}
+                  {r && <th className="right">Restock requests</th>}
+                  <th>Current stock</th>
+                </tr>
+              </thead>
               <tbody>
-                {data.alerts.low_stock.map((m) => (
+                {a.top_medicines.map((m, i) => (
                   <tr key={m.medicine_id}>
-                    <td>{m.medicine_name}</td><td>{m.available_stock} {m.unit}</td><td>{m.reorder_level}</td><td><Badge value={m.status} /></td>
+                    <td className="col-no">{i + 1}</td>
+                    <td><strong>{m.medicine_name}</strong></td>
+                    {r && <td className="right num">{m.requests}</td>}
+                    {r && <td className="right num">{m.quantity_requested}</td>}
+                    {d && <td className="right num">{m.quantity_dispensed}</td>}
+                    {r && <td className="right num">{m.restock_requests}</td>}
+                    <td className="nowrap">
+                      {m.status === 'unrecorded' ? <Badge value="unrecorded" /> : <>{m.available_stock} {m.unit ? (m.available_stock === 1 ? m.unit : `${m.unit}s`) : ''} {m.status && m.status !== 'available' && <Badge value={m.status} />}</>}
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-          )}
-        </Card>
+          </div>
+        )}
+      </>)}
 
-        <Card title="Expiration alerts (within 1 month)">
-          {data.alerts.expired.length + data.alerts.near_expiry.length === 0 ? <Empty>No medicine will expire within 1 month.</Empty> : (
-            <table>
-              <thead><tr><th>Medicine</th><th>Qty</th><th>Expires</th><th>Status</th></tr></thead>
-              <tbody>
-                {[...data.alerts.expired, ...data.alerts.near_expiry].map((b) => {
-                  const expired = data.alerts.expired.includes(b);
-                  return (
-                    <tr key={b.inventory_id}>
-                      <td>{b.medicine.medicine_name}</td><td>{b.quantity}</td><td>{formatDate(b.expiration_date)}<div className="muted small">{expiryText(b).replace(/ \(.*\)$/, '')}</div></td>
-                      <td><Badge value={expired ? 'expired' : 'near_expiry'} /></td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          )}
-        </Card>
-      </div>
-
-      {isAdmin && <PendingRequests requests={data.recent_requests} />}
-    </div>
+      <details className="da-rules">
+        <summary>How these numbers are counted</summary>
+        <ul>
+          <li><b>Medicine requests</b>: each request is counted once (even with several medicines), on the date it was submitted, with its current status. Walk-in releases are recorded as requests and shown separately.</li>
+          <li><b>Quantity requested</b>: requests that are pending, ready for pickup or completed. Rejected, cancelled and expired (not claimed) requests are not counted as demand — the same rule as Demand Forecasting.</li>
+          <li><b>Quantity dispensed</b>: medicines actually given out, on the date they were given. These are the records Demand Forecasting uses.</li>
+          <li><b>Restock requests</b>: requests for out-of-stock medicines (cancelled ones are not counted).</li>
+          <li><b>Current stock</b>: the quantity in batches that have not expired, as of now.</li>
+        </ul>
+      </details>
+    </section>
   );
 }
 
@@ -198,8 +403,8 @@ function People({ residents, staff, links }: { residents: number; staff: number;
 }
 
 /** Requests & Dispensing: one summary panel with four sections (tap a section to open it). */
-function RequestsPanel({ c, today }: { c: Record<string, number>; today: string }) {
-  const items = [
+function RequestsPanel({ c, today, sections }: { c: Record<string, number>; today: string; sections: Sections }) {
+  const all = [
     { to: '/requests?type=medicine&status=pending', tone: 'review', icon: ICON.review, value: c.pending_requests, label: 'Pending requests',
       hint: c.pending_requests ? 'Waiting for review' : 'All reviewed', alert: c.pending_requests > 0 },
     { to: '/requests?type=medicine&status=approved', tone: 'ready', icon: ICONS.check, value: c.approved_to_dispense, label: 'Ready for pickup',
@@ -209,13 +414,15 @@ function RequestsPanel({ c, today }: { c: Record<string, number>; today: string 
     { to: '/requests?type=restock&status=pending', tone: 'restock', icon: ICON.restock, value: c.pending_restock, label: 'Pending restock',
       hint: c.pending_restock ? 'Needs admin review' : 'None waiting', alert: c.pending_restock > 0 },
   ];
+  // Only what this user may open (User Permissions): request numbers need Requests, "Dispensed today" needs Dispensing Records.
+  const items = all.filter((m) => (m.label === 'Dispensed today' ? sections.dispensing : sections.requests));
   return (
     <section className="card db-panel" aria-labelledby="db-req-title">
       <div className="db-panel-head">
-        <h2 id="db-req-title">Requests &amp; Dispensing</h2>
-        <Link to="/requests" className="db-more">All requests <Svg d={ICONS.chevron} size={16} /></Link>
+        <h2 id="db-req-title">Requests &amp; Dispensing <span className="muted small db-asof">as of now</span></h2>
+        {sections.requests && <Link to="/requests" className="db-more">All requests <Svg d={ICONS.chevron} size={16} /></Link>}
       </div>
-      <div className="db-req">
+      <div className={`db-req db-req-n${items.length}`}>
         {items.map((m) => (
           <Link key={m.label} to={m.to} className={`db-req-item t-${m.tone} ${m.alert ? 'is-alert' : ''}`}>
             <span className="db-req-label"><span className="db-req-icon"><Svg d={m.icon} size={18} /></span>{m.label}</span>
@@ -234,7 +441,7 @@ function RequestsPanel({ c, today }: { c: Record<string, number>; today: string 
  */
 function StockOverview({ c }: { c: Record<string, number> }) {
   const unrecorded = c.unrecorded ?? 0;
-  const available = Math.max(0, c.medicines - c.low_stock - c.out_of_stock - unrecorded);
+  const available = c.available ?? 0; // counted by the server (each medicine once, by its non-expired stock)
   const segments = [
     { key: 'available', label: 'Available', value: available, icon: ICONS.check, to: '/medicines?status=available' },
     { key: 'low', label: 'Low stock', value: c.low_stock, icon: ICON.alert, to: '/medicines?status=low_stock' },
@@ -247,7 +454,7 @@ function StockOverview({ c }: { c: Record<string, number> }) {
   return (
     <section className="card db-panel" aria-labelledby="db-stock-title">
       <div className="db-panel-head">
-        <h2 id="db-stock-title">Medicine Stock Overview</h2>
+        <h2 id="db-stock-title">Medicine Stock Overview <span className="muted small db-asof">as of now</span></h2>
         <Link to="/medicines" className="db-more">Medicine List <Svg d={ICONS.chevron} size={16} /></Link>
       </div>
       <div className="db-stock">

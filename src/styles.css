@@ -2100,3 +2100,51 @@ td.col-no { font-weight: 600; }
 .tbl-dates select { width: auto; flex: none; }
 .req-filters .search { flex: 1 1 300px; }
 @media (max-width: 640px) { .tbl-dates select, .req-filters select { width: 100%; } }
+
+/* ---------- Dashboard: Demand Analysis (requests and dispensing within a period) ---------- */
+.db-asof { font-weight: 500; font-size: 0.78rem; margin-left: 6px; }
+.db-req.db-req-n1 { grid-template-columns: minmax(0, 1fr); }
+.db-req.db-req-n3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.da-panel { margin-bottom: 18px; }
+.da-head { align-items: flex-start; }
+.da-sub { margin: 2px 0 0; }
+.da-filters { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
+.da-dates { display: flex; gap: 8px; flex-wrap: wrap; }
+.da-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 14px; }
+.da-kpi { border: 1px solid var(--border); border-radius: 14px; padding: 12px 14px; background: #fff; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.da-kpi small { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
+.da-kpi strong { font-size: 1.6rem; line-height: 1.2; font-variant-numeric: tabular-nums; color: var(--text); }
+.da-kpi span { font-size: 0.82rem; color: var(--muted); }
+.da-status { margin-bottom: 16px; }
+.da-status-bar { display: flex; height: 10px; border-radius: 999px; overflow: hidden; background: #eef2f1; gap: 2px; }
+.da-seg { display: block; min-width: 6px; }
+.da-status-list { list-style: none; padding: 0; margin: 8px 0 0; display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 0.84rem; color: var(--muted); }
+.da-status-list b { color: var(--text); margin-left: 2px; }
+.da-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; vertical-align: 0; }
+.da-pending { background: #a855f7; }
+.da-approved { background: #0ea5e9; }
+.da-dispensed { background: #228b39; }
+.da-rejected { background: #e11d48; }
+.da-cancelled { background: #94a3b8; }
+.da-expired { background: #f59e0b; }
+.da-charts { margin-bottom: 14px; }
+.da-chart { border: 1px solid var(--border); border-radius: 14px; padding: 12px 12px 6px; min-width: 0; }
+.da-chart h3, .da-table-title { font-size: 0.9rem; margin: 0 0 8px; }
+.da-table-title { margin-top: 4px; }
+.da-table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 12px; }
+.da-table { min-width: 620px; }
+.da-table td.num { font-variant-numeric: tabular-nums; }
+.da-rules { margin-top: 12px; font-size: 0.84rem; color: var(--muted); }
+.da-rules summary { cursor: pointer; font-weight: 600; color: var(--primary); }
+.da-rules ul { margin: 8px 0 0; padding-left: 18px; display: grid; gap: 4px; }
+@media (max-width: 900px) { .da-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 640px) {
+  .da-kpis { gap: 8px; }
+  .da-kpi { padding: 10px 12px; }
+  .da-kpi strong { font-size: 1.3rem; }
+  .da-filters .chips { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); width: 100%; }
+  .da-filters .chip { justify-content: center; }
+  .da-dates { width: 100%; }
+  .db-req.db-req-n3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+.da-table td:nth-child(2) { min-width: 170px; }
