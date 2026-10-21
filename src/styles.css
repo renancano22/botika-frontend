@@ -1511,7 +1511,7 @@ button.pf-back { background: none; border: none; font: inherit; cursor: pointer;
 /* My Profile uses the same cards as Edit Profile (read-only, one Edit Profile button at the bottom) */
 .fb-page { max-width: 720px; }
 .fb-view .fb-who { padding-bottom: 4px; }
-.fb-photo-sec { padding-top: 22px; }
+.fb-photo-sec { padding-top: 22px; overflow: visible; position: relative; z-index: 5; } /* the picture menu opens over the page, not inside the card (no scrollbar) */
 .fb-qr-btn { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 14px auto 2px; min-width: 220px; }
 @media (max-width: 600px) { .fb-qr-btn { width: 100%; min-width: 0; } .fb-photo-sec { padding-top: 18px !important; } }
 .fb-who .fb-rid { color: #33443f; font-weight: 600; }
