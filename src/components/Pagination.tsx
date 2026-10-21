@@ -4,7 +4,7 @@ import type { PageMeta, Paged } from '../types';
 
 /** Rows per page offered in every data table. */
 export const PAGE_SIZES = [5, 10, 25, 50];
-const DEFAULT_SIZE = 10;
+const DEFAULT_SIZE = 5; // every table starts with 5 rows per page
 
 /** The value after the user stops typing for `ms` (so a search is not sent to the server on every key press). */
 export function useDebounced<T>(value: T, ms = 300): T {
@@ -22,12 +22,12 @@ export const rowNo = (meta: PageMeta | undefined, index: number) => (meta?.from 
 /** The rows-per-page choice is remembered per table on this device (it is only a display preference). */
 function savedSize(table: string): number {
   try {
-    const n = Number(localStorage.getItem(`botika_rows_${table}`));
+    const n = Number(localStorage.getItem(`botika_rows5_${table}`));
     return PAGE_SIZES.includes(n) ? n : DEFAULT_SIZE;
   } catch { return DEFAULT_SIZE; }
 }
 function saveSize(table: string, n: number) {
-  try { localStorage.setItem(`botika_rows_${table}`, String(n)); } catch { /* storage blocked: not remembered */ }
+  try { localStorage.setItem(`botika_rows5_${table}`, String(n)); } catch { /* storage blocked: not remembered */ }
 }
 
 /**
