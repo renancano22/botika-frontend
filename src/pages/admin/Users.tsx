@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { api, formatDate, ROLE_LABEL } from '../../api';
 import { useAuth } from '../../auth';
-import { useApi } from '../../hooks';
+import { Pagination, rowNo, useDebounced, usePagedApi } from '../../components/Pagination';
 import { Badge, Card, Empty, Loading, Message, Modal } from '../../components/ui';
 import type { Role, User } from '../../types';
 import { FIELD } from '../../validation';
@@ -55,7 +55,10 @@ export default function Users() {
   const { user: me } = useAuth();
   const [role, setRole] = useState(() => new URLSearchParams(window.location.search).get('role') ?? ''); // ?role=resident / staff from the dashboard
   const [search, setSearch] = useState('');
-  const { data, errorInfo, loading, reload } = useApi<User[]>('/users', { role, search });
+  const [status, setStatus] = useState('');
+  const [sort, setSort] = useState('name');
+  const list = usePagedApi<User>('/users', { role, search: useDebounced(search.trim()), status, sort }, { table: 'users' });
+  const { data, errorInfo, loading, reload, rows, meta } = list;
   const [editing, setEditing] = useState<User | null>(null);
   const [form, setForm] = useState<Form | null>(null);
   const fe = useFormErrors(['name', 'email', 'role']);
@@ -148,21 +151,32 @@ export default function Users() {
 
       <Card actions={
         <div className="filters">
-          <select value={role} onChange={(e) => setRole(e.target.value)}>
+          <select value={role} onChange={(e) => setRole(e.target.value)} aria-label="Role">
             <option value="">All roles</option>
             <option value="admin">Administrators</option>
             <option value="staff">Pharmacy staff</option>
             <option value="resident">Residents</option>
           </select>
+          <select value={status} onChange={(e) => setStatus(e.target.value)} aria-label="Account status">
+            <option value="">All statuses</option>
+            <option value="active">Active</option>
+            <option value="inactive">Deactivated</option>
+          </select>
+          <select value={sort} onChange={(e) => setSort(e.target.value)} aria-label="Sort">
+            <option value="name">Name (A–Z)</option>
+            <option value="newest">Newest accounts first</option>
+            <option value="oldest">Oldest accounts first</option>
+          </select>
           <input className="search" placeholder="Search name, email, mobile or Resident ID…" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
       }>
-        {loading && !data ? <Loading /> : !data ? null : !data?.length ? <Empty>No users found.</Empty> : (
-          <table>
-            <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Resident ID / Mobile</th><th>Status</th><th>Created</th><th></th></tr></thead>
+        {loading && !data ? <Loading /> : !data ? null : !rows.length ? <Empty>No users found.</Empty> : (
+          <table className={loading ? 'tbl-updating' : ''}>
+            <thead><tr><th className="col-no">No.</th><th>Name</th><th>Email</th><th>Role</th><th>Resident ID / Mobile</th><th>Status</th><th>Created</th><th></th></tr></thead>
             <tbody>
-              {data.map((u) => (
+              {rows.map((u, i) => (
                 <tr key={u.user_id} className={u.is_active ? '' : 'row-muted'}>
+                  <td className="col-no">{rowNo(meta, i)}</td>
                   <td>{u.name}</td><td>{u.email ?? '—'}</td><td><Badge value={u.role} /></td>
                   <td>{u.resident ? `${u.resident.qr_code} · ${u.resident.contact_no}` : '—'}</td>
                   <td>
@@ -187,6 +201,7 @@ export default function Users() {
             </tbody>
           </table>
         )}
+        <Pagination meta={meta} onPage={list.setPage} onPerPage={list.setPerPage} noun="accounts" busy={loading} />
       </Card>
 
       {form && (

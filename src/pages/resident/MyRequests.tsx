@@ -8,6 +8,7 @@ import StatusDropdown from '../../components/StatusDropdown';
 import type { MedicineRequest } from '../../types';
 import BackButton from '../../components/BackButton';
 import { LoadError } from '../../components/feedback';
+import { Pagination, useClientPages } from '../../components/Pagination';
 
 const FILTERS: ('all' | StatusKey)[] = ['all', 'review', 'claim', 'stock', 'claimed', 'available', 'cancelled', 'expired', 'rejected'];
 
@@ -43,6 +44,9 @@ export default function MyRequests() {
   const shown = (data ?? []).filter((r) =>
     (filter === '' || filter === 'all' || statusKey(r) === filter)
     && (!term || String(r.request_id) === term || r.items.some((i) => i.medicine.medicine_name.toLowerCase().includes(term))));
+
+  // All of the resident's requests are kept; they are shown a page at a time, newest first.
+  const pages = useClientPages(shown, `${filter}|${term}`, 'my-requests');
 
   return (
     <div className="page">
@@ -83,9 +87,12 @@ export default function MyRequests() {
         {loading && !data ? <Loading /> : !data ? null : shown.length === 0 ? (
           <div className="card"><Empty>{data?.length ? 'No requests match your search or filter.' : 'You have no requests yet. Tap "+ New request" to request medicines.'}</Empty></div>
         ) : (
-          <div className="req-rows">
-            {shown.map((r) => <RequestRow key={r.request_id} request={r} />)}
-          </div>
+          <>
+            <div className="req-rows">
+              {pages.rows.map((r) => <RequestRow key={r.request_id} request={r} />)}
+            </div>
+            <Pagination meta={pages.meta} onPage={pages.setPage} onPerPage={pages.setPerPage} noun="requests" />
+          </>
         )}
       </section>
     </div>

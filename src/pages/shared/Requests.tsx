@@ -4,6 +4,7 @@ import { api, errorMessage, formatDate } from '../../api';
 import { LoadError, toast } from '../../components/feedback';
 import { useAuth } from '../../auth';
 import { useApi } from '../../hooks';
+import { Pagination, rowNo, useDebounced, usePagedApi } from '../../components/Pagination';
 import { Badge, Card, Empty, Loading, Message, Modal } from '../../components/ui';
 import RequestTracker from '../../components/RequestTracker';
 import { PrescriptionViewer, requiresPrescription, RxBadge, RX_ICON } from '../../components/Prescription';
@@ -75,8 +76,18 @@ export default function Requests() {
     const st = next.status ?? apiStatus;
     setParams({ type: t || 'all', status: st || 'all' }, { replace: true });
   };
-  const { data, errorInfo, loading, reload: reloadList } = useApi<MedicineRequest[]>('/requests', { type: apiType, status: apiStatus }, 30000);
-  const counts = useApi<Record<string, number>>('/requests/counts', { type: apiType }, 30000);
+  // Search, dates and sort apply to all requests (on the server); the list shows one page at a time.
+  const [search, setSearch] = useState('');
+  const [from, setFrom] = useState('');
+  const [to, setTo] = useState('');
+  const [sort, setSort] = useState<'newest' | 'oldest'>('newest');
+  const term = useDebounced(search.trim());
+  const badRange = !!from && !!to && from > to;
+  const range = badRange ? { from: to, to: from } : { from, to };
+  const list = usePagedApi<MedicineRequest>('/requests', { type: apiType, status: apiStatus, search: term, ...range, sort }, { table: 'requests', refreshMs: 30000 });
+  const { data, errorInfo, loading, reload: reloadList, rows, meta } = list;
+  const counts = useApi<Record<string, number>>('/requests/counts', { type: apiType, search: term, ...range }, 30000);
+  const filtered = !!term || !!from || !!to;
   const reload = (silent = false) => { reloadList(silent); counts.reload(true); };
   // Request being approved or rejected right now: its buttons are disabled so it cannot be sent twice.
   const [actingId, setActingId] = useState<number | null>(null);
@@ -88,7 +99,7 @@ export default function Requests() {
   const openReject = (r: MedicineRequest) => { setRejecting(r); setReason(''); setOtherReason(''); setRejectError(''); };
   const [rejectBusy, setRejectBusy] = useState(false);
   const [viewingId, setViewingId] = useState<number | null>(null);
-  const viewing = data?.find((r) => r.request_id === viewingId) ?? null;
+  const viewing = rows.find((r) => r.request_id === viewingId) ?? null;
   const [rxChecked, setRxChecked] = useState(false);
   const [viewRxId, setViewRxId] = useState<number | null>(null);
   const openDetails = (r: MedicineRequest) => { setRxChecked(false); setViewingId(r.request_id); };
@@ -163,16 +174,28 @@ export default function Requests() {
         {apiStatus === 'approved' && apiType !== 'restock' && (
           <p className="muted small tab-hint">Approved medicine requests waiting to be claimed. The medicines are set aside for these residents until the deadline; after that the request is cancelled automatically.</p>
         )}
-        {loading && !data ? <Loading /> : !data ? null : !data?.length ? <Empty>No requests found.</Empty> : (
-          <div className="req-table-wrap">
+        <div className="filters req-filters">
+          <input type="search" className="search" placeholder="Search request no., resident, Resident ID or medicine…" value={search} onChange={(e) => setSearch(e.target.value)} aria-label="Search requests" />
+          <label className="tbl-date">From <input type="date" value={from} max={to || undefined} onChange={(e) => setFrom(e.target.value)} aria-label="From date" /></label>
+          <label className="tbl-date">To <input type="date" value={to} min={from || undefined} onChange={(e) => setTo(e.target.value)} aria-label="To date" /></label>
+          <select value={sort} onChange={(e) => setSort(e.target.value as 'newest' | 'oldest')} aria-label="Sort">
+            <option value="newest">Newest first</option>
+            <option value="oldest">Oldest first</option>
+          </select>
+          {filtered && <button type="button" className="btn btn-outline btn-sm" onClick={() => { setSearch(''); setFrom(''); setTo(''); }}>Clear filters</button>}
+        </div>
+        {badRange && <p className="field-warning">The "From" date is after the "To" date, so the dates were swapped.</p>}
+        {loading && !data ? <Loading /> : !data ? null : !rows.length ? <Empty>{filtered ? 'No requests match this search or date range.' : 'No requests found.'}</Empty> : (
+          <div className={`req-table-wrap ${loading ? 'tbl-updating' : ''}`}>
           <table className="req-table">
             <thead>
-              <tr><th>No.</th><th className="rq-date">Date</th><th className="rq-resident">Resident</th><th>Type</th><th className="rq-meds">Medicines</th><th className="rq-status">Status</th><th className="rq-note">Resident's note / Remarks</th><th></th></tr>
+              <tr><th className="col-no">No.</th><th>Request No.</th><th className="rq-date">Date</th><th className="rq-resident">Resident</th><th>Type</th><th className="rq-meds">Medicines</th><th className="rq-status">Status</th><th className="rq-note">Resident's note / Remarks</th><th></th></tr>
             </thead>
             <tbody>
-              {data.map((r) => (
+              {rows.map((r, i) => (
                 <tr key={r.request_id}>
-                  <td>{r.request_id}</td>
+                  <td className="col-no">{rowNo(meta, i)}</td>
+                  <td className="nowrap">No. {r.request_id}</td>
                   <td className="nowrap rq-date">{formatDate(r.request_date, true)}</td>
                   <td className="rq-resident">
                     {r.resident?.name}
@@ -213,6 +236,7 @@ export default function Requests() {
           </table>
           </div>
         )}
+        <Pagination meta={meta} onPage={list.setPage} onPerPage={list.setPerPage} noun="requests" busy={loading} />
       </Card>
 
       {viewing && (

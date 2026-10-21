@@ -298,3 +298,15 @@ export interface ForecastReport {
   results: ForecastResult[];
   saved?: boolean;
 }
+
+/** One page of a data table (Laravel pagination, see the backend's App\Support\Listing). */
+export interface PageMeta {
+  current_page: number;
+  per_page: number;
+  total: number;
+  last_page: number;
+  /** Position of the first and last row shown (the "No." column), null when there are no rows. */
+  from: number | null;
+  to: number | null;
+}
+export interface Paged<T> { data: T[]; meta: PageMeta }

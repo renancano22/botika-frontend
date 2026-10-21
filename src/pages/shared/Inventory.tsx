@@ -10,6 +10,7 @@ import { jumpWhenReady } from '../../scroll';
 import BackButton from '../../components/BackButton';
 import { LoadError, toast, useFormErrors } from '../../components/feedback';
 import { useAuth } from '../../auth';
+import { Pagination, rowNo, useDebounced, usePagedApi } from '../../components/Pagination';
 
 const STOCK_OUT_REASONS = ['Expired', 'Damaged', 'Lost', 'Returned to supplier', 'Other'];
 const TX_LABEL: Record<StockTransaction['type'], string> = { stock_in: 'Stock-in', stock_out: 'Stock-out', dispensed: 'Dispensed' };
@@ -22,9 +23,13 @@ export default function Inventory() {
   // ?expiry=near_expiry / expired (dashboard tiles, expiry alerts) opens the batches already filtered;
   // &batch=<id> (an expiry alert) also jumps to that batch and highlights it.
   const [expiry, setExpiry] = useState(() => new URLSearchParams(window.location.search).get('expiry') ?? '');
-  const { data, errorInfo, loading, reload } = useApi<InventoryBatch[]>('/inventory', { search }, 30000);
+  const [batchSort, setBatchSort] = useState('expiry');
+  // A batch opened from an expiry alert: the server returns the page that contains it.
+  const [focus, setFocus] = useState<string | null>(() => new URLSearchParams(window.location.search).get('batch'));
+  const batchList = usePagedApi<InventoryBatch>('/inventory', { search: useDebounced(search.trim()), expiry, sort: batchSort },
+    { table: 'batches', refreshMs: 30000, focus });
+  const { data, errorInfo, loading, reload, rows: batches, meta: batchMeta } = batchList;
   const { data: medicines } = useApi<Medicine[]>('/medicines');
-  const batches = (data ?? []).filter((b) => !expiry || (b.expiry_status ?? 'ok') === expiry);
   const [stockIn, setStockIn] = useState<{ medicine_id: string; quantity: number; expiration_date: string } | null>(null);
   const openStockIn = (medicineId = '') => { fe.clear(); setStockIn({ medicine_id: medicineId, quantity: 1, expiration_date: '' }); };
   // ?stockin=<medicine id> (Medicine List → "Record stock") or ?stockin=new opens the stock-in form.
@@ -33,16 +38,19 @@ export default function Inventory() {
   useEffect(() => {
     const e = params.get('expiry');
     if (e !== null) setExpiry(e);
-    if (batchParam) setSearch(''); // make sure the batch is not hidden by an earlier search
+    if (batchParam) { setSearch(''); setFocus(batchParam); } // make sure the batch is not hidden by an earlier search
   }, [params, batchParam]);
   useEffect(() => {
-    if (!batchParam || !data) return;
-    jumpWhenReady(`batch-${batchParam}`);
-    const next = new URLSearchParams(params);
-    next.delete('batch');
-    setParams(next, { replace: true });
+    if (!focus || !batchList.ready) return;
+    if (batches.some((b) => String(b.inventory_id) === focus)) jumpWhenReady(`batch-${focus}`);
+    setFocus(null);
+    if (batchParam) {
+      const next = new URLSearchParams(params);
+      next.delete('batch');
+      setParams(next, { replace: true });
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [batchParam, data]);
+  }, [focus, batchList.ready, batches]);
   useEffect(() => {
     const id = params.get('stockin');
     if (id === null) return;
@@ -61,7 +69,15 @@ export default function Inventory() {
   const chosen = medicines?.find((m) => String(m.medicine_id) === stockIn?.medicine_id);
   const [stockOut, setStockOut] = useState<{ batch: InventoryBatch; quantity: number; reason: string; details: string } | null>(null);
   const [txType, setTxType] = useState('');
-  const tx = useApi<StockTransaction[]>('/inventory/transactions', { type: txType }, 30000);
+  const [txSearch, setTxSearch] = useState('');
+  const [txFrom, setTxFrom] = useState('');
+  const [txTo, setTxTo] = useState('');
+  const [txSort, setTxSort] = useState<'newest' | 'oldest'>('newest');
+  const txBadRange = !!txFrom && !!txTo && txFrom > txTo;
+  const tx = usePagedApi<StockTransaction>('/inventory/transactions',
+    { type: txType, search: useDebounced(txSearch.trim()), ...(txBadRange ? { from: txTo, to: txFrom } : { from: txFrom, to: txTo }), sort: txSort },
+    { table: 'transactions', refreshMs: 30000 });
+  const txFiltered = !!txType || !!txSearch.trim() || !!txFrom || !!txTo;
   const fe = useFormErrors(['medicine_id', 'quantity', 'expiration_date', 'reason']);
   // While a stock-in / stock-out is being saved its button is disabled, so a double click cannot save it twice.
   const [saving, setSaving] = useState(false);
@@ -114,48 +130,72 @@ export default function Inventory() {
       <Card title="Stock batches" actions={
         <div className="filters">
           <select value={expiry} onChange={(e) => setExpiry(e.target.value)} aria-label="Expiry status">
-            <option value="">All batches</option>
+            <option value="">All batches with stock</option>
             <option value="near_expiry">Expiring within 1 month</option>
             <option value="expired">Expired</option>
             <option value="ok">Not expiring soon</option>
+            <option value="empty">Used up (0 left)</option>
           </select>
-          <input className="search" placeholder="Search medicine…" value={search} onChange={(e) => setSearch(e.target.value)} />
+          <select value={batchSort} onChange={(e) => setBatchSort(e.target.value)} aria-label="Sort batches">
+            <option value="expiry">Expiring soonest first</option>
+            <option value="expiry_desc">Expiring latest first</option>
+            <option value="newest">Newest batches first</option>
+          </select>
+          <input type="search" className="search" placeholder="Search medicine or batch #…" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
       }>
-        {loading && !data ? <Loading /> : !data ? null : !data?.length ? <Empty>No stock yet. Record a stock-in.</Empty> : !batches.length ? <Empty>No batches with this expiry status.</Empty> : (
-          <table>
-            <thead><tr><th>Batch #</th><th>Medicine</th><th>Quantity</th><th>Expiration date</th><th>Expiry status</th><th>Last updated</th><th></th></tr></thead>
+        {loading && !data ? <Loading /> : !data ? null : !batches.length ? (
+          <Empty>{search.trim() ? 'No batches match this search.' : expiry === 'empty' ? 'No used-up batches yet.' : expiry ? 'No batches with this expiry status.' : 'No stock yet. Record a stock-in.'}</Empty>
+        ) : (
+          <table className={loading ? 'tbl-updating' : ''}>
+            <thead><tr><th className="col-no">No.</th><th>Batch #</th><th>Medicine</th><th>Quantity</th><th>Expiration date</th><th>Expiry status</th><th>Last updated</th><th></th></tr></thead>
             <tbody>
-              {batches.map((b) => (
+              {batches.map((b, i) => (
                 <tr key={b.inventory_id} id={`batch-${b.inventory_id}`} className={b.expiry_status === 'expired' ? 'row-danger' : b.expiry_status === 'near_expiry' ? 'row-warn' : ''}>
+                  <td className="col-no">{rowNo(batchMeta, i)}</td>
                   <td>{b.inventory_id}</td>
                   <td>{b.medicine.medicine_name}</td>
                   <td>{b.quantity} {b.medicine.unit}</td>
                   <td>{formatDate(b.expiration_date)}</td>
                   <td><Badge value={b.expiry_status ?? 'ok'} /></td>
                   <td>{formatDate(b.last_updated, true)}</td>
-                  <td className="right">{canManage && <button className="btn btn-outline btn-sm" onClick={() => { fe.clear(); setStockOut({ batch: b, quantity: b.quantity, reason: b.expiry_status === 'expired' ? 'Expired' : '', details: '' }); }}>Stock-out</button>}</td>
+                  <td className="right">{canManage && b.quantity > 0 && <button className="btn btn-outline btn-sm" onClick={() => { fe.clear(); setStockOut({ batch: b, quantity: b.quantity, reason: b.expiry_status === 'expired' ? 'Expired' : '', details: '' }); }}>Stock-out</button>}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         )}
+        <Pagination meta={batchMeta} onPage={batchList.setPage} onPerPage={batchList.setPerPage} noun="batches" busy={loading} />
       </Card>
 
       <Card title="Stock transactions (stock-in / stock-out history)" actions={
-        <select value={txType} onChange={(e) => setTxType(e.target.value)}>
-          <option value="">All types</option>
-          <option value="stock_in">Stock-in</option>
-          <option value="stock_out">Stock-out</option>
-          <option value="dispensed">Dispensed</option>
-        </select>
+        <div className="filters">
+          <select value={txType} onChange={(e) => setTxType(e.target.value)} aria-label="Transaction type">
+            <option value="">All types</option>
+            <option value="stock_in">Stock-in</option>
+            <option value="stock_out">Stock-out</option>
+            <option value="dispensed">Dispensed</option>
+          </select>
+          <select value={txSort} onChange={(e) => setTxSort(e.target.value as 'newest' | 'oldest')} aria-label="Sort transactions">
+            <option value="newest">Newest first</option>
+            <option value="oldest">Oldest first</option>
+          </select>
+          <input type="search" className="search" placeholder="Search medicine or batch #…" value={txSearch} onChange={(e) => setTxSearch(e.target.value)} />
+        </div>
       }>
-        {tx.loading && !tx.data ? <Loading /> : !tx.data?.length ? <Empty>No transactions yet.</Empty> : (
-          <table>
-            <thead><tr><th>Date</th><th>Type</th><th>Medicine</th><th>Quantity</th><th>Batch #</th><th>Reason</th><th>By</th></tr></thead>
+        <div className="filters tbl-dates">
+          <label className="tbl-date">From <input type="date" value={txFrom} max={txTo || undefined} onChange={(e) => setTxFrom(e.target.value)} aria-label="From date" /></label>
+          <label className="tbl-date">To <input type="date" value={txTo} min={txFrom || undefined} onChange={(e) => setTxTo(e.target.value)} aria-label="To date" /></label>
+          {txFiltered && <button type="button" className="btn btn-outline btn-sm" onClick={() => { setTxType(''); setTxSearch(''); setTxFrom(''); setTxTo(''); }}>Clear filters</button>}
+        </div>
+        {txBadRange && <p className="field-warning">The "From" date is after the "To" date, so the dates were swapped.</p>}
+        {tx.loading && !tx.data ? <Loading /> : !tx.rows.length ? <Empty>{txFiltered ? 'No transactions match these filters.' : 'No transactions yet.'}</Empty> : (
+          <table className={tx.loading ? 'tbl-updating' : ''}>
+            <thead><tr><th className="col-no">No.</th><th>Date</th><th>Type</th><th>Medicine</th><th>Quantity</th><th>Batch #</th><th>Reason</th><th>By</th></tr></thead>
             <tbody>
-              {tx.data.map((t) => (
+              {tx.rows.map((t, i) => (
                 <tr key={t.transaction_id}>
+                  <td className="col-no">{rowNo(tx.meta, i)}</td>
                   <td className="nowrap">{formatDate(t.created_at, true)}</td>
                   <td><span className={`badge badge-tx-${t.type}`}>{TX_LABEL[t.type]}</span></td>
                   <td>{t.medicine?.medicine_name}</td>
@@ -168,6 +208,7 @@ export default function Inventory() {
             </tbody>
           </table>
         )}
+        <Pagination meta={tx.meta} onPage={tx.setPage} onPerPage={tx.setPerPage} noun="transactions" busy={tx.loading} />
       </Card>
 
       {stockIn && (

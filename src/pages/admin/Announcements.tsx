@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { api, describeError, formatDate } from '../../api';
-import { useApi } from '../../hooks';
+import { Pagination, rowNo, useDebounced, usePagedApi } from '../../components/Pagination';
 import { Badge, Card, Empty, Loading, Message } from '../../components/ui';
 import type { SmsNotification } from '../../types';
 import BackButton from '../../components/BackButton';
@@ -15,7 +15,17 @@ const CATEGORIES = [
 
 /** Admin: send SMS announcements to residents and view the SMS notification log. */
 export default function Announcements() {
-  const { data, errorInfo, loading, reload } = useApi<SmsNotification[]>('/notifications', undefined, 30000);
+  // SMS log: one page at a time, newest first; the search, status and dates apply to the whole log.
+  const [search, setSearch] = useState('');
+  const [status, setStatus] = useState('');
+  const [from, setFrom] = useState('');
+  const [to, setTo] = useState('');
+  const [sort, setSort] = useState<'newest' | 'oldest'>('newest');
+  const badRange = !!from && !!to && from > to;
+  const log = usePagedApi<SmsNotification>('/notifications',
+    { search: useDebounced(search.trim()), status, ...(badRange ? { from: to, to: from } : { from, to }), sort }, { table: 'sms-log', refreshMs: 30000 });
+  const { data, errorInfo, loading, reload, rows, meta } = log;
+  const filtered = !!search.trim() || !!status || !!from || !!to;
   const [message, setMessage] = useState('');
   const [category, setCategory] = useState('general');
   const fe = useFormErrors(['message', 'category']);
@@ -76,13 +86,35 @@ export default function Announcements() {
       </Card>
 
       <LoadError error={errorInfo} onRetry={() => reload()} />
-      <Card title="SMS log">
-        {loading && !data ? <Loading /> : !data ? null : !data?.length ? <Empty>No SMS sent yet.</Empty> : (
-          <table>
-            <thead><tr><th>Date</th><th>Resident</th><th>Mobile</th><th>Message</th><th>Status</th></tr></thead>
+      <Card title="SMS log" actions={
+        <div className="filters">
+          <select value={status} onChange={(e) => setStatus(e.target.value)} aria-label="Status">
+            <option value="">All statuses</option>
+            <option value="sent">Sent</option>
+            <option value="failed">Failed</option>
+            <option value="logged">Logged (no SMS key)</option>
+            <option value="app">In-app only</option>
+          </select>
+          <select value={sort} onChange={(e) => setSort(e.target.value as 'newest' | 'oldest')} aria-label="Sort">
+            <option value="newest">Newest first</option>
+            <option value="oldest">Oldest first</option>
+          </select>
+          <input type="search" className="search" placeholder="Search resident, mobile or message…" value={search} onChange={(e) => setSearch(e.target.value)} />
+        </div>
+      }>
+        <div className="filters tbl-dates">
+          <label className="tbl-date">From <input type="date" value={from} max={to || undefined} onChange={(e) => setFrom(e.target.value)} aria-label="From date" /></label>
+          <label className="tbl-date">To <input type="date" value={to} min={from || undefined} onChange={(e) => setTo(e.target.value)} aria-label="To date" /></label>
+          {filtered && <button type="button" className="btn btn-outline btn-sm" onClick={() => { setSearch(''); setStatus(''); setFrom(''); setTo(''); }}>Clear filters</button>}
+        </div>
+        {badRange && <p className="field-warning">The "From" date is after the "To" date, so the dates were swapped.</p>}
+        {loading && !data ? <Loading /> : !data ? null : !rows.length ? <Empty>{filtered ? 'No messages match these filters.' : 'No SMS sent yet.'}</Empty> : (
+          <table className={loading ? 'tbl-updating' : ''}>
+            <thead><tr><th className="col-no">No.</th><th>Date</th><th>Resident</th><th>Mobile</th><th>Message</th><th>Status</th></tr></thead>
             <tbody>
-              {data.map((n) => (
+              {rows.map((n, i) => (
                 <tr key={n.notification_id}>
+                  <td className="col-no">{rowNo(meta, i)}</td>
                   <td className="nowrap">{formatDate(n.sent_at, true)}</td>
                   <td>{n.resident?.name}</td><td>{n.resident?.contact_no}</td>
                   <td>{n.message}</td><td><Badge value={n.channel === 'app' ? 'app' : n.status} /></td>
@@ -91,6 +123,7 @@ export default function Announcements() {
             </tbody>
           </table>
         )}
+        <Pagination meta={meta} onPage={log.setPage} onPerPage={log.setPerPage} noun="messages" busy={loading} />
       </Card>
     </div>
   );

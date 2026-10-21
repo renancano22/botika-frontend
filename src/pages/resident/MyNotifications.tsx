@@ -5,6 +5,7 @@ import { markAllRead, NotificationItem } from '../../components/Notifications';
 import type { SmsNotification } from '../../types';
 import BackButton from '../../components/BackButton';
 import { LoadError, toast } from '../../components/feedback';
+import { Pagination, useClientPages } from '../../components/Pagination';
 
 /**
  * Resident notifications: every SMS sent to them (request updates and the administrator's
@@ -16,6 +17,8 @@ export default function MyNotifications() {
 
   const unread = data?.filter((n) => !n.read_at).length ?? 0;
   const shown = tab === 'unread' ? data?.filter((n) => !n.read_at) : data;
+  // Every notification is kept; they are shown a page at a time, newest first.
+  const pages = useClientPages(shown ?? [], tab, 'my-notifications');
 
   const readAll = async () => {
     try {
@@ -55,9 +58,12 @@ export default function MyNotifications() {
       {loading && !data ? <Loading /> : !data ? null : !shown?.length ? (
         <div className="card"><Empty>{tab === 'unread' ? 'You have read all your notifications.' : 'No notifications yet.'}</Empty></div>
       ) : (
-        <ul className="notif-list">
-          {shown.map((n) => <NotificationItem key={n.notification_id} n={n} />)}
-        </ul>
+        <>
+          <ul className="notif-list">
+            {pages.rows.map((n) => <NotificationItem key={n.notification_id} n={n} />)}
+          </ul>
+          <Pagination meta={pages.meta} onPage={pages.setPage} onPerPage={pages.setPerPage} noun="notifications" />
+        </>
       )}
     </div>
   );

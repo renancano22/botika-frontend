@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { api, describeError, NOTIFICATIONS_CHANGED, notificationsChanged, timeAgo, type ErrorInfo } from '../api';
 import { ICONS, Svg } from './RequestCards';
-import type { SmsNotification } from '../types';
+import type { SmsNotification, Paged } from '../types';
 import { LoadError, toast } from './feedback';
 
 const BELL = 'M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10 21h4';
@@ -138,7 +138,8 @@ export function NotificationBell() {
   useEffect(() => {
     if (!open) return;
     setFailed(null);
-    api.get<SmsNotification[]>('/notifications').then((res) => setItems(res.data.slice(0, 8))).catch((err) => setFailed(describeError(err)));
+    // Only the 8 newest are needed here (one page from the server); "View all" opens the full list.
+    api.get<Paged<SmsNotification>>('/notifications', { params: { per_page: 8, page: 1 } }).then((res) => setItems(res.data.data)).catch((err) => setFailed(describeError(err)));
     const onDown = (e: MouseEvent | TouchEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
     };

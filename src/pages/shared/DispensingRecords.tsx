@@ -1,12 +1,14 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../auth';
-import { useApi } from '../../hooks';
 import { Empty, Loading } from '../../components/ui';
 import { ICONS, RequestNo, Svg, unitPlural } from '../../components/RequestCards';
 import type { Dispensing } from '../../types';
 import BackButton from '../../components/BackButton';
 import { LoadError } from '../../components/feedback';
+import { Pagination, rowNo, useDebounced, usePagedApi } from '../../components/Pagination';
+
+interface Summary { records: number; residents: number; total_quantity: number }
 
 /** YYYY-MM-DD in local time. */
 const ymd = (d: Date) => d.toLocaleDateString('en-CA');
@@ -40,23 +42,21 @@ export default function DispensingRecords() {
     setParams(next, { replace: true });
   };
   const [search, setSearch] = useState('');
+  const [sort, setSort] = useState<'newest' | 'oldest'>('newest');
   const badRange = !!from && !!to && from > to;
-  const { data, errorInfo, loading, reload } = useApi<Dispensing[]>('/dispensing', badRange ? { from: to, to: from } : { from, to }, 30000);
+  const searchTerm = useDebounced(search.trim());
+  // One page at a time from the server; the search, dates and sort are applied to ALL records there.
+  const list = usePagedApi<Dispensing, { summary: Summary }>('/dispensing',
+    { ...(badRange ? { from: to, to: from } : { from, to }), search: searchTerm, sort }, { table: 'dispensing', refreshMs: 30000 });
+  const { data, errorInfo, loading, reload, rows, meta } = list;
 
   const activePreset = PRESETS.find((p) => { const [f, t] = p.range(); return f === from && t === to; })?.key;
   const rangeText = from && to ? (from === to ? longDate(from) : `${longDate(from)} – ${longDate(to)}`)
     : from ? `From ${longDate(from)}` : to ? `Until ${longDate(to)}` : 'All dates';
 
-  const term = search.trim().toLowerCase().replace(/^(request\s*)?(no\.?|#)\s*(?=\d)/, '');
-  const rows = useMemo(() => (data ?? []).filter((d) => !term
-    || String(d.request_id) === term
-    || d.request?.resident?.name.toLowerCase().includes(term)
-    || d.request?.resident?.qr_code.toLowerCase().includes(term)
-    || d.items.some((i) => i.medicine.medicine_name.toLowerCase().includes(term))), [data, term]);
-
-  const totalQty = rows.reduce((s, d) => s + d.items.reduce((a, i) => a + i.quantity, 0), 0);
-  const residents = new Set(rows.map((d) => d.request?.resident_id)).size;
-  const filtered = !!from || !!to || !!term;
+  // Totals of every matching record (worked out by the server), not only of the page shown.
+  const summary = data?.summary;
+  const filtered = !!from || !!to || !!search.trim();
 
   return (
     <div className="page dr-page">
@@ -102,6 +102,13 @@ export default function DispensingRecords() {
                 placeholder={isResident ? 'Medicine or request no.' : 'Name, Resident ID, medicine or request no.'} />
             </span>
           </label>
+          <label className="dr-field dr-field-sort">
+            <span>Sort</span>
+            <select value={sort} onChange={(e) => setSort(e.target.value as 'newest' | 'oldest')} aria-label="Sort">
+              <option value="newest">Newest first</option>
+              <option value="oldest">Oldest first</option>
+            </select>
+          </label>
           {/* Always shown so it is easy to find; inactive when there is nothing to clear. */}
           <button type="button" className="btn btn-outline dr-clear" disabled={!filtered} onClick={() => { setSearch(''); setRange('', ''); }}>
             Clear filters
@@ -112,18 +119,19 @@ export default function DispensingRecords() {
 
       <div className="dr-summary">
         <div><small>Showing</small><strong>{rangeText}</strong></div>
-        <div><small>Records</small><strong>{rows.length}</strong></div>
-        {!isResident && <div><small>Residents served</small><strong>{residents}</strong></div>}
-        <div><small>Total quantity given</small><strong>{totalQty}</strong></div>
+        <div><small>Records</small><strong>{summary?.records ?? '—'}</strong></div>
+        {!isResident && <div><small>Residents served</small><strong>{summary?.residents ?? '—'}</strong></div>}
+        <div><small>Total quantity given</small><strong>{summary?.total_quantity ?? '—'}</strong></div>
       </div>
 
       <section className="card dr-card">
         {loading && !data ? <Loading /> : !data ? null : rows.length === 0 ? (
           <Empty>{filtered ? 'No dispensing records match these filters. Try another date range or clear the filters.' : 'No dispensing records yet.'}</Empty>
-        ) : (
-          <table className="dr-table">
+        ) : (<>
+          <table className={`dr-table ${loading ? 'tbl-updating' : ''}`}>
             <thead>
               <tr>
+                <th className="col-no">No.</th>
                 <th>Date &amp; time</th>
                 {!isResident && <th>Resident</th>}
                 <th>Medicines given</th>
@@ -133,11 +141,12 @@ export default function DispensingRecords() {
               </tr>
             </thead>
             <tbody>
-              {rows.map((d) => {
+              {rows.map((d, i) => {
                 const at = new Date(d.dispensed_at);
                 const walkIn = d.request?.remarks === 'Walk-in';
                 return (
                   <tr key={d.dispensing_id}>
+                    <td data-label="No." className="col-no">{rowNo(meta, i)}</td>
                     <td data-label="Date & time">
                       <strong className="dr-date">{at.toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}</strong>
                       <span className="muted small dr-time">{at.toLocaleTimeString('en-PH', { hour: 'numeric', minute: '2-digit' })} · Record No. {d.dispensing_id}</span>
@@ -170,7 +179,8 @@ export default function DispensingRecords() {
               })}
             </tbody>
           </table>
-        )}
+        </>)}
+        <Pagination meta={meta} onPage={list.setPage} onPerPage={list.setPerPage} busy={loading} />
       </section>
     </div>
   );

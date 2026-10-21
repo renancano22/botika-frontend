@@ -7,6 +7,7 @@ import { Empty, Loading, Modal } from '../../components/ui';
 import { ICONS, quantityText, Svg, unitPlural } from '../../components/RequestCards';
 import type { ForecastMethod, ForecastMethodResult, ForecastReport, ForecastResult } from '../../types';
 import { jumpTo } from '../../scroll';
+import { Pagination, useClientPages } from '../../components/Pagination';
 import BackButton from '../../components/BackButton';
 
 const METHODS: { key: ForecastMethod; label: string; hint: string }[] = [
@@ -287,6 +288,9 @@ export default function Forecasting() {
         : results.filter((r) => r.recommended_restock > 0);
     return sortRows(rows);
   }, [results, tableFilter, selectedMedicine]);
+
+  // The restocking table is shown a page at a time (the export still has every row).
+  const fcPages = useClientPages(tableRows, `${tableFilter}|${selectedMedicine?.medicine_id ?? ''}|${data?.generated_at ?? ''}`, 'forecast');
 
   const go = (filter: TableFilter | null, ref: RefObject<HTMLElement>) => {
     if (filter) { setTableFilter(filter); setMedicineId(null); }
@@ -576,11 +580,12 @@ export default function Forecasting() {
                 ) : (
                   <table className="fc-table">
                     <thead>
-                      <tr><th>Medicine</th><th className="center">Current Stock</th><th className="center">Predicted Demand<br /><small>({horizonText})</small></th><th className="center">Suggested Restock</th><th>Priority</th><th aria-label="Details" /></tr>
+                      <tr><th className="col-no">No.</th><th>Medicine</th><th className="center">Current Stock</th><th className="center">Predicted Demand<br /><small>({horizonText})</small></th><th className="center">Suggested Restock</th><th>Priority</th><th aria-label="Details" /></tr>
                     </thead>
                     <tbody>
-                      {tableRows.map((r) => (
+                      {fcPages.rows.map((r, i) => (
                         <tr key={r.medicine_id} className="clickable" onClick={() => setDetails(r)}>
+                          <td className="col-no">{(fcPages.meta.from ?? 1) + i}</td>
                           <td>
                             <span className="fc-med">
                               <span className="fc-med-icon"><Svg d={ICONS.pill} size={18} /></span>
@@ -598,6 +603,7 @@ export default function Forecasting() {
                   </table>
                 )}
               </div>
+              <Pagination meta={fcPages.meta} onPage={fcPages.setPage} onPerPage={fcPages.setPerPage} noun="medicines" />
               <div className="fc-restock-actions">
                 <button className="btn btn-outline" onClick={exportReport} disabled={!tableRows.length}><Svg d={ICON.download} size={18} /> Export Report</button>
                 {generateButton()}

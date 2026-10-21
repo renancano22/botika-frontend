@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent } from 'react';
+import { useState, type FormEvent } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { api, formatDate } from '../../api';
 import { useAuth } from '../../auth';
@@ -10,6 +10,7 @@ import { RxBadge } from '../../components/Prescription';
 import BackButton from '../../components/BackButton';
 import { FIELD } from '../../validation';
 import { confirmAction, LoadError, toast, useFormErrors } from '../../components/feedback';
+import { Pagination, rowNo, useDebounced, usePagedApi } from '../../components/Pagination';
 
 const EMPTY = { generic_name: '', strength: '', dosage_form: '', category: '', unit: '', reorder_level: 20, requires_prescription: false };
 type Form = typeof EMPTY;
@@ -38,11 +39,14 @@ export default function Medicines() {
     if (value) next.set(key, value); else next.delete(key);
     setParams(next, { replace: true });
   };
-  const { data, errorInfo, loading, reload } = useApi<Medicine[]>('/medicines', { search }, 30000);
+  // One page at a time; the search, category and stock status are applied to the whole list on the server.
+  const list = usePagedApi<Medicine, { unrecorded: number }>('/medicines', { search: useDebounced(search.trim()), category, status },
+    { table: 'medicines', refreshMs: 30000 });
+  const { data, errorInfo, loading, reload, rows: shown, meta } = list;
   const { data: categories } = useApi<string[]>('/medicines/categories');
   const { data: forms } = useApi<Record<string, string>>('/medicines/dosage-forms');
-  const shown = useMemo(() => (data ?? []).filter((m) => (!status || m.status === status) && (!category || m.category === category)), [data, status, category]);
-  const unrecorded = (data ?? []).filter((m) => m.status === 'unrecorded').length;
+  const unrecorded = data?.unrecorded ?? 0;
+  const filtered = !!search.trim() || !!category || !!status;
 
   const [editing, setEditing] = useState<Medicine | null>(null);
   const [form, setForm] = useState<Form | null>(null);
@@ -147,17 +151,18 @@ export default function Medicines() {
           <input className="search" placeholder="Search name or category…" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
       }>
-        {loading && !data ? <Loading /> : !data ? null : !data?.length ? <Empty>No medicines yet.</Empty> : !shown.length ? <Empty>No medicines match these filters.</Empty> : (
-          <table className="mi-table">
+        {loading && !data ? <Loading /> : !data ? null : !shown.length ? <Empty>{filtered ? 'No medicines match these filters.' : 'No medicines yet.'}</Empty> : (
+          <table className={`mi-table ${loading ? 'tbl-updating' : ''}`}>
             <thead>
               <tr>
-                <th>Medicine ID</th><th>Generic Name</th><th>Category</th><th>Strength</th><th>Dosage Form</th>
+                <th className="col-no">No.</th><th>Medicine ID</th><th>Generic Name</th><th>Category</th><th>Strength</th><th>Dosage Form</th>
                 <th>Quantity in Stock</th><th>Expiration Date</th><th>Stock Status</th><th>Date Last Updated</th><th></th>
               </tr>
             </thead>
             <tbody>
-              {shown.map((m) => (
+              {shown.map((m, i) => (
                 <tr key={m.medicine_id} className={m.status === 'unrecorded' ? 'mi-unrecorded' : ''}>
+                  <td className="col-no">{rowNo(meta, i)}</td>
                   <td className="nowrap mi-code">{m.medicine_code}</td>
                   <td>
                     <strong>{m.generic_name ?? m.medicine_name}</strong>
@@ -193,6 +198,7 @@ export default function Medicines() {
             </tbody>
           </table>
         )}
+        <Pagination meta={meta} onPage={list.setPage} onPerPage={list.setPerPage} noun="medicines" busy={loading} />
       </Card>
 
       {form && (

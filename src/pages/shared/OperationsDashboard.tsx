@@ -139,11 +139,11 @@ function ReadyForPickup({ requests, total }: { requests: MedicineRequest[]; tota
     <Card title={`Ready for pickup (${total})`} actions={<Link to="/requests?status=approved">View all approved requests</Link>}>
       {requests.length === 0 ? <Empty>No approved requests are waiting to be claimed.</Empty> : (
         <table>
-          <thead><tr><th>No.</th><th>Resident</th><th>Medicines</th><th>Approved</th><th>Claim by</th></tr></thead>
+          <thead><tr><th>Request No.</th><th>Resident</th><th>Medicines</th><th>Approved</th><th>Claim by</th></tr></thead>
           <tbody>
             {requests.map((r) => (
               <tr key={r.request_id}>
-                <td>{r.request_id}</td>
+                <td className="nowrap">No. {r.request_id}</td>
                 <td>
                   <strong>{r.resident?.name}</strong>
                   <div className="muted small">{r.resident?.qr_code}{r.resident?.contact_no ? ` · ${r.resident.contact_no}` : ''}</div>
@@ -166,11 +166,11 @@ function PendingRequests({ requests }: { requests: MedicineRequest[] }) {
     <Card title="Pending requests" actions={<Link to="/requests">Review requests</Link>}>
       {requests.length === 0 ? <Empty>No pending requests.</Empty> : (
         <table>
-          <thead><tr><th>No.</th><th>Type</th><th>Resident</th><th>Medicines</th><th>Date</th></tr></thead>
+          <thead><tr><th>Request No.</th><th>Type</th><th>Resident</th><th>Medicines</th><th>Date</th></tr></thead>
           <tbody>
             {requests.map((r) => (
               <tr key={r.request_id}>
-                <td>{r.request_id}</td><td><Badge value={r.request_type} /></td><td>{r.resident?.name}</td>
+                <td className="nowrap">No. {r.request_id}</td><td><Badge value={r.request_type} /></td><td>{r.resident?.name}</td>
                 <td>{r.items.map((i) => `${i.medicine.medicine_name} ×${i.quantity}`).join(', ')}</td>
                 <td>{formatDate(r.request_date, true)}</td>
               </tr>

@@ -17,6 +17,8 @@ export function useApi<T>(url: string | null, params?: Record<string, unknown>, 
   const [errorInfo, setErrorInfo] = useState<ErrorInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const key = JSON.stringify(params ?? {});
+  // The params of the data on screen (it may still be the previous list while a new one is loading).
+  const [loadedKey, setLoadedKey] = useState<string | null>(null);
   const hasData = useRef(false);
   hasData.current = data !== null;
 
@@ -26,6 +28,7 @@ export function useApi<T>(url: string | null, params?: Record<string, unknown>, 
     try {
       const res = await api.get<T>(url, { params: JSON.parse(key) });
       setData(res.data);
+      setLoadedKey(key);
       setErrorInfo(null);
     } catch (err) {
       if (!hasData.current) setErrorInfo(describeError(err));
@@ -46,7 +49,7 @@ export function useApi<T>(url: string | null, params?: Record<string, unknown>, 
     };
   }, [load, refreshMs]);
 
-  return { data, error: errorInfo?.message ?? null, errorInfo, loading, reload: load, setData };
+  return { data, error: errorInfo?.message ?? null, errorInfo, loading, reload: load, setData, current: loadedKey === key };
 }
 
 /**
