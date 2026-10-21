@@ -4,6 +4,7 @@ import { LoadError } from './components/feedback';
 import AccessDenied from './components/AccessDenied';
 import Permissions from './pages/admin/Permissions';
 import ChangePasswordRequired from './pages/ChangePasswordRequired';
+import AccountProfile from './pages/AccountProfile';
 import { useAuth } from './auth';
 import Layout from './components/Layout';
 import type { Role } from './types';
@@ -95,7 +96,7 @@ export default function App() {
         <Route path="/dispensing" element={<Need perm={role === 'resident' ? 'history.view' : 'dispensing.records'}><DispensingRecords /></Need>} />
         <Route path="/notifications" element={role === 'admin' ? <Announcements /> : <Guard roles={['resident']}><Need perm="notifications.view"><MyNotifications /></Need></Guard>} />
 
-        <Route path="/profile" element={<Guard roles={['resident']}><Profile /></Guard>} />
+        <Route path="/profile" element={role === 'resident' ? <Profile /> : <AccountProfile />} />
 
         <Route path="/inventory" element={<Guard roles={OPS}><Need perm="inventory.view|inventory.manage"><Inventory /></Need></Guard>} />
         <Route path="/dispense" element={<Guard roles={OPS}><Need perm="dispensing.dispense|residents.register"><Dispense /></Need></Guard>} />

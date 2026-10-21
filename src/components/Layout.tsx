@@ -3,9 +3,7 @@ import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { ROLE_LABEL } from '../api';
 import { useAuth } from '../auth';
 import type { Role } from '../types';
-import { Avatar, Modal } from './ui';
-import ChangePasswordForm from './ChangePasswordForm';
-import { toast } from './feedback';
+import { Avatar } from './ui';
 import { NAV_STATE } from './BackButton';
 import { NotificationBell } from './Notifications';
 import { ExpiryBell } from './ExpiryAlerts';
@@ -97,10 +95,9 @@ const NAV: Record<Role, Section[]> = {
  * dimmed area, with the ✕ button, or with the Esc key.
  */
 export default function Layout() {
-  const { user, logout, can, setUser } = useAuth();
+  const { user, logout, can } = useAuth();
   const location = useLocation();
   const [open, setOpen] = useState(false);
-  const [changingPassword, setChangingPassword] = useState(false);
 
   // Close the menu after moving to another page.
   useEffect(() => { setOpen(false); }, [location.pathname]);
@@ -142,43 +139,28 @@ export default function Layout() {
             <small>Botika ng Bayan · Bulan</small>
           </div>
         </NavLink>
-        {user.role !== 'resident' && can('inventory.view|inventory.manage') && (
-          <div className="topbar-actions">
-            <ExpiryBell />
-          </div>
-        )}
-        {user.role === 'resident' && (
-          <div className="topbar-actions">
-            {can('notifications.view') && <NotificationBell />}
-            <Link to="/profile" state={NAV_STATE} className={`topbar-profile ${location.pathname === '/profile' ? 'is-current' : ''}`} aria-label="Open my profile" title="My profile"
+        <div className="topbar-actions">
+          {user.role !== 'resident' && can('inventory.view|inventory.manage') && <ExpiryBell />}
+          {user.role === 'resident' && can('notifications.view') && <NotificationBell />}
+          {/* Everyone: the picture or initial opens My Profile. */}
+          <Link to="/profile" state={NAV_STATE} className={`topbar-profile ${location.pathname === '/profile' ? 'is-current' : ''}`} aria-label="Open my profile" title="My profile"
               aria-current={location.pathname === '/profile' ? 'page' : undefined}>
-              <Avatar name={user.name} photo={user.resident?.photo} size={36} />
-            </Link>
-          </div>
-        )}
+            <Avatar name={user.name} photo={user.resident?.photo} size={36} />
+          </Link>
+        </div>
       </header>
 
       <div className={`drawer-overlay ${open ? 'is-open' : ''}`} onClick={() => setOpen(false)} aria-hidden="true" />
       <aside id="side-menu" className={`drawer ${open ? 'is-open' : ''}`} aria-hidden={!open} aria-label="Main menu">
         <div className="drawer-head">
-          {user.role === 'resident' ? (
-            // Residents: the picture and name open My Profile.
-            <Link to="/profile" state={NAV_STATE} className="drawer-profile" tabIndex={open ? 0 : -1} aria-label="Open my profile" title="My profile">
-              <Avatar name={user.name} photo={user.resident?.photo} size={38} />
-              <span className="drawer-user">
-                <strong>{user.name}</strong>
-                <small>View my profile</small>
-              </span>
-            </Link>
-          ) : (
-            <>
-              <Avatar name={user.name} photo={user.resident?.photo} size={38} />
-              <div className="drawer-user">
-                <strong>{user.name}</strong>
-                <small>{ROLE_LABEL[user.role]}</small>
-              </div>
-            </>
-          )}
+          {/* The picture and name open My Profile (all roles). */}
+          <Link to="/profile" state={NAV_STATE} className="drawer-profile" tabIndex={open ? 0 : -1} aria-label="Open my profile" title="My profile">
+            <Avatar name={user.name} photo={user.resident?.photo} size={38} />
+            <span className="drawer-user">
+              <strong>{user.name}</strong>
+              <small>{user.role === 'resident' ? 'View my profile' : `${ROLE_LABEL[user.role]} · View my profile`}</small>
+            </span>
+          </Link>
           <button className="drawer-close" onClick={() => setOpen(false)} aria-label="Close menu" tabIndex={open ? 0 : -1}>✕</button>
         </div>
 
@@ -202,12 +184,6 @@ export default function Layout() {
           ))}
         </nav>
 
-        {/* Residents change their password in Edit Profile; staff and the administrator here. */}
-        {user.role !== 'resident' && (
-          <button className="drawer-item drawer-action" onClick={() => { setOpen(false); setChangingPassword(true); }} tabIndex={open ? 0 : -1}>
-            <Icon name="key" /> Change password
-          </button>
-        )}
         <button className="drawer-logout" onClick={logout} tabIndex={open ? 0 : -1}>
           <Icon name="logout" /> Log out
         </button>
@@ -216,17 +192,6 @@ export default function Layout() {
       <main className="content">
         <Outlet />
       </main>
-
-      {changingPassword && (
-        <Modal title="Change password" onClose={() => setChangingPassword(false)}>
-          <p className="muted small">For your security, enter your current password. You will stay logged in here; other devices will be logged out.</p>
-          <ChangePasswordForm temporary={false} submitLabel="Change password" onCancel={() => setChangingPassword(false)} onDone={(u) => {
-            setUser(u);
-            setChangingPassword(false);
-            toast.success('Password changed', { description: 'Use your new password the next time you log in. Other devices were logged out.' });
-          }} />
-        </Modal>
-      )}
     </div>
   );
 }

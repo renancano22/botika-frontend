@@ -2028,3 +2028,13 @@ a.db-person:hover { background: rgba(255, 255, 255, 0.2); }
 .temp-login-warn { padding: 8px 10px; border-radius: 8px; background: #fff7ed; color: #9a3412; font-weight: 600; }
 .drawer-action { margin: 0 12px; width: calc(100% - 24px); border: none; background: none; font: inherit; cursor: pointer; text-align: left; }
 .cp-form .btn-block { margin-top: 12px; }
+
+/* User Accounts → Create / Edit: same sections as My Profile */
+.uf-form { display: flex; flex-direction: column; gap: 14px; }
+.uf-form .fb-sec { box-shadow: none; margin: 0; }
+.uf-form .fb-sec-link:disabled { opacity: 0.45; cursor: not-allowed; }
+.uf-reset ul { margin: 0 0 12px; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; font-size: 0.88rem; color: #374151; }
+.uf-reset .btn { display: inline-flex; align-items: center; gap: 8px; }
+.uf-form .modal-actions { margin-top: 0; }
+a.fb-sec-link { text-decoration: none; }
+.fb-sec input:disabled, .fb-sec select:disabled { background: #f3f6f5; color: var(--muted); cursor: not-allowed; }
