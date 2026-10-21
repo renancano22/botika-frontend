@@ -133,8 +133,8 @@ export default function Inventory() {
             <option value="">All batches with stock</option>
             <option value="near_expiry">Expiring within 1 month</option>
             <option value="expired">Expired</option>
-            <option value="ok">Not expiring soon</option>
-            <option value="empty">Used up (0 left)</option>
+            <option value="ok">Valid (expires in more than 1 month)</option>
+            <option value="empty">Empty batches (0 left)</option>
           </select>
           <select value={batchSort} onChange={(e) => setBatchSort(e.target.value)} aria-label="Sort batches">
             <option value="expiry">Expiring soonest first</option>
@@ -145,7 +145,7 @@ export default function Inventory() {
         </div>
       }>
         {loading && !data ? <Loading /> : !data ? null : !batches.length ? (
-          <Empty>{search.trim() ? 'No batches match this search.' : expiry === 'empty' ? 'No used-up batches yet.' : expiry ? 'No batches with this expiry status.' : 'No stock yet. Record a stock-in.'}</Empty>
+          <Empty>{search.trim() ? 'No batches match this search.' : expiry === 'empty' ? 'No empty batches yet.' : expiry ? 'No batches with this expiry status.' : 'No stock yet. Record a stock-in.'}</Empty>
         ) : (
           <table className={loading ? 'tbl-updating' : ''}>
             <thead><tr><th className="col-no">No.</th><th>Batch #</th><th>Medicine</th><th>Quantity</th><th>Expiration date</th><th>Expiry status</th><th>Last updated</th><th></th></tr></thead>

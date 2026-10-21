@@ -14,7 +14,7 @@ export function StatCard({ label, value, tone = 'default', hint }: {
 
 const BADGE_LABEL: Record<string, string> = {
   available: 'Available', low_stock: 'Low stock', out_of_stock: 'Out of stock', unrecorded: 'Not recorded',
-  near_expiry: 'Near expiry', expired: 'Expired', ok: 'OK',
+  near_expiry: 'Near expiry', expired: 'Expired', ok: 'Valid',
   pending: 'Pending', approved: 'Approved', rejected: 'Rejected', dispensed: 'Dispensed',
   fulfilled: 'Fulfilled', cancelled: 'Cancelled', app: 'In-app only', sent: 'Sent', failed: 'Failed', logged: 'Logged (no SMS key)',
   medicine: 'Medicine', restock: 'Restock', admin: 'Administrator', staff: 'Pharmacy Staff', resident: 'Resident',
