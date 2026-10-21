@@ -230,8 +230,14 @@ select::-ms-expand { display: none; }
 .toaster { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); z-index: 120; display: flex; flex-direction: column; align-items: stretch; gap: 10px; width: min(420px, calc(100vw - 24px)); pointer-events: none; }
 /* Inside the system: just below the green top bar. */
 body:has(.topbar) .toaster { top: 76px; }
-/* Log in / register / forgot password: messages go to the bottom so they never cover the logo or the form title. */
-body:has(.auth-page) .toaster { top: auto; bottom: 16px; flex-direction: column-reverse; }
+/* Log in / register / forgot password: messages are outside the card and close by themselves.
+   Laptops and wider: top right, in the free space beside the centred card (never over it).
+   Phones and tablets: at the bottom of the screen. */
+body:has(.auth-page) .toaster { top: auto; bottom: 16px; flex-direction: column-reverse; width: min(380px, calc(100vw - 24px)); }
+@media (min-width: 1000px) {
+  body:has(.auth-page) .toaster { top: 16px; bottom: auto; left: auto; right: 16px; transform: none; flex-direction: column;
+    width: min(360px, calc((100vw - 480px) / 2 - 8px)); }
+}
 .toast, .conn-banner {
   --tc: var(--primary); position: relative; overflow: hidden; pointer-events: auto; display: flex; align-items: flex-start; gap: 12px; padding: 14px 14px 15px;
   border-radius: 12px; background: #fff; color: var(--text); border: 1px solid #e3e9e7;

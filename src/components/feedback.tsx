@@ -99,7 +99,8 @@ function ToastView({ t }: { t: ToastItem }) {
 
   return (
     <div className={`toast toast-${t.type} ${paused ? 'is-paused' : ''}`} role={t.type === 'error' ? 'alert' : 'status'}
-      onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}
+      // Hovering with a mouse pauses the countdown (to read it). Touch does not, so on phones it always closes by itself.
+      onPointerEnter={(e) => { if (e.pointerType === 'mouse') setPaused(true); }} onPointerLeave={(e) => { if (e.pointerType === 'mouse') setPaused(false); }}
       onFocus={() => setPaused(true)} onBlur={() => setPaused(false)}>
       <span className="toast-icon"><FbIcon d={ICON[t.type]} /></span>
       <div className="toast-body">
