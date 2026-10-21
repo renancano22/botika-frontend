@@ -145,7 +145,7 @@ export default function Layout() {
           {/* Everyone: the picture or initial opens My Profile. */}
           <Link to="/profile" state={NAV_STATE} className={`topbar-profile ${location.pathname === '/profile' ? 'is-current' : ''}`} aria-label="Open my profile" title="My profile"
               aria-current={location.pathname === '/profile' ? 'page' : undefined}>
-            <Avatar name={user.name} photo={user.resident?.photo} size={36} />
+            <Avatar name={user.name} photo={user.resident?.photo ?? user.photo} size={36} />
           </Link>
         </div>
       </header>
@@ -155,7 +155,7 @@ export default function Layout() {
         <div className="drawer-head">
           {/* The picture and name open My Profile (all roles). */}
           <Link to="/profile" state={NAV_STATE} className="drawer-profile" tabIndex={open ? 0 : -1} aria-label="Open my profile" title="My profile">
-            <Avatar name={user.name} photo={user.resident?.photo} size={38} />
+            <Avatar name={user.name} photo={user.resident?.photo ?? user.photo} size={38} />
             <span className="drawer-user">
               <strong>{user.name}</strong>
               <small>{user.role === 'resident' ? 'View my profile' : `${ROLE_LABEL[user.role]} · View my profile`}</small>

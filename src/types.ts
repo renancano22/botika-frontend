@@ -21,6 +21,8 @@ export interface User {
   is_active: boolean;
   created_at: string;
   resident?: Resident | null;
+  /** Profile picture of the administrator / pharmacy staff (data URL; residents use resident.photo). Only for the logged-in user. */
+  photo?: string | null;
   /** Features this user may use (Admin → User Permissions). The administrator has all of them. */
   permissions?: string[];
   /** Still using the temporary default password given by the administrator: must change it first. */

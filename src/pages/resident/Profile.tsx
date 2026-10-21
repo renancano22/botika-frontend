@@ -4,7 +4,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { api, errorMessage } from '../../api';
 import { useAuth } from '../../auth';
 import { useApi } from '../../hooks';
-import { Avatar, Loading, Message, Modal, PasswordInput } from '../../components/ui';
+import { Loading, Message, Modal, PasswordInput } from '../../components/ui';
 import { Svg } from '../../components/RequestCards';
 import type { User } from '../../types';
 import { FIELD, passwordHasPersonalInfo } from '../../validation';
@@ -12,6 +12,7 @@ import { jumpTo, jumpToTop } from '../../scroll';
 import BackButton from '../../components/BackButton';
 import { LoadError, toast } from '../../components/feedback';
 import AccessDenied from '../../components/AccessDenied';
+import { DeletePhotoConfirm, NewPhotoConfirm, PhotoMenu, PhotoPreview, resizePhoto, type PhotoAction, type PhotoChange } from '../../components/ProfilePhoto';
 
 interface ProfileData {
   user: User;
@@ -22,8 +23,6 @@ interface ProfileData {
 }
 
 type Msg = { type: 'error' | 'success' | 'info'; text: string } | null;
-/** Profile picture in the Edit Profile form: unchanged, a new picture (not saved yet) or removed (not saved yet). */
-type PhotoChange = { kind: 'keep' } | { kind: 'new'; data: string } | { kind: 'remove' };
 
 const EMPTY_PW = { current_password: '', password: '', password_confirmation: '' };
 
@@ -60,29 +59,6 @@ function SummaryRow({ icon, label, children }: { icon: string; label: string; ch
   );
 }
 
-/** Shrinks and crops the chosen picture to a 256×256 JPEG so it uploads fast and stays small. */
-function resizePhoto(file: File, size = 256): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const url = URL.createObjectURL(file);
-    const img = new Image();
-    img.onload = () => {
-      const side = Math.min(img.width, img.height);
-      const canvas = document.createElement('canvas');
-      canvas.width = size;
-      canvas.height = size;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) { reject(new Error('no canvas')); return; }
-      ctx.fillStyle = '#fff';
-      ctx.fillRect(0, 0, size, size);
-      ctx.drawImage(img, (img.width - side) / 2, (img.height - side) / 2, side, side, 0, 0, size, size);
-      URL.revokeObjectURL(url);
-      resolve(canvas.toDataURL('image/jpeg', 0.85));
-    };
-    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('This file is not a picture.')); };
-    img.src = url;
-  });
-}
-
 const MONTHS = ['Jan.', 'Feb.', 'Mar.', 'Apr.', 'May', 'Jun.', 'Jul.', 'Aug.', 'Sep.', 'Oct.', 'Nov.', 'Dec.'];
 /** Registration date as "Oct. 5, 2026". */
 const regDate = (v: string) => {
@@ -90,8 +66,6 @@ const regDate = (v: string) => {
   return Number.isNaN(d.getTime()) ? '—' : `${MONTHS[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
 };
 
-/** One action in the profile picture menu (View / Change / Delete). */
-interface PhotoAction { key: string; icon: string; label: string; onClick: () => void; danger?: boolean; disabled?: boolean }
 
 /** "0917 123 4567" / "+63 917…" → "09171234567" (same as the server), to tell whether the number changed. */
 const normalizePhone = (v: string) => {
@@ -128,8 +102,6 @@ export default function Profile() {
   const fileInput = useRef<HTMLInputElement>(null);
   const formTop = useRef<HTMLDivElement>(null);
   const [pwOpen, setPwOpen] = useState(false);           // Change Password: closed by default
-  const [photoMenu, setPhotoMenu] = useState(false);     // camera button menu
-  const photoBox = useRef<HTMLDivElement>(null);
   const viewFileInput = useRef<HTMLInputElement>(null);
   const [newPhoto, setNewPhoto] = useState<string | null>(null);  // My Profile: chosen picture waiting for "Save Picture"
   const [confirmDelete, setConfirmDelete] = useState(false);       // My Profile: "Delete profile picture?"
@@ -149,23 +121,7 @@ export default function Profile() {
     setPhoto({ kind: 'keep' });
     setFormMsg(null);
     setPwOpen(false);
-    setPhotoMenu(false);
   }, [data, editing]);
-
-  // Close the picture menu when tapping elsewhere or pressing Esc.
-  useEffect(() => {
-    if (!photoMenu) return;
-    const close = (e: MouseEvent | TouchEvent) => { if (!photoBox.current?.contains(e.target as Node)) setPhotoMenu(false); };
-    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') setPhotoMenu(false); };
-    document.addEventListener('mousedown', close);
-    document.addEventListener('touchstart', close);
-    document.addEventListener('keydown', esc);
-    return () => {
-      document.removeEventListener('mousedown', close);
-      document.removeEventListener('touchstart', close);
-      document.removeEventListener('keydown', esc);
-    };
-  }, [photoMenu]);
 
   // Esc closes the confirmation dialog (not while saving).
   useEffect(() => {
@@ -273,26 +229,7 @@ export default function Profile() {
 
   /** Profile picture with a camera button; tapping either opens View / Change / Delete. */
   const photoControl = (src: string | null | undefined, name: string, actions: PhotoAction[], disabled = false) => (
-    <div className="fb-avatar-wrap" ref={photoBox}>
-      <button type="button" className="fb-avatar" onClick={() => setPhotoMenu((o) => !o)} disabled={disabled}
-        aria-haspopup="menu" aria-expanded={photoMenu} aria-label="Profile picture options" title="Profile picture options">
-        <Avatar name={name} photo={src} size={128} />
-      </button>
-      <button type="button" className="fb-camera" onClick={() => setPhotoMenu((o) => !o)} disabled={disabled}
-        aria-haspopup="menu" aria-expanded={photoMenu} aria-label="Profile picture options" title="Profile picture options">
-        <Svg d={ICON.camera} size={19} width={2.2} />
-      </button>
-      {photoMenu && (
-        <div className="pf-menu fb-photo-menu" role="menu">
-          {actions.map((a) => (
-            <button key={a.key} type="button" role="menuitem" className={a.danger ? 'pf-menu-danger' : ''} disabled={a.disabled}
-              onClick={() => { setPhotoMenu(false); a.onClick(); }}>
-              <Svg d={a.icon} size={18} /> {a.label}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
+    <PhotoMenu src={src} name={name} actions={actions} disabled={disabled} />
   );
 
   const showFormError = (text: string) => {
@@ -355,23 +292,7 @@ export default function Profile() {
 
   /** Enlarged profile picture (My Profile, and Edit Profile where it can be a new picture not saved yet). */
   const previewModal = (src: string | null | undefined, note?: string) => (
-    <Modal title="Profile Picture" onClose={() => setPreview(false)}>
-      <div className="pf-preview">
-        {src
-          ? <img src={src} alt={`Profile picture of ${user.name}`} />
-          : (
-            <>
-              <Avatar name={user.name} size={160} />
-              <p className="muted small">No profile picture yet. You can add one in Edit Profile.</p>
-            </>
-          )}
-        <strong>{user.name}</strong>
-        {note && <p className="muted small">{note}</p>}
-        <div className="modal-actions">
-          <button type="button" className="btn" onClick={() => setPreview(false)}>Close</button>
-        </div>
-      </div>
-    </Modal>
+    <PhotoPreview src={src} name={user.name} note={note} onClose={() => setPreview(false)} />
   );
 
   // ------------------------------------------------------------------ Edit Profile
@@ -578,33 +499,9 @@ export default function Profile() {
 
       {preview && previewModal(resident.photo)}
 
-      {newPhoto && (
-        <div className="modal-backdrop" onMouseDown={() => !savingRef.current && setNewPhoto(null)}>
-          <div className="modal confirm-modal pf-confirm" role="dialog" aria-modal="true" aria-labelledby="pf-photo-title" onMouseDown={(e) => e.stopPropagation()}>
-            <img className="pf-new-photo" src={newPhoto} alt="New profile picture" />
-            <h2 id="pf-photo-title">Change profile picture?</h2>
-            <p>This picture will replace your current profile picture.</p>
-            <div className="confirm-actions">
-              <button type="button" className="btn btn-outline" onClick={() => setNewPhoto(null)} disabled={photoSaving}>Cancel</button>
-              <button type="button" className="btn" onClick={() => savePhoto('change')} disabled={photoSaving}>{photoSaving ? 'Saving…' : 'Save Picture'}</button>
-            </div>
-          </div>
-        </div>
-      )}
+      {newPhoto && <NewPhotoConfirm src={newPhoto} saving={photoSaving} onCancel={() => setNewPhoto(null)} onSave={() => savePhoto('change')} />}
 
-      {confirmDelete && (
-        <div className="modal-backdrop" onMouseDown={() => !savingRef.current && setConfirmDelete(false)}>
-          <div className="modal confirm-modal pf-confirm" role="dialog" aria-modal="true" aria-labelledby="pf-del-title" onMouseDown={(e) => e.stopPropagation()}>
-            <span className="confirm-icon"><Svg d={ICON.trash} size={28} /></span>
-            <h2 id="pf-del-title">Delete profile picture?</h2>
-            <p>Your picture will be removed and the default profile avatar will be shown instead.</p>
-            <div className="confirm-actions">
-              <button type="button" className="btn btn-outline" onClick={() => setConfirmDelete(false)} disabled={photoSaving}>Cancel</button>
-              <button type="button" className="btn btn-danger" onClick={() => savePhoto('delete')} disabled={photoSaving}>{photoSaving ? 'Deleting…' : 'Delete'}</button>
-            </div>
-          </div>
-        </div>
-      )}
+      {confirmDelete && <DeletePhotoConfirm saving={photoSaving} onCancel={() => setConfirmDelete(false)} onDelete={() => savePhoto('delete')} />}
 
       {showQr && (
         <Modal title="My QR Code" onClose={() => setShowQr(false)}>

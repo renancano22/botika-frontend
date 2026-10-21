@@ -1,14 +1,15 @@
-import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ChangeEvent, type FormEvent, type ReactNode } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { api, formatDate, ROLE_LABEL } from '../api';
 import { useAuth } from '../auth';
-import { Avatar, Message, PasswordInput } from '../components/ui';
+import { Message, PasswordInput } from '../components/ui';
 import { Svg } from '../components/RequestCards';
 import BackButton from '../components/BackButton';
 import { confirmAction, toast, useFormErrors } from '../components/feedback';
 import type { User } from '../types';
 import { FIELD, passwordHasPersonalInfo } from '../validation';
 import { jumpToTop } from '../scroll';
+import { DeletePhotoConfirm, NewPhotoConfirm, PHOTO_ICON, PhotoMenu, PhotoPreview, resizePhoto, type PhotoChange } from '../components/ProfilePhoto';
 
 const ICON = {
   user: 'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8',
@@ -49,19 +50,67 @@ export default function AccountProfile() {
   const [pw, setPw] = useState(EMPTY_PW);
   const [pwOpen, setPwOpen] = useState(false);
   const [saving, setSaving] = useState(false);
-  const fe = useFormErrors(['name', 'current_password', 'password', 'password_confirmation']);
+  const fe = useFormErrors(['name', 'current_password', 'password', 'password_confirmation', 'photo']);
+  // Profile picture: the same as the resident's My Profile (shared component).
+  const [photo, setPhoto] = useState<PhotoChange>({ kind: 'keep' });   // Edit Profile: saved with the other changes
+  const [newPhoto, setNewPhoto] = useState<string | null>(null);       // My Profile: chosen picture waiting for "Save Picture"
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [preview, setPreview] = useState(false);
+  const [preparingPhoto, setPreparingPhoto] = useState(false);
+  const [photoSaving, setPhotoSaving] = useState(false);
+  const [photoError, setPhotoError] = useState('');
+  const fileInput = useRef<HTMLInputElement>(null);
 
-  // Every time Edit Profile opens it starts from the saved name, with the password closed and empty.
+  // Every time Edit Profile opens it starts from the saved name and picture, with the password closed and empty.
   useEffect(() => {
     setName(user?.name ?? '');
     setPw(EMPTY_PW);
     setPwOpen(false);
+    setPhoto({ kind: 'keep' });
+    setPhotoError('');
     fe.clear();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editing, user?.user_id]);
 
   if (!user) return null;
   const isAdmin = user.role === 'admin';
+  const editPhoto = photo.kind === 'new' ? photo.data : photo.kind === 'remove' ? null : user.photo;
+
+  /** A picture chosen from the gallery or camera, shrunk to a small JPEG. Edit Profile keeps it until Save Changes. */
+  const choosePhoto = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // lets the same file be chosen again later
+    if (!file) return;
+    setPreparingPhoto(true);
+    setPhotoError('');
+    try {
+      const data = await resizePhoto(file);
+      if (editing) setPhoto({ kind: 'new', data }); else setNewPhoto(data);
+    } catch (err) {
+      setPhotoError(err instanceof Error ? err.message : 'This picture could not be used.');
+    } finally { setPreparingPhoto(false); }
+  };
+
+  /** My Profile: saves the new picture or deletes it, after the confirmation dialog. */
+  const savePhoto = async (action: 'change' | 'delete') => {
+    if (photoSaving) return;
+    setPhotoSaving(true);
+    try {
+      const res = action === 'change'
+        ? await api.post<{ user: User }>('/account/photo', { photo: newPhoto })
+        : await api.delete<{ user: User }>('/account/photo');
+      setUser(res.data.user); // updates the picture in the top bar and menu
+      toast.success(action === 'change' ? 'Profile picture updated' : 'Profile picture deleted', {
+        description: action === 'change' ? 'Your new picture is now shown on your profile.' : 'Your profile now shows your initial instead of a picture.',
+      });
+    } catch (err) {
+      toast.fromError(err, { title: action === 'change' ? 'Your picture was not changed' : 'Your picture was not deleted' });
+    } finally {
+      setNewPhoto(null);
+      setConfirmDelete(false);
+      setPhotoSaving(false);
+    }
+  };
 
   const openEdit = () => { setParams({ edit: '1' }, { state: { fromProfile: true } }); jumpToTop(); };
   const closeEdit = () => {
@@ -93,27 +142,33 @@ export default function AccountProfile() {
       if (!pw.current_password) return fe.setFieldErrors({ current_password: 'Enter your current password to change your password.' });
       if (!pwChecks.every((c) => c.ok)) return fe.setFieldErrors({ password: 'The new password does not meet the requirements below.' });
     }
-    if (pwOpen && !wantsPassword && cleanName === user.name) {
+    if (pwOpen && !wantsPassword && cleanName === user.name && photo.kind === 'keep') {
       // Change Password is open but empty: say what to do instead of "nothing to save".
       return fe.setFieldErrors({ current_password: 'Enter your current password and a new password, or tap "Don\'t change" to keep your current password.' });
     }
-    if (cleanName === user.name && !wantsPassword) {
-      toast.info('Nothing to save', { description: 'You have not made any changes. Edit your name or change your password, then save.' });
+    if (cleanName === user.name && !wantsPassword && photo.kind === 'keep') {
+      toast.info('Nothing to save', { description: 'You have not made any changes. Edit your name, picture or password, then save.' });
       return;
     }
 
-    const changes = [...(cleanName !== user.name ? ['Full name'] : []), ...(wantsPassword ? ['Password'] : [])];
+    const changes = [
+      ...(cleanName !== user.name ? ['Full name'] : []),
+      ...(photo.kind === 'new' ? ['Profile picture (new picture)'] : photo.kind === 'remove' ? ['Profile picture (removed)'] : []),
+      ...(wantsPassword ? ['Password'] : []),
+    ];
     await confirmAction({
       title: 'Save changes to your profile?',
-      message: <>These will be updated: <strong>{changes.join(' and ')}</strong>.</>,
+      message: <>These will be updated: <strong>{changes.length > 1 ? `${changes.slice(0, -1).join(', ')} and ${changes[changes.length - 1]}` : changes[0]}</strong>.</>,
       details: wantsPassword ? 'Use your new password the next time you log in. Other phones or computers logged in to your account will be logged out.' : undefined,
       confirmLabel: 'Confirm and Save',
       busyLabel: 'Saving…',
       onConfirm: async () => {
         setSaving(true);
         try {
-          const body: Record<string, string> = { name: cleanName };
+          const body: Record<string, unknown> = { name: cleanName };
           if (wantsPassword) Object.assign(body, pw);
+          if (photo.kind === 'new') body.photo = photo.data;
+          if (photo.kind === 'remove') body.remove_photo = true;
           const res = await api.put<{ user: User; password_changed: boolean }>('/account', body);
           setUser(res.data.user);
           toast.success('Profile updated', {
@@ -136,6 +191,30 @@ export default function AccountProfile() {
         <Message>{fe.general}</Message>
 
         <form onSubmit={submit} className="fb-form">
+          {/* Profile picture with a camera button to change it (saved with the other changes) */}
+          <section className="card fb-sec fb-photo-sec">
+            <PhotoMenu src={editPhoto} name={name.trim() || user.name} disabled={preparingPhoto || saving} actions={[
+              { key: 'view', icon: PHOTO_ICON.eye, label: 'View Profile Picture', onClick: () => setPreview(true) },
+              { key: 'change', icon: PHOTO_ICON.camera, label: 'Change Profile Picture', onClick: () => fileInput.current?.click() },
+              ...(photo.kind !== 'keep' ? [{ key: 'keep', icon: PHOTO_ICON.undo, label: 'Keep Current Picture', onClick: () => setPhoto({ kind: 'keep' }) }] : []),
+              { key: 'delete', icon: PHOTO_ICON.trash, label: 'Delete Profile Picture', danger: true, disabled: !user.photo || photo.kind === 'remove',
+                onClick: () => setPhoto({ kind: 'remove' }) },
+            ]} />
+            <input ref={fileInput} type="file" accept="image/*" hidden onChange={choosePhoto} />
+            <div className="fb-who">
+              <strong>{name.trim() || user.name}</strong>
+              <small className="fb-rid">{ROLE_LABEL[user.role]}</small>
+              <small>Account created {formatDate(user.created_at)}</small>
+            </div>
+            {(preparingPhoto || photo.kind !== 'keep') && (
+              <p className="fb-photo-status is-pending">
+                {preparingPhoto ? 'Preparing picture…' : photo.kind === 'new' ? 'New picture chosen — it will be saved when you confirm your changes.' : 'Picture will be removed when you confirm your changes.'}
+              </p>
+            )}
+            {photoError && <p className="field-error" role="alert">{photoError}</p>}
+            {fe.error('photo')}
+          </section>
+
           <section className="card fb-sec">
             <div className="fb-sec-head">
               <h2><span className="fb-sec-icon"><Svg d={ICON.user} size={17} /></span>Personal Information</h2>
@@ -191,10 +270,11 @@ export default function AccountProfile() {
           <p className="fb-fixed-note muted small">Your email address, role and account creation date cannot be changed here.</p>
 
           <div className="fb-actions">
-            <button className="btn btn-lg" disabled={saving}><Svg d={ICON.save} size={18} /> {saving ? 'Saving…' : 'Save Changes'}</button>
+            <button className="btn btn-lg" disabled={saving || preparingPhoto}><Svg d={ICON.save} size={18} /> {saving ? 'Saving…' : 'Save Changes'}</button>
             <button type="button" className="btn btn-outline btn-lg" onClick={closeEdit} disabled={saving}>Cancel</button>
           </div>
         </form>
+        {preview && <PhotoPreview src={editPhoto} name={name.trim() || user.name} note={photo.kind === 'new' ? 'New picture — not saved yet.' : undefined} onClose={() => setPreview(false)} />}
       </div>
     );
   }
@@ -207,7 +287,15 @@ export default function AccountProfile() {
 
       <div className="fb-form fb-view">
         <section className="card fb-sec fb-photo-sec">
-          <div className="fb-avatar-wrap"><span className="fb-avatar"><Avatar name={user.name} size={128} /></span></div>
+          <PhotoMenu src={user.photo} name={user.name} disabled={preparingPhoto || photoSaving} actions={[
+            { key: 'view', icon: PHOTO_ICON.eye, label: 'View Profile Picture', onClick: () => setPreview(true) },
+            { key: 'change', icon: PHOTO_ICON.camera, label: 'Change Profile Picture', onClick: () => fileInput.current?.click() },
+            { key: 'delete', icon: PHOTO_ICON.trash, label: 'Delete Profile Picture', danger: true, disabled: !user.photo, onClick: () => setConfirmDelete(true) },
+          ]} />
+          {/* gallery or camera (the phone offers both for image/*) */}
+          <input ref={fileInput} type="file" accept="image/*" hidden onChange={choosePhoto} />
+          {preparingPhoto && <p className="fb-photo-status">Preparing picture…</p>}
+          {photoError && <p className="field-error" role="alert">{photoError}</p>}
           <div className="fb-who">
             <strong>{user.name}</strong>
             <small className="fb-rid">{ROLE_LABEL[user.role]}</small>
@@ -228,6 +316,10 @@ export default function AccountProfile() {
           <button type="button" className="btn btn-lg" onClick={openEdit}><Svg d={ICON.edit} size={18} /> Edit Profile</button>
         </div>
       </div>
+
+      {preview && <PhotoPreview src={user.photo} name={user.name} onClose={() => setPreview(false)} />}
+      {newPhoto && <NewPhotoConfirm src={newPhoto} saving={photoSaving} onCancel={() => setNewPhoto(null)} onSave={() => savePhoto('change')} />}
+      {confirmDelete && <DeletePhotoConfirm saving={photoSaving} onCancel={() => setConfirmDelete(false)} onDelete={() => savePhoto('delete')} />}
     </div>
   );
 }
