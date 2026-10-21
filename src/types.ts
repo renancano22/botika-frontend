@@ -109,7 +109,8 @@ export interface InventoryBatch {
   quantity: number;
   expiration_date: string;
   last_updated: string;
-  expiry_status?: 'ok' | 'near_expiry' | 'expired';
+  /** 'empty': the batch has 0 left (its expiration date no longer matters: there is nothing to remove). */
+  expiry_status?: 'ok' | 'near_expiry' | 'expired' | 'empty';
   medicine: Pick<Medicine, 'medicine_id' | 'medicine_name' | 'unit'> & { category?: string };
 }
 

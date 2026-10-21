@@ -131,8 +131,8 @@ export default function Inventory() {
         <div className="filters">
           <select value={expiry} onChange={(e) => setExpiry(e.target.value)} aria-label="Expiry status">
             <option value="">All batches with stock</option>
-            <option value="near_expiry">Expiring within 1 month</option>
-            <option value="expired">Expired</option>
+            <option value="near_expiry">Expiring within 1 month (in stock)</option>
+            <option value="expired">Expired (still in stock)</option>
             <option value="ok">Valid (expires in more than 1 month)</option>
             <option value="empty">Empty batches (0 left)</option>
           </select>

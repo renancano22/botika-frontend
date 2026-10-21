@@ -177,6 +177,7 @@ tr.clickable:hover td { background: #f1faf3; }
 .badge-rejected { background: #ffe4e6; color: var(--st-rejected); }
 .badge-cancelled { background: #e2e8f0; color: var(--st-cancelled); }
 .badge-expired { background: #ffedd5; color: #c2410c; }
+.badge-empty { background: #eef2f1; color: #5f6f6b; }
 .badge-medicine, .badge-staff { background: var(--primary-soft); color: var(--primary-dark); }
 .badge-tx-stock_in { background: var(--ok-soft); color: var(--ok); }
 .badge-tx-stock_out { background: var(--danger-soft); color: var(--danger); }
