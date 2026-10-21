@@ -72,10 +72,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     login: async (login, password) => handleAuth((await api.post('/login', { login, password })).data),
     register: async (data) => handleAuth((await api.post('/register', data)).data),
     logout: async () => {
-      try { await api.post('/logout'); } catch { /* token may already be invalid */ }
+      // Log out on this device immediately, then end the session on the server in the background
+      // (with the token read before it is removed), so a slow connection does not delay anything.
+      const token = localStorage.getItem(TOKEN_KEY);
       localStorage.removeItem(TOKEN_KEY);
       setUser(null);
       toast.success('Logged out', { description: 'You have safely logged out of BulanBotikaCare.' });
+      if (token) api.post('/logout', null, { headers: { Authorization: `Bearer ${token}` } }).catch(() => { /* already ended or offline */ });
     },
     setUser,
     can: (keys) => hasPermission(user, keys),

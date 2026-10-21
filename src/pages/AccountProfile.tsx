@@ -93,8 +93,12 @@ export default function AccountProfile() {
       if (!pw.current_password) return fe.setFieldErrors({ current_password: 'Enter your current password to change your password.' });
       if (!pwChecks.every((c) => c.ok)) return fe.setFieldErrors({ password: 'The new password does not meet the requirements below.' });
     }
+    if (pwOpen && !wantsPassword && cleanName === user.name) {
+      // Change Password is open but empty: say what to do instead of "nothing to save".
+      return fe.setFieldErrors({ current_password: 'Enter your current password and a new password, or tap "Don\'t change" to keep your current password.' });
+    }
     if (cleanName === user.name && !wantsPassword) {
-      toast.info('No changes to save', { description: 'Your profile is already up to date.' });
+      toast.info('Nothing to save', { description: 'You have not made any changes. Edit your name or change your password, then save.' });
       return;
     }
 

@@ -311,8 +311,12 @@ export default function Profile() {
       if (!pwChecks.every((c) => c.ok)) return showFormError('The new password does not meet the requirements below the password fields.');
       if (pw.password === pw.current_password) return showFormError('The new password must be different from your current password.');
     }
+    if (changes.length === 0 && !wantsPassword && pwOpen) {
+      // Change Password is open but empty: say what to do instead of "nothing to save".
+      return showFormError('To change your password, enter your current password and a new password. Or tap "Don\'t change" to keep your current password.');
+    }
     if (changes.length === 0 && !wantsPassword) {
-      setFormMsg({ type: 'info', text: 'There are no changes to save.' });
+      toast.info('Nothing to save', { description: 'You have not made any changes. Edit your information, picture or password, then save.' });
       return;
     }
     setConfirming(true);
