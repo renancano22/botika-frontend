@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../api';
 import { Message, PasswordInput } from '../components/ui';
-import { toast, useFormErrors } from '../components/feedback';
+import { useFormErrors } from '../components/feedback';
 import { FIELD } from '../validation';
 
 /**
@@ -28,8 +28,8 @@ export default function ForgotPassword() {
     fe.clear();
     try {
       const res = await api.post<{ message: string }>('/forgot-password', { login });
-      setInfo(res.data.message);
-      if (step === 2) toast.success('Code sent again', { description: 'Check your SMS or email for the new 6-digit code.' });
+      // Shown inside the card (a toast would cover the form on this page).
+      setInfo(step === 2 ? `New code requested. ${res.data.message}` : res.data.message);
       setStep(2);
     } catch (err) {
       fe.fromError(err);

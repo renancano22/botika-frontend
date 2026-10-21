@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
-import { api, describeError, TOKEN_KEY, type ErrorInfo } from './api';
-import type { User } from './types';
+import { api, describeError, SESSION_NOTICE_KEY, TOKEN_KEY, type ErrorInfo } from './api';
 import { toast } from './components/feedback';
+import type { User } from './types';
 import { hasPermission, PERMISSION_DENIED } from './permissions';
 
 interface AuthState {
@@ -76,8 +76,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // (with the token read before it is removed), so a slow connection does not delay anything.
       const token = localStorage.getItem(TOKEN_KEY);
       localStorage.removeItem(TOKEN_KEY);
+      try { sessionStorage.setItem(SESSION_NOTICE_KEY, 'logged_out'); } catch { /* storage blocked */ }
+      toast.clear();
       setUser(null);
-      toast.success('Logged out', { description: 'You have safely logged out of BulanBotikaCare.' });
       if (token) api.post('/logout', null, { headers: { Authorization: `Bearer ${token}` } }).catch(() => { /* already ended or offline */ });
     },
     setUser,

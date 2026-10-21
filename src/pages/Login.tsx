@@ -13,9 +13,9 @@ export default function Login() {
   const [busy, setBusy] = useState(false);
   // Message passed from the Forgot Password page after a successful reset.
   const notice = (useLocation().state as { notice?: string } | null)?.notice ?? '';
-  // Shown once after the session expired (the user was logged out automatically).
-  const [expired] = useState(() => {
-    try { return sessionStorage.getItem(SESSION_NOTICE_KEY) === 'expired'; } catch { return false; }
+  // Shown once inside the card: after logging out, or after the session expired (logged out automatically).
+  const [session] = useState(() => {
+    try { return sessionStorage.getItem(SESSION_NOTICE_KEY) ?? ''; } catch { return ''; }
   });
   useEffect(() => {
     try { sessionStorage.removeItem(SESSION_NOTICE_KEY); } catch { /* storage blocked */ }
@@ -44,7 +44,8 @@ export default function Login() {
         </div>
         <h1>Log in</h1>
         <Message type="success">{notice}</Message>
-        {expired && !notice && <Message type="warning" title="Session expired">For your security, you were logged out. Please log in again to continue.</Message>}
+        {!notice && session === 'logged_out' && <Message type="success" title="Logged out">You have safely logged out of BulanBotikaCare.</Message>}
+        {!notice && session === 'expired' && <Message type="warning" title="Session expired">For your security, you were logged out. Please log in again to continue.</Message>}
         <Message>{fe.general}</Message>
         <label>Email or mobile number
           <input value={login} onChange={(e) => { setLogin(e.target.value); fe.clear('login'); }} placeholder="name@gmail.com or 09XXXXXXXXX" autoComplete="username" required autoFocus {...fe.invalid('login')} />

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type CSSProperties, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { describeError, onSlowConnection, type ErrorInfo } from '../api';
 
@@ -76,6 +76,8 @@ export const toast = {
   warning: (title: string, opts?: ToastOptions) => pushToast('warning', title, opts),
   info: (title: string, opts?: ToastOptions) => pushToast('info', title, opts),
   dismiss: dismissToast,
+  /** Removes every toast (used when logging out, so in-app messages don't follow to the login page). */
+  clear: () => { toasts = []; emitToasts(); },
   /** Error toast built from a failed request; adds "Try again" when retrying can help. */
   fromError: (err: unknown, opts: { title?: string; retry?: () => void } = {}) => {
     const info = describeError(err);
@@ -96,7 +98,7 @@ function ToastView({ t }: { t: ToastItem }) {
   }, [t.id, t.stamp, paused, duration]);
 
   return (
-    <div className={`toast toast-${t.type}`} role={t.type === 'error' ? 'alert' : 'status'}
+    <div className={`toast toast-${t.type} ${paused ? 'is-paused' : ''}`} role={t.type === 'error' ? 'alert' : 'status'}
       onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}
       onFocus={() => setPaused(true)} onBlur={() => setPaused(false)}>
       <span className="toast-icon"><FbIcon d={ICON[t.type]} /></span>
@@ -112,6 +114,7 @@ function ToastView({ t }: { t: ToastItem }) {
       <button type="button" className="toast-close" onClick={() => dismissToast(t.id)} aria-label="Dismiss notification">
         <FbIcon d="M6 6l12 12M18 6 6 18" size={16} />
       </button>
+      {duration > 0 && <span key={`${t.stamp}-${paused}`} className="toast-progress" style={{ '--dur': `${duration}ms` } as CSSProperties} aria-hidden="true" />}
     </div>
   );
 }

@@ -226,32 +226,43 @@ select::-ms-expand { display: none; }
 .msg-warning { background: #fff7ed; color: #9a3412; border-color: #fed7aa; }
 
 /* ---------- feedback: toasts, connection notice, dialogs, load errors, field errors */
-.toaster { position: fixed; top: 76px; left: 50%; transform: translateX(-50%); z-index: 120; display: flex; flex-direction: column; align-items: stretch; gap: 10px; width: min(440px, calc(100vw - 24px)); pointer-events: none; }
+.toaster { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); z-index: 120; display: flex; flex-direction: column; align-items: stretch; gap: 10px; width: min(420px, calc(100vw - 24px)); pointer-events: none; }
+/* Inside the system: just below the green top bar. */
+body:has(.topbar) .toaster { top: 76px; }
+/* Log in / register / forgot password: messages go to the bottom so they never cover the logo or the form title. */
+body:has(.auth-page) .toaster { top: auto; bottom: 16px; flex-direction: column-reverse; }
 .toast, .conn-banner {
-  --tc: var(--primary); pointer-events: auto; display: flex; align-items: flex-start; gap: 12px; padding: 13px 14px; border-radius: 14px;
-  background: #fff; color: var(--text); border: 1px solid color-mix(in srgb, var(--tc) 28%, white); border-left: 5px solid var(--tc);
-  box-shadow: 0 12px 30px rgba(15, 31, 27, 0.16); animation: fb-in 0.22s ease-out;
+  --tc: var(--primary); position: relative; overflow: hidden; pointer-events: auto; display: flex; align-items: flex-start; gap: 12px; padding: 14px 14px 15px;
+  border-radius: 12px; background: #fff; color: var(--text); border: 1px solid #e3e9e7;
+  box-shadow: 0 1px 2px rgba(15, 31, 27, 0.06), 0 12px 28px -6px rgba(15, 31, 27, 0.22); animation: fb-in 0.2s ease-out;
 }
 .toast-success { --tc: #16a34a; }
 .toast-error { --tc: #e11d48; }
 .toast-warning { --tc: #d97706; }
 .toast-info { --tc: #2563eb; }
-.conn-offline { --tc: #475569; background: #f8fafc; }
+.conn-offline { --tc: #475569; }
 .conn-slow { --tc: #d97706; }
-.toast-icon { width: 32px; height: 32px; border-radius: 10px; display: grid; place-items: center; flex-shrink: 0; color: var(--tc); background: color-mix(in srgb, var(--tc) 13%, white); }
-.toast-body { flex: 1; min-width: 0; padding-top: 1px; }
-.toast-body strong { display: block; font-size: 0.93rem; line-height: 1.3; }
-.toast-body p { margin: 3px 0 0; font-size: 0.84rem; color: #4b5b57; line-height: 1.4; }
-.toast-action { margin-top: 8px; padding: 5px 12px; border-radius: 8px; border: 1px solid color-mix(in srgb, var(--tc) 40%, white); background: color-mix(in srgb, var(--tc) 8%, white);
+.toast-icon { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; flex-shrink: 0; margin-top: 1px; color: #fff; background: var(--tc); }
+.toast-icon svg { width: 15px; height: 15px; stroke-width: 2.8; }
+.toast-body { flex: 1; min-width: 0; }
+.toast-body strong { display: block; font-size: 0.92rem; font-weight: 700; line-height: 1.35; color: #0f1f1b; }
+.toast-body p { margin: 2px 0 0; font-size: 0.84rem; color: #5b6b67; line-height: 1.45; }
+.toast-action { margin-top: 9px; padding: 5px 12px; border-radius: 8px; border: 1px solid #d5dedb; background: #fff;
   color: color-mix(in srgb, var(--tc) 85%, black); font: inherit; font-size: 0.82rem; font-weight: 700; cursor: pointer; }
-.toast-action:hover { background: color-mix(in srgb, var(--tc) 16%, white); }
-.toast-close { flex-shrink: 0; width: 28px; height: 28px; margin: -3px -4px 0 0; display: grid; place-items: center; border: none; border-radius: 8px; background: none; color: #8a9894; cursor: pointer; }
+.toast-action:hover { background: #f4f7f6; }
+.toast-close { flex-shrink: 0; width: 26px; height: 26px; margin: -2px -4px 0 0; display: grid; place-items: center; border: none; border-radius: 6px; background: none; color: #94a3a0; cursor: pointer; }
 .toast-close:hover { background: #f1f5f4; color: var(--text); }
-.toast-close:focus-visible, .toast-action:focus-visible { outline: 3px solid color-mix(in srgb, var(--tc) 35%, white); outline-offset: 1px; }
+.toast-close:focus-visible, .toast-action:focus-visible { outline: 3px solid color-mix(in srgb, var(--tc) 30%, white); outline-offset: 1px; }
+/* Time left before the message closes by itself (stops while the mouse is over it). */
+.toast-progress { position: absolute; left: 0; bottom: 0; height: 3px; width: 100%; background: var(--tc); opacity: 0.55; transform-origin: left;
+  animation: toast-progress var(--dur, 5s) linear forwards; }
+.toast.is-paused .toast-progress { animation-play-state: paused; }
+@keyframes toast-progress { from { transform: scaleX(1); } to { transform: scaleX(0); } }
 @keyframes fb-in { from { opacity: 0; transform: translateY(-8px) scale(0.98); } to { opacity: 1; transform: none; } }
 @media (max-width: 640px) {
-  .toaster { top: 72px; }
+  body:has(.topbar) .toaster { top: 72px; }
 }
+@media (prefers-reduced-motion: reduce) { .toast-progress { display: none; } }
 
 .dlg-backdrop { z-index: 110; animation: fb-fade 0.15s ease-out; }
 @keyframes fb-fade { from { opacity: 0; } to { opacity: 1; } }
