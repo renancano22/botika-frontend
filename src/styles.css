@@ -2152,3 +2152,57 @@ td.col-no { font-weight: 600; }
 .fc-sub { display: block; font-size: 0.74rem; }
 .fc-calc table td { padding: 7px 10px; }
 .fc-calc .fc-calc-total td { font-weight: 700; border-top: 2px solid var(--border); background: var(--primary-50); }
+/* Forecasting: page controls under the restock table, buttons stay in the right column */
+.fc-restock > .pager { grid-column: 1; }
+.fc-restock > .fc-restock-actions { grid-column: 2; grid-row: 1; }
+@media (max-width: 900px) { .fc-restock > .fc-restock-actions { grid-column: auto; grid-row: auto; } }
+
+/* ---------- Demand Forecasting: same building blocks as the other admin/staff pages ---------- */
+.fc-body { display: flex; flex-direction: column; gap: 18px; }
+.fc-body > .card, .fc-body > div > .card { margin-bottom: 0; }
+.fc-filters { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 0.9fr) minmax(0, 1.2fr) minmax(0, 1.4fr); gap: 12px; }
+.fc-field { margin: 0; gap: 6px; min-width: 0; }
+.fc-field > span { font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
+.fc-field select { margin: 0; width: 100%; }
+.fc-method-hint { margin: 10px 0 0; line-height: 1.6; }
+.fc-method-hint .badge { vertical-align: 1px; }
+.da-kpi-link { font: inherit; text-align: left; cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s; }
+.da-kpi-link:hover { border-color: color-mix(in srgb, var(--primary) 40%, white); box-shadow: var(--shadow-sm); }
+.da-kpi-link:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.fc-kpis { margin-bottom: 0; }
+.da-kpi .fc-kpi-period { font-size: 1.05rem; line-height: 1.5; padding: 4px 0; }
+.fc-story { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-bottom: 12px; }
+.fc-story .da-kpi strong { color: var(--text); }
+.fc-story .da-kpi span { display: flex; flex-wrap: wrap; gap: 2px 8px; align-items: center; }
+.fc-note { margin: 10px 0 0; display: block; }
+.fc-note svg { display: none; }
+.rank-no { color: var(--muted); }
+.fc-msg-p { margin: 4px 0 0; }
+.lg-forecast { border-top-color: #14532d; }
+.lg-forecast::after { background: #14532d; }
+.fc-calc-title { color: var(--text); }
+.fc-calc-result span { background: var(--primary-50); border-color: color-mix(in srgb, var(--primary) 25%, white); color: var(--primary-dark, #1b6e2d); }
+.fc-howto { background: transparent; border: none; padding: 0; margin-top: 12px; font-size: 0.84rem; }
+.fc-howto summary { color: var(--primary); display: list-item; list-style: revert; font-weight: 600; }
+.fc-howto summary::after { content: none; }
+.fc-howto ul { list-style: disc; margin: 8px 0 0; padding-left: 18px; display: grid; gap: 4px; }
+.fc-howto li { display: list-item; color: var(--muted); }
+.fc-chart { margin-top: 8px; }
+.fc-table-wrap { margin-bottom: 4px; }
+.fc-table th.right, .fc-table td.right { text-align: right; }
+.fc-foot { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-top: 14px; }
+.fc-foot p { margin: 0; max-width: 760px; }
+.fc-foot .btn { flex-shrink: 0; }
+.fc-detail-grid > div { background: #fff; border: 1px solid var(--border); }
+.fc-nodata { border-color: var(--border); }
+@media (max-width: 900px) {
+  .fc-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .fc-story { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 560px) {
+  .fc-filters { grid-template-columns: minmax(0, 1fr); }
+  .fc-foot { flex-direction: column; }
+  .fc-foot .btn { width: 100%; }
+  .fc-legend { gap: 10px; }
+}
+.fc-table td:nth-child(2) { min-width: 170px; }

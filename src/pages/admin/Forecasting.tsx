@@ -3,7 +3,7 @@ import { CartesianGrid, LabelList, Line, LineChart, ReferenceArea, ReferenceLine
 import { api, formatDate } from '../../api';
 import { LoadError, toast } from '../../components/feedback';
 import { useApi } from '../../hooks';
-import { Empty, Loading, Modal } from '../../components/ui';
+import { Badge, Card, Empty, Loading, Message, Modal } from '../../components/ui';
 import { ICONS, quantityText, Svg, unitPlural } from '../../components/RequestCards';
 import type { ForecastMethod, ForecastMethodResult, ForecastReport, ForecastResult } from '../../types';
 import { jumpTo } from '../../scroll';
@@ -20,11 +20,7 @@ const HISTORY_OPTIONS = [6, 12, 24];
 const HORIZON_OPTIONS = [1, 3, 6];
 
 const ICON = {
-  bars: 'M6 20v-8M12 20V5M18 20v-11',
   trend: 'M3 17l6-6 4 4 8-8M15 7h6v6',
-  trophy: 'M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0zM7 6H4a3 3 0 0 0 3 4M17 6h3a3 3 0 0 1-3 4',
-  alert: 'M12 3 2 20h20zM12 10v4M12 17h.01',
-  filter: 'M3 5h18l-7 8v6l-4 2v-8z',
   download: 'M12 4v11M7 10l5 5 5-5M5 20h14',
 };
 
@@ -45,6 +41,10 @@ const sortRows = (rows: ForecastResult[]) => [...rows].sort((a, b) =>
   || a.medicine_name.localeCompare(b.medicine_name));
 
 type TableFilter = 'restock' | 'high' | 'all';
+
+/** Chart colours: the same greens as the Dashboard charts (actual = solid, forecast = dashed). */
+const ACTUAL = '#228b39';
+const FORECAST = '#14532d';
 
 /** Two-line month label under the chart: "Oct" / "2026". */
 function MonthTick({ x = 0, y = 0, payload }: { x?: number; y?: number; payload?: { value: string } }) {
@@ -98,7 +98,7 @@ function ChartTip({ active, payload, label, unit, forecastKeys, currentMonth, da
 function ActualDot({ cx, cy, index, payload, currentMonth }: { cx?: number; cy?: number; index?: number; payload?: { key: string }; currentMonth: string }) {
   if (cx == null || cy == null) return <g key={`a-${index}`} />;
   const inProgress = payload?.key === currentMonth;
-  return <circle key={`a-${index}`} cx={cx} cy={cy} r={inProgress ? 5 : 4} fill={inProgress ? '#fff' : '#228b39'} stroke="#228b39" strokeWidth={inProgress ? 2.5 : 1} />;
+  return <circle key={`a-${index}`} cx={cx} cy={cy} r={inProgress ? 5 : 4} fill={inProgress ? '#fff' : ACTUAL} stroke={ACTUAL} strokeWidth={inProgress ? 2.5 : 1} />;
 }
 
 /** "How this forecast was calculated", with the selected method's own numbers. */
@@ -173,17 +173,14 @@ function MethodExplanation({ method, result, unit, forecast, basisMonths, partia
   );
 }
 
+/** Restock priority with the same badges as the stock statuses (Medicine List, Dashboard). */
 function PriorityBadge({ priority, recorded = true }: { priority: ForecastResult['priority']; recorded?: boolean }) {
-  if (!recorded) return <span className="badge badge-unrecorded">Stock not recorded</span>;
-  if (!priority) return <span className="prio prio-ok"><Svg d={ICONS.check} size={14} width={2.6} /> Enough stock</span>;
-  return (
-    <span className={`prio prio-${priority}`}>
-      <Svg d={ICONS.info} size={14} width={2.4} /> {priority === 'high' ? 'High' : 'Medium'}
-    </span>
-  );
+  if (!recorded) return <Badge value="unrecorded" />;
+  if (!priority) return <span className="badge badge-available">Enough stock</span>;
+  return <span className={`badge ${priority === 'high' ? 'badge-out_of_stock' : 'badge-low_stock'}`}>{priority === 'high' ? 'High' : 'Medium'}</span>;
 }
 
-/** Ranked list with medal numbers and bars (top barangays / top medicines). */
+/** Ranked list with numbers and bars (top barangays / top medicines). */
 function RankList({ items, empty, unit }: { items: { name: string; total: number }[]; empty: string; unit: string }) {
   if (!items.length) return <Empty>{empty}</Empty>;
   const max = Math.max(...items.map((i) => i.total), 1);
@@ -191,7 +188,7 @@ function RankList({ items, empty, unit }: { items: { name: string; total: number
     <ol className="rank-list">
       {items.map((item, i) => (
         <li key={item.name} title={`${item.name}: ${item.total} ${unit}`}>
-          <span className={`rank-no ${i < 3 ? `rank-medal rank-${i + 1}` : ''}`}>{i + 1}</span>
+          <span className="rank-no">{i + 1}</span>
           <span className="rank-name">{item.name}</span>
           <strong className="rank-total">{item.total}</strong>
           <span className="rank-bar"><span style={{ width: `${(item.total / max) * 100}%` }} /></span>
@@ -220,8 +217,8 @@ export default function Forecasting() {
   const [tableFilter, setTableFilter] = useState<TableFilter>('restock');
   const [details, setDetails] = useState<ForecastResult | null>(null);
   const [busy, setBusy] = useState(false);
-  const chartRef = useRef<HTMLElement>(null);
-  const tableRef = useRef<HTMLElement>(null);
+  const chartRef = useRef<HTMLDivElement>(null);
+  const tableRef = useRef<HTMLDivElement>(null);
 
   // A method that cannot forecast with the records available is replaced by the default on the server.
   useEffect(() => {
@@ -328,89 +325,112 @@ export default function Forecasting() {
     URL.revokeObjectURL(a.href);
   };
 
-  const generateButton = (extra = '') => (
-    <button className={`btn ${extra}`} onClick={generate} disabled={busy || !data}>
+  const generateButton = () => (
+    <button className="btn" onClick={generate} disabled={busy || !data}>
       <Svg d={ICON.trend} size={18} /> {busy ? 'Generating…' : 'Generate Forecast'}
     </button>
   );
 
   const since = data ? monthText(data.history_keys[0] ?? '') : '';
   const horizonText = data ? `Next ${monthsText(data.horizon)}` : '';
+  const shownMethod = data ? (method ?? data.method) : null;
+  // Phones: the chart is narrow, so the labels inside it (quantities, "No records yet") are left out; the tooltip still shows them.
+  const narrow = typeof window !== 'undefined' && window.innerWidth < 640;
 
   return (
     <div className="page fc-page">
       <BackButton linkedOnly />
-      <header className="page-head fc-head">
-        <div className="fc-title">
-          <span className="fc-title-icon"><Svg d={ICON.bars} size={26} width={2.6} /></span>
-          <div>
-            <h1>Demand Forecasting</h1>
-            <p className="muted">Analyze historical data to predict medicine needs and identify key trends.</p>
-          </div>
+      <header className="page-head">
+        <div>
+          <div className="page-title"><h1>Demand Forecasting</h1></div>
+          <p className="muted">Predicted medicine needs from the dispensing records, with restocking recommendations.</p>
         </div>
-        <div className="fc-head-actions">
-          <label className="fc-select" aria-label="Historical data">
-            <Svg d={ICONS.calendar} size={18} />
-            <select value={months ?? data?.history_months ?? ''} onChange={(e) => setMonths(Number(e.target.value))} disabled={!data}>
-              {HISTORY_OPTIONS.map((m) => <option key={m} value={m}>Last {monthsText(m)}</option>)}
-            </select>
-          </label>
-          {generateButton()}
-        </div>
+        <div className="actions">{generateButton()}</div>
       </header>
       <LoadError error={errorInfo} onRetry={() => reload()} />
 
-      {loading && !data ? <Loading /> : !data ? null : !results.length ? <div className="card"><Empty>No medicines to forecast yet. Add medicines first.</Empty></div> : (
-        <div className={`fc-body ${loading ? 'is-updating' : ''}`}>
-          <div className="fc-stats">
-            <button className="fc-stat k-available" onClick={() => go('all', tableRef)}>
-              <span className="fc-stat-icon kicon"><Svg d={ICONS.pill} size={24} /></span>
-              <span className="fc-stat-text"><small>Medicines Analyzed</small><strong>{data.summary.medicines_analyzed}</strong><span>total medicines</span></span>
-              <Svg d={ICONS.chevron} size={18} />
+      {loading && !data ? <Loading /> : !data ? null : !results.length ? <Card><Empty>No medicines to forecast yet. Add medicines first.</Empty></Card> : (
+        <div className={`fc-body ${loading ? 'tbl-updating' : ''}`}>
+          <Card title="Forecast settings">
+            <div className="fc-filters">
+              <label className="fc-field"><span>Historical data</span>
+                <select value={months ?? data.history_months} onChange={(e) => setMonths(Number(e.target.value))}>
+                  {HISTORY_OPTIONS.map((m) => <option key={m} value={m}>Last {monthsText(m)}</option>)}
+                </select>
+              </label>
+              <label className="fc-field"><span>Forecast period</span>
+                <select value={horizon ?? data.horizon} onChange={(e) => setHorizon(Number(e.target.value))}>
+                  {HORIZON_OPTIONS.map((h) => <option key={h} value={h}>Next {monthsText(h)}</option>)}
+                </select>
+              </label>
+              <label className="fc-field"><span>Medicine</span>
+                <select value={medicineId ?? ''} onChange={(e) => setMedicineId(e.target.value ? Number(e.target.value) : null)}>
+                  <option value="">All medicines</option>
+                  {results.map((r) => <option key={r.medicine_id} value={r.medicine_id}>{r.medicine_name}</option>)}
+                </select>
+              </label>
+              <label className="fc-field"><span>Forecasting method</span>
+                <select value={shownMethod ?? ''} onChange={(e) => setMethod(e.target.value as ForecastMethod)}>
+                  {METHODS.map((m) => {
+                    const mi = data.methods_info[m.key];
+                    return (
+                      <option key={m.key} value={m.key} disabled={!mi.available}>
+                        {m.label}{hasHistory && data.best_method === m.key ? ' (most accurate)' : ''}{!mi.available ? ` (needs ${mi.min_months} months)` : ''}
+                      </option>
+                    );
+                  })}
+                </select>
+              </label>
+            </div>
+            {shownMethod && (
+              <p className="muted small fc-method-hint">
+                <b>{METHOD_LABEL[shownMethod]}</b>: {METHODS.find((m) => m.key === shownMethod)?.hint}
+                {hasHistory && data.method_error[shownMethod] !== null && <> · average error ±{data.method_error[shownMethod]} per month</>}
+                {methodInfo?.available && provisional && data.data_start && <> · <span className="badge badge-low_stock">Provisional</span></>}
+                <br />
+                {hasHistory
+                  ? `"Most accurate" = the method whose past forecasts came closest to what was actually given out (average error over the ${data.medicines_with_records} ${data.medicines_with_records === 1 ? 'medicine' : 'medicines'} with dispensing records).`
+                  : 'The most accurate method will be shown once there are at least 4 months of dispensing records to test the methods on.'}
+                {unavailable.length > 0 && ` ${unavailable.map((m) => m.label).join(' and ')} ${unavailable.length === 1 ? 'needs' : 'need'} more complete months of records (there ${basisCount === 1 ? 'is' : 'are'} ${basisCount}).`}
+              </p>
+            )}
+          </Card>
+
+          <div className="da-kpis fc-kpis">
+            <button type="button" className="da-kpi da-kpi-link" onClick={() => go('all', tableRef)}>
+              <small>Medicines analyzed</small><strong>{data.summary.medicines_analyzed}</strong><span>all medicines in the list</span>
             </button>
-            <button className="fc-stat k-rejected" onClick={() => go('high', tableRef)}>
-              <span className="fc-stat-icon kicon"><Svg d={ICON.alert} size={24} /></span>
-              <span className="fc-stat-text"><small>Potential Stockouts</small><strong>{data.summary.potential_stockouts}</strong><span>within forecast period</span></span>
-              <Svg d={ICONS.chevron} size={18} />
+            <button type="button" className="da-kpi da-kpi-link" onClick={() => go('high', tableRef)}>
+              <small>Potential stockouts</small><strong>{data.summary.potential_stockouts}</strong><span>would run out in the forecast period</span>
             </button>
-            <button className="fc-stat k-approved" onClick={() => go('restock', tableRef)}>
-              <span className="fc-stat-icon kicon"><Svg d={ICONS.box} size={24} /></span>
-              <span className="fc-stat-text"><small>Restock Recommendations</small><strong>{data.summary.restock_recommendations}</strong><span>medicines need restocking</span></span>
-              <Svg d={ICONS.chevron} size={18} />
+            <button type="button" className="da-kpi da-kpi-link" onClick={() => go('restock', tableRef)}>
+              <small>Restock recommendations</small><strong>{data.summary.restock_recommendations}</strong><span>medicines need restocking</span>
             </button>
-            <button className="fc-stat k-submitted" onClick={() => go(null, chartRef)}>
-              <span className="fc-stat-icon kicon"><Svg d={ICONS.calendar} size={24} /></span>
-              <span className="fc-stat-text"><small>Forecast Period</small><strong className="fc-stat-period">{periodText(data.forecast_keys)}</strong><span>{horizonText.toLowerCase()}</span></span>
-              <Svg d={ICONS.chevron} size={18} />
+            <button type="button" className="da-kpi da-kpi-link" onClick={() => go(null, chartRef)}>
+              <small>Forecast period</small><strong className="fc-kpi-period">{periodText(data.forecast_keys)}</strong><span>{horizonText.toLowerCase()}</span>
             </button>
           </div>
 
-          <div className="fc-two">
-            <section className="card fc-card">
-              <div className="fc-card-head"><span className="fc-card-icon"><Svg d={ICON.trophy} size={20} /></span><h2>Barangay with Most Medicine Requests</h2></div>
+          <div className="grid-2">
+            <Card title="Barangays with Most Medicine Requests">
               <RankList items={data.top_barangays.map((b) => ({ name: b.barangay, total: b.total }))} empty="No approved medicine requests in this period yet." unit="approved requests" />
-              <p className="fc-note"><Svg d={ICONS.info} size={16} /> Based on approved medicine requests since {since}.</p>
-            </section>
-            <section className="card fc-card">
-              <div className="fc-card-head"><span className="fc-card-icon"><Svg d={ICONS.pill} size={20} /></span><h2>Most Frequently Requested Medicines</h2></div>
+              <p className="muted small fc-note">Based on approved medicine requests since {since}.</p>
+            </Card>
+            <Card title="Most Frequently Requested Medicines">
               <RankList items={data.top_medicines.map((m) => ({ name: m.medicine_name, total: m.total }))} empty="No medicine requests in this period yet." unit="requests" />
-              <p className="fc-note"><Svg d={ICONS.info} size={16} /> Based on medicine requests (approved and pending) since {since}.</p>
-            </section>
+              <p className="muted small fc-note">Based on medicine requests (pending, approved and completed) since {since}.</p>
+            </Card>
           </div>
 
-          <div className="fc-main">
-            <section className="card fc-card" ref={chartRef}>
-              <div className="fc-card-head fc-chart-head">
-                <span className="fc-card-icon"><Svg d={ICON.trend} size={20} /></span>
-                <h2>Predicted Medicine Demand{selectedMedicine ? `: ${selectedMedicine.medicine_name}` : ''}</h2>
-                <span className="fc-legend">
-                  <span><i className="lg-actual" /> Actual Demand</span>
-                  <span><i className="lg-forecast" /> {provisional ? 'Provisional Forecast' : 'Forecast Demand'}</span>
-                </span>
-              </div>
+          <div ref={chartRef}>
+            <Card title={`Predicted Medicine Demand${selectedMedicine ? `: ${selectedMedicine.medicine_name}` : ''}`} actions={
+              <span className="fc-legend">
+                <span><i className="lg-actual" /> Actual demand</span>
+                <span><i className="lg-forecast" /> {provisional ? 'Provisional forecast' : 'Forecast demand'}</span>
+              </span>
+            }>
               {story && story.past === 0 ? (
                 <div className="fc-nodata">
-                  <span className="fc-nodata-icon"><Svg d={ICON.bars} size={30} /></span>
                   <strong>{data.data_start ? `Nothing given out yet${selectedMedicine ? `: ${selectedMedicine.medicine_name}` : ''}` : 'No dispensing records yet'}</strong>
                   {data.data_start ? (
                     <p>
@@ -423,18 +443,18 @@ export default function Forecasting() {
                       There are no records in this period yet, so there is nothing to forecast from and the predicted demand is 0.
                     </p>
                   )}
-                  <p>As the pharmacy staff dispense medicines, this chart fills in: the <b className="txt-actual">green line</b> shows what was given out each month, and the <b className="txt-forecast">blue dashed line</b> shows what is expected next.</p>
-                  {data.history_months < 24 && <p className="muted small">Tip: choose a longer period (e.g. Last 24 Months) at the top if older records exist.</p>}
+                  <p>As the pharmacy staff dispense medicines, this chart fills in: the solid line shows what was given out each month, and the dashed line shows what is expected next.</p>
+                  {data.history_months < 24 && <p className="muted small">Tip: choose a longer period in Forecast settings (e.g. Last 24 Months) if older records exist.</p>}
                 </div>
               ) : story && (
                 <>
-                  <div className="fc-story">
-                    <div><small>Given out in the last {monthsText(data.history_months).toLowerCase()}</small><strong>{story.past}</strong><span>{unitLabel}</span></div>
-                    <div><small>Average per month</small><strong>{story.avg}</strong><span>{unitLabel} / month · {basisText}</span></div>
-                    <div className="fc-story-next">
-                      <small>Expected in {periodText(data.forecast_keys)}</small>
-                      <strong>{story.next}</strong>
-                      <span>about {story.perMonth} / month
+                  <div className="da-kpis fc-story">
+                    <div className="da-kpi"><small>Given out, last {monthsText(data.history_months).toLowerCase()}</small><strong>{story.past.toLocaleString('en-PH')}</strong><span>{unitLabel}</span></div>
+                    <div className="da-kpi"><small>Average per month</small><strong>{story.avg.toLocaleString('en-PH')}</strong><span>{unitLabel} / month · {basisText}</span></div>
+                    <div className="da-kpi">
+                      <small>Expected, {periodText(data.forecast_keys)}</small>
+                      <strong>{story.next.toLocaleString('en-PH')}</strong>
+                      <span>about {story.perMonth} / month{' '}
                         {provisional
                           ? <em className="trend trend-prov">Provisional</em>
                           : story.change !== null && (Math.abs(story.change) < 0.05
@@ -444,30 +464,16 @@ export default function Forecasting() {
                     </div>
                   </div>
                   {(provisional || unavailable.length > 0) && (
-                    <div className="fc-limited" role="note">
-                      <Svg d={ICON.alert} size={16} />
-                      <div>
-                        <strong>
-                          Not enough history for a reliable forecast: only {monthsLower(basisCount)} of dispensing records
-                          {data.basis.partial ? `, and ${monthText(basisMonths[0])} is not finished yet` : ` (${periodText(basisMonths)})`}.
-                        </strong>
-                        <p>
-                          {data.basis.partial && `Records so far: ${data.first_record_date ? dayText(data.first_record_date) : monthText(basisMonths[0])} to ${dayText(data.today)}. Because the month is not over, the real monthly demand may be higher. `}
-                          {basisCount < 3
-                            ? `This is not enough to tell whether demand is going up or down. The forecast below is provisional: it assumes the coming months will be like ${basisText}.`
-                            : `The forecast below is provisional: ${METHOD_LABEL[data.method]} is reliable after ${methodInfo?.recommended_months} complete months of records.`}
-                        </p>
-                        {unavailable.length > 0 && (
-                          <ul>
-                            {unavailable.map((m) => (
-                              <li key={m.key}><b>{m.label}</b> is not available yet: it needs at least {data.methods_info[m.key].min_months} complete months of records (there {basisCount === 1 ? 'is' : 'are'} {basisCount}).
-                                {m.key === 'linear_regression' && ' Two months always fit a straight line exactly, so they cannot show a real trend.'}</li>
-                            ))}
-                          </ul>
-                        )}
-                        <p className="small">No records are made up: the forecast becomes reliable after 3 complete months of records (6 for Linear Regression).</p>
-                      </div>
-                    </div>
+                    <Message type="warning" title={`Not enough history for a reliable forecast: only ${monthsLower(basisCount)} of dispensing records${data.basis.partial ? `, and ${monthText(basisMonths[0])} is not finished yet` : ` (${periodText(basisMonths)})`}.`}>
+                      <p className="fc-msg-p">
+                        {data.basis.partial && `Records so far: ${data.first_record_date ? dayText(data.first_record_date) : monthText(basisMonths[0])} to ${dayText(data.today)}. Because the month is not over, the real monthly demand may be higher. `}
+                        {basisCount < 3
+                          ? `This is not enough to tell whether demand is going up or down. The forecast below is provisional: it assumes the coming months will be like ${basisText}.`
+                          : `The forecast below is provisional: ${METHOD_LABEL[data.method]} is reliable after ${methodInfo?.recommended_months} complete months of records.`}
+                        {unavailable.map((m) => ` ${m.label} is not available yet: it needs at least ${data.methods_info[m.key].min_months} complete months of records.${m.key === 'linear_regression' ? ' Two months always fit a straight line exactly, so they cannot show a real trend.' : ''}`).join('')}
+                        {' '}No records are made up.
+                      </p>
+                    </Message>
                   )}
                   <p className="fc-sentence">
                     {selectedMedicine ? selectedMedicine.medicine_name : 'All medicines together'}: Botika ng Bayan gave out an average of <b>{story.avg} {unitLabel}</b> per month
@@ -480,150 +486,106 @@ export default function Forecasting() {
                         <CartesianGrid vertical={false} stroke="#e8eeec" />
                         {data.data_start && data.data_start > data.history_keys[0] && (
                           <ReferenceArea x1={data.history_keys[0]} x2={data.data_start} fill="#eef1f0" fillOpacity={0.8}
-                            label={{ value: 'No records yet', position: 'insideTop', fontSize: 11, fill: '#7a8a86' }} />
+                            label={narrow ? undefined : { value: 'No records yet', position: 'insideTop', fontSize: 11, fill: '#7a8a86' }} />
                         )}
                         {chartData.length > 1 && (
-                          <ReferenceArea x1={data.history_keys[data.history_keys.length - 1]} x2={data.forecast_keys[data.forecast_keys.length - 1]} fill="#dbe7fd" fillOpacity={0.45} />
+                          <ReferenceArea x1={data.history_keys[data.history_keys.length - 1]} x2={data.forecast_keys[data.forecast_keys.length - 1]} fill="#eff9f1" fillOpacity={0.9} />
                         )}
                         <ReferenceLine x={data.history_keys[data.history_keys.length - 1]} stroke="#94a3b8" strokeDasharray="4 4"
-                          label={{ value: 'Forecast starts →', position: 'insideTopRight', fontSize: 11, fill: '#2563eb', offset: 6 }} />
+                          label={narrow ? undefined : { value: 'Forecast starts →', position: 'insideTopRight', fontSize: 11, fill: FORECAST, offset: 6 }} />
                         <XAxis dataKey="key" tick={<MonthTick />} height={42} interval="preserveStartEnd" tickLine={false} axisLine={{ stroke: '#cbd5d1' }} />
                         <YAxis allowDecimals={false} fontSize={12} tickLine={false} axisLine={false} width={52}
                           label={{ value: `Quantity (${unitLabel})`, angle: -90, position: 'insideLeft', style: { fontSize: 12, fill: '#5f6f6b', textAnchor: 'middle' } }} />
                         <Tooltip content={<ChartTip unit={unitLabel} forecastKeys={data.forecast_keys} currentMonth={data.current_month}
                           dataStart={data.data_start} today={data.today} currentUsed={currentUsed} provisional={provisional} />} />
-                        <Line dataKey="actual" name="Given out (actual)" stroke="#228b39" strokeWidth={2.5} activeDot={{ r: 6 }} isAnimationActive={false}
+                        <Line dataKey="actual" name="Given out (actual)" stroke={ACTUAL} strokeWidth={2.5} activeDot={{ r: 6 }} isAnimationActive={false}
                           dot={({ cx, cy, index, payload }: { cx?: number; cy?: number; index?: number; payload?: { key: string } }) => (
                             <ActualDot key={`a-${index}`} cx={cx} cy={cy} index={index} payload={payload} currentMonth={data.current_month} />
                           )} />
-                        <Line dataKey="forecast" name="Expected (forecast)" stroke="#2563eb" strokeWidth={2.5} strokeDasharray="6 5" dot={{ r: 4, fill: '#2563eb' }} activeDot={{ r: 6 }} isAnimationActive={false}>
-                          <LabelList dataKey="forecastLabel" position="top" fontSize={12} fontWeight={700} fill="#1e3a8a" />
+                        <Line dataKey="forecast" name="Expected (forecast)" stroke={FORECAST} strokeWidth={2.5} strokeDasharray="6 5" dot={{ r: 4, fill: FORECAST }} activeDot={{ r: 6 }} isAnimationActive={false}>
+                          {!narrow && <LabelList dataKey="forecastLabel" position="top" fontSize={12} fontWeight={700} fill={FORECAST} />}
                         </Line>
                       </LineChart>
                     </ResponsiveContainer>
                   </div>
                   <div className="fc-periods">
                     <span style={{ flex: Math.max(data.history_keys.length - 1, 1) }}>Past months (actual, this month so far)</span>
-                    <span className="fc-period-forecast" style={{ flex: data.forecast_keys.length }}>{provisional ? 'Forecast Period (provisional)' : 'Forecast Period'}</span>
+                    <span className="fc-period-forecast" style={{ flex: data.forecast_keys.length }}>{provisional ? 'Forecast period (provisional)' : 'Forecast period'}</span>
                   </div>
                   <MethodExplanation method={data.method} result={methodResult} unit={unitLabel} forecast={forecastList} basisMonths={basisMonths}
                     partial={data.basis.partial} currentMonth={data.current_month} today={data.today} provisional={provisional} allMedicines={!selectedMedicine} />
                 </>
               )}
-              <details className="fc-howto">
-                <summary><Svg d={ICONS.info} size={16} /> How to read this chart</summary>
+              <details className="da-rules fc-howto">
+                <summary>How to read this chart</summary>
                 <ul>
-                  <li><i className="lg-actual" /> <span><b>Green line — Actual Demand:</b> how many {unitLabel} were given out (dispensed) each month, taken from the dispensing records. The hollow green dot is this month so far: it can still go up, so it is only used for the forecast while there is no complete month yet.</span></li>
-                  <li><i className="lg-forecast" /> <span><b>Blue dashed line — Forecast Demand:</b> how many are expected to be needed each coming month, calculated from the green line with the method chosen in Filter &amp; Settings. The numbers above the blue dots are the expected quantities.</span></li>
-                  <li><i className="lg-area" /> <span><b>Shaded area — Forecast Period:</b> the coming months being predicted, starting next month.</span></li>
-                  <li><i className="lg-norec" /> <span><b>Grey area — No records yet:</b> months before the first dispensing record. They are not counted as 0. A month after that with nothing given out is a real 0.</span></li>
-                  {!selectedMedicine && <li><i className="lg-tip" /> <span>The chart adds up <b>all medicines</b>. Choose one medicine in Filter &amp; Settings to see its own demand.</span></li>}
+                  <li><b>Solid line, actual demand:</b> how many {unitLabel} were given out (dispensed) each month, from the dispensing records. The hollow dot is this month so far: it can still go up, so it is only used for the forecast while there is no complete month yet.</li>
+                  <li><b>Dashed line, forecast demand:</b> how many are expected to be needed each coming month, calculated from the solid line with the method chosen in Forecast settings. The numbers above the dots are the expected quantities.</li>
+                  <li><b>Light green area, forecast period:</b> the coming months being predicted, starting next month.</li>
+                  <li><b>Grey area, no records yet:</b> months before the first dispensing record. They are not counted as 0. A month after that with nothing given out is a real 0.</li>
+                  {!selectedMedicine && <li>The chart adds up <b>all medicines</b>. Choose one medicine in Forecast settings to see its own demand.</li>}
                 </ul>
               </details>
-            </section>
-
-            <section className="card fc-card fc-settings">
-              <div className="fc-card-head"><span className="fc-card-icon"><Svg d={ICON.filter} size={20} /></span><h2>Filter &amp; Settings</h2></div>
-              <label>Medicine
-                <select className="select-pill" value={medicineId ?? ''} onChange={(e) => setMedicineId(e.target.value ? Number(e.target.value) : null)}>
-                  <option value="">All Medicines</option>
-                  {results.map((r) => <option key={r.medicine_id} value={r.medicine_id}>{r.medicine_name}</option>)}
-                </select>
-              </label>
-              <label>Forecast Period
-                <select className="select-pill" value={horizon ?? data.horizon} onChange={(e) => setHorizon(Number(e.target.value))}>
-                  {HORIZON_OPTIONS.map((h) => <option key={h} value={h}>Next {monthsText(h)}</option>)}
-                </select>
-              </label>
-              <fieldset className="fc-methods">
-                <legend>Forecasting Method</legend>
-                {METHODS.map((m) => {
-                  const mi = data.methods_info[m.key];
-                  return (
-                    <label key={m.key} className={`fc-method ${(method ?? data.method) === m.key ? 'active' : ''} ${mi.available ? '' : 'is-disabled'}`}>
-                      <input type="radio" name="method" checked={(method ?? data.method) === m.key} disabled={!mi.available} onChange={() => setMethod(m.key)} />
-                      <span>
-                        <strong>{m.label}</strong>
-                        {hasHistory && data.best_method === m.key && <em className="fc-best">Most accurate</em>}
-                        {mi.available && mi.provisional && data.data_start && <em className="fc-prov">Provisional</em>}
-                        <small>{m.hint}{hasHistory && data.method_error[m.key] !== null ? ` · avg. error ±${data.method_error[m.key]}/month` : ''}</small>
-                        {!mi.available && (
-                          <small className="fc-method-need">Needs at least {mi.min_months} complete months of records (has {basisCount}).</small>
-                        )}
-                      </span>
-                    </label>
-                  );
-                })}
-              </fieldset>
-              <p className="fc-note">{hasHistory
-                ? `"Most accurate" = the method whose past forecasts came closest to what was actually given out. Average error over the ${data.medicines_with_records} ${data.medicines_with_records === 1 ? 'medicine' : 'medicines'} with dispensing records.`
-                : 'The most accurate method will be shown once there are at least 4 months of dispensing records to test the methods on.'}</p>
-            </section>
+            </Card>
           </div>
 
-          <section className="card fc-card" ref={tableRef}>
-            <div className="fc-card-head">
-              <span className="fc-card-icon"><Svg d={ICONS.box} size={20} /></span>
-              <h2>Restocking Recommendations</h2>
-              {!selectedMedicine && (
-                <div className="chips fc-chips" role="tablist" aria-label="Show">
-                  {([['restock', 'Needs restock', data.summary.restock_recommendations], ['high', 'Will run out', data.summary.potential_stockouts], ['all', 'All medicines', data.summary.medicines_analyzed]] as const).map(([key, label, count]) => (
-                    <button key={key} role="tab" aria-selected={tableFilter === key} className={`chip ${tableFilter === key ? 'active' : ''}`} onClick={() => setTableFilter(key)}>
-                      {label}<span className="chip-count">{count}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-            <div className="fc-restock">
-              <div className="fc-table-wrap">
-                {tableRows.length === 0 ? (
-                  <Empty>{tableFilter === 'high' ? 'No medicine is expected to run out in the forecast period.' : 'All medicines have enough stock for the forecast period.'}</Empty>
-                ) : (
+          <div ref={tableRef}>
+            <Card title="Restocking Recommendations" actions={!selectedMedicine && (
+              <div className="chips" role="tablist" aria-label="Show">
+                {([['restock', 'Needs restock', data.summary.restock_recommendations], ['high', 'Will run out', data.summary.potential_stockouts], ['all', 'All medicines', data.summary.medicines_analyzed]] as const).map(([key, label, count]) => (
+                  <button key={key} role="tab" aria-selected={tableFilter === key} className={`chip ${tableFilter === key ? 'active' : ''}`} onClick={() => setTableFilter(key)}>
+                    {label}<span className="chip-count">{count}</span>
+                  </button>
+                ))}
+              </div>
+            )}>
+              {tableRows.length === 0 ? (
+                <Empty>{tableFilter === 'high' ? 'No medicine is expected to run out in the forecast period.' : 'All medicines have enough stock for the forecast period.'}</Empty>
+              ) : (
+                <div className="fc-table-wrap">
                   <table className="fc-table">
                     <thead>
-                      <tr><th className="col-no">No.</th><th>Medicine</th><th className="center">Current Stock</th><th className="center">Waiting Requests<br /><small>(as of now)</small></th><th className="center">Predicted Demand<br /><small>({horizonText})</small></th><th className="center">Suggested Restock</th><th>Priority</th><th aria-label="Details" /></tr>
+                      <tr>
+                        <th className="col-no">No.</th><th>Medicine</th><th className="right">Current stock</th><th className="right">Waiting requests<br /><small>(as of now)</small></th>
+                        <th className="right">Predicted demand<br /><small>({horizonText})</small></th><th className="right">Suggested restock</th><th>Priority</th><th aria-label="Details" />
+                      </tr>
                     </thead>
                     <tbody>
                       {fcPages.rows.map((r, i) => (
                         <tr key={r.medicine_id} className="clickable" onClick={() => setDetails(r)}>
                           <td className="col-no">{(fcPages.meta.from ?? 1) + i}</td>
-                          <td>
-                            <span className="fc-med">
-                              <span className="fc-med-icon"><Svg d={ICONS.pill} size={18} /></span>
-                              <span><strong>{r.medicine_name}</strong><small className="muted">{r.unit}</small></span>
-                            </span>
-                          </td>
-                          <td className="center">
+                          <td><strong>{r.medicine_name}</strong><div className="muted small">{r.unit}</div></td>
+                          <td className="right">
                             {r.stock_recorded === false ? <span className="mi-missing">Not recorded</span> : r.available_stock}
-                            {r.reserved_stock > 0 && <small className="muted fc-sub">{r.reserved_stock} set aside</small>}
+                            {r.reserved_stock > 0 && <div className="muted small">{r.reserved_stock} set aside</div>}
                           </td>
-                          <td className="center">
+                          <td className="right">
                             {r.waiting_demand}
-                            {r.restock_requests > 0 && <small className="muted fc-sub">{r.restock_requests} in restock requests</small>}
+                            {r.restock_requests > 0 && <div className="muted small">{r.restock_requests} in restock requests</div>}
                           </td>
-                          <td className="center">{r.predicted_demand}</td>
-                          <td className="center"><strong>{r.recommended_restock}</strong></td>
+                          <td className="right">{r.predicted_demand}</td>
+                          <td className="right"><strong>{r.recommended_restock}</strong></td>
                           <td><PriorityBadge priority={r.priority} recorded={r.stock_recorded !== false} /></td>
-                          <td className="right"><Svg d={ICONS.chevron} size={18} /></td>
+                          <td className="right"><button type="button" className="btn btn-outline btn-sm" onClick={(e) => { e.stopPropagation(); setDetails(r); }}>Details</button></td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
-                )}
-              </div>
+                </div>
+              )}
               <Pagination meta={fcPages.meta} onPage={fcPages.setPage} onPerPage={fcPages.setPerPage} noun="medicines" />
-              <div className="fc-restock-actions">
-                <button className="btn btn-outline" onClick={exportReport} disabled={!tableRows.length}><Svg d={ICON.download} size={18} /> Export Report</button>
-                {generateButton()}
+              <div className="fc-foot">
+                <p className="muted small">
+                  Forecasts are estimates based on historical dispensing records. The suggested restock also counts the requests still waiting (pending medicine
+                  requests and restock requests) and the stock set aside for approved requests. Review recommendations before restocking.
+                  {' '}Method: {METHOD_LABEL[data.method]} · last run {formatDate(data.generated_at, true)}.
+                </p>
+                <button className="btn btn-outline" onClick={exportReport} disabled={!tableRows.length}><Svg d={ICON.download} size={18} /> Export report</button>
               </div>
-            </div>
-            <p className="fc-info"><Svg d={ICONS.info} size={16} /> Forecasts are estimates based on historical dispensing records. The suggested restock also counts the requests still waiting (pending medicine requests and restock requests) and the stock set aside for approved requests. Review recommendations before restocking.
-              {' '}Method: {METHOD_LABEL[data.method]} · last run {formatDate(data.generated_at, true)}.</p>
-          </section>
+            </Card>
+          </div>
         </div>
       )}
-
 
       {details && data && (
         <Modal title={details.medicine_name} onClose={() => setDetails(null)}>
