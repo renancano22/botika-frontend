@@ -216,7 +216,7 @@ function DemandAnalysis({ a, preset, custom, badRange, busy, isAdmin, onPreset, 
           </div>
         </div>
 
-        <h3 className="da-table-title">Most requested medicines</h3>
+        <h3 className="da-table-title">Top 5 most requested medicines</h3>
         {a.top_medicines.length === 0 ? <Empty>No medicine was requested or dispensed in this period.</Empty> : (
           <div className="da-table-wrap">
             <table className="da-table">
