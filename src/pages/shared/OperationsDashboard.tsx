@@ -8,6 +8,7 @@ import { Badge, Card, Empty, Loading } from '../../components/ui';
 import type { MedicineRequest } from '../../types';
 import { ICONS, PickupCountdown, Svg } from '../../components/RequestCards';
 import { LoadError } from '../../components/feedback';
+import { Pagination, useClientPages } from '../../components/Pagination';
 
 interface Sections { requests: boolean; stock: boolean; dispensing: boolean }
 
@@ -138,6 +139,8 @@ function DemandAnalysis({ a, preset, custom, badRange, busy, isAdmin, onPreset, 
   const chart = a.trend.map((t) => ({ ...t, label: periodLabel(t.period, period.group) }));
   const fromInput = preset === 'custom' ? custom.from : period.from;
   const toInput = preset === 'custom' ? custom.to : period.to;
+  // Top 10 most requested medicines, 5 rows per page (like every table).
+  const topPages = useClientPages(a.top_medicines, `${period.from}|${period.to}`, 'top-medicines');
 
   return (
     <section className={`card db-panel da-panel ${busy ? 'tbl-updating' : ''}`} aria-labelledby="da-title">
@@ -216,7 +219,7 @@ function DemandAnalysis({ a, preset, custom, badRange, busy, isAdmin, onPreset, 
           </div>
         </div>
 
-        <h3 className="da-table-title">Top 5 most requested medicines</h3>
+        <h3 className="da-table-title">Top 10 most requested medicines</h3>
         {a.top_medicines.length === 0 ? <Empty>No medicine was requested or dispensed in this period.</Empty> : (
           <div className="da-table-wrap">
             <table className="da-table">
@@ -231,9 +234,9 @@ function DemandAnalysis({ a, preset, custom, badRange, busy, isAdmin, onPreset, 
                 </tr>
               </thead>
               <tbody>
-                {a.top_medicines.map((m, i) => (
+                {topPages.rows.map((m, i) => (
                   <tr key={m.medicine_id}>
-                    <td className="col-no">{i + 1}</td>
+                    <td className="col-no">{(topPages.meta.from ?? 1) + i}</td>
                     <td><strong>{m.medicine_name}</strong></td>
                     {r && <td className="right num">{m.requests}</td>}
                     {r && <td className="right num">{m.quantity_requested}</td>}
@@ -248,6 +251,7 @@ function DemandAnalysis({ a, preset, custom, badRange, busy, isAdmin, onPreset, 
             </table>
           </div>
         )}
+        {a.top_medicines.length > 0 && <Pagination meta={topPages.meta} onPage={topPages.setPage} onPerPage={topPages.setPerPage} noun="medicines" />}
       </>)}
 
       <details className="da-rules">
