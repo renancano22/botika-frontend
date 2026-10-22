@@ -189,7 +189,7 @@ export default function Requests() {
           <div className={`req-table-wrap ${loading ? 'tbl-updating' : ''}`}>
           <table className="req-table">
             <thead>
-              <tr><th className="col-no">No.</th><th>Request No.</th><th className="rq-date">Date</th><th className="rq-resident">Resident</th><th>Type</th><th className="rq-meds">Medicines</th><th className="rq-status">Status</th><th className="rq-note">Resident's note / Remarks</th><th></th></tr>
+              <tr><th className="col-no">No.</th><th>Request No.</th><th className="rq-date">Date</th><th className="rq-resident">Resident</th><th>Type</th><th className="rq-meds">Medicines</th><th className="rq-status">Status</th><th className="rq-note">Resident's note / Remarks</th><th className="right">Actions</th></tr>
             </thead>
             <tbody>
               {rows.map((r, i) => (

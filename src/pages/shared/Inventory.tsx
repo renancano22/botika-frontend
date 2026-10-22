@@ -148,7 +148,7 @@ export default function Inventory() {
           <Empty>{search.trim() ? 'No batches match this search.' : expiry === 'empty' ? 'No empty batches yet.' : expiry ? 'No batches with this expiry status.' : 'No stock yet. Record a stock-in.'}</Empty>
         ) : (
           <table className={loading ? 'tbl-updating' : ''}>
-            <thead><tr><th className="col-no">No.</th><th>Batch #</th><th>Medicine</th><th>Quantity</th><th>Expiration date</th><th>Expiry status</th><th>Last updated</th><th></th></tr></thead>
+            <thead><tr><th className="col-no">No.</th><th>Batch #</th><th>Medicine</th><th>Quantity</th><th>Expiration date</th><th>Expiry status</th><th>Last updated</th>{canManage && <th className="right">Actions</th>}</tr></thead>
             <tbody>
               {batches.map((b, i) => (
                 <tr key={b.inventory_id} id={`batch-${b.inventory_id}`} className={b.expiry_status === 'expired' ? 'row-danger' : b.expiry_status === 'near_expiry' ? 'row-warn' : ''}>
@@ -159,7 +159,7 @@ export default function Inventory() {
                   <td>{formatDate(b.expiration_date)}</td>
                   <td><Badge value={b.expiry_status ?? 'ok'} /></td>
                   <td>{formatDate(b.last_updated, true)}</td>
-                  <td className="right">{canManage && b.quantity > 0 && <button className="btn btn-outline btn-sm" onClick={() => { fe.clear(); setStockOut({ batch: b, quantity: b.quantity, reason: b.expiry_status === 'expired' ? 'Expired' : '', details: '' }); }}>Stock-out</button>}</td>
+                  {canManage && <td className="right">{b.quantity > 0 && <button className="btn btn-outline btn-sm" onClick={() => { fe.clear(); setStockOut({ batch: b, quantity: b.quantity, reason: b.expiry_status === 'expired' ? 'Expired' : '', details: '' }); }}>Stock-out</button>}</td>}
                 </tr>
               ))}
             </tbody>

@@ -547,7 +547,7 @@ export default function Forecasting() {
                     <thead>
                       <tr>
                         <th className="col-no">No.</th><th>Medicine</th><th className="right">Current stock</th><th className="right">Waiting requests<br /><small>(as of now)</small></th>
-                        <th className="right">Predicted demand<br /><small>({horizonText})</small></th><th className="right">Suggested restock</th><th>Priority</th><th aria-label="Details" />
+                        <th className="right">Predicted demand<br /><small>({horizonText})</small></th><th className="right">Suggested restock</th><th>Priority</th><th className="right">Actions</th>
                       </tr>
                     </thead>
                     <tbody>

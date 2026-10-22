@@ -287,7 +287,7 @@ export default function Dispense() {
               <div className="dv-approved">
                 <h3 className="dv-sub">Approved requests ({found.approved_requests.length})</h3>
                 <table>
-                  <thead><tr><th>No.</th><th>Medicines</th><th>Approved</th><th></th></tr></thead>
+                  <thead><tr><th>No.</th><th>Medicines</th><th>Approved</th><th className="right">Actions</th></tr></thead>
                   <tbody>
                     {found.approved_requests.map((r) => (
                       <tr key={r.request_id}>
@@ -312,7 +312,7 @@ export default function Dispense() {
           <Card title="Dispensing history of this resident">
             {found.dispensing_history.length === 0 ? <Empty>No previous dispensing.</Empty> : (
               <table>
-                <thead><tr><th>Date</th><th>Medicines</th><th>Dispensed by</th><th></th></tr></thead>
+                <thead><tr><th>Date</th><th>Medicines</th><th>Dispensed by</th><th>Status</th></tr></thead>
                 <tbody>
                   {found.dispensing_history.map((d) => (
                     <tr key={d.dispensing_id}>

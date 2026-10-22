@@ -172,7 +172,7 @@ export default function Users() {
       }>
         {loading && !data ? <Loading /> : !data ? null : !rows.length ? <Empty>No users found.</Empty> : (
           <table className={loading ? 'tbl-updating' : ''}>
-            <thead><tr><th className="col-no">No.</th><th>Name</th><th>Email</th><th>Role</th><th>Resident ID / Mobile</th><th>Status</th><th>Created</th><th></th></tr></thead>
+            <thead><tr><th className="col-no">No.</th><th>Name</th><th>Email</th><th>Role</th><th>Resident ID / Mobile</th><th>Status</th><th>Created</th><th className="right">Actions</th></tr></thead>
             <tbody>
               {rows.map((u, i) => (
                 <tr key={u.user_id} className={u.is_active ? '' : 'row-muted'}>

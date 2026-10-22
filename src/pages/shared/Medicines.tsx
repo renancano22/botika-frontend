@@ -29,6 +29,8 @@ export default function Medicines() {
   const { user, can } = useAuth();
   const canManage = can('medicines.manage');
   const canStock = can('inventory.manage');
+  // The Actions column is shown only when the user has at least one action (Edit, Delete, Record stock).
+  const showActions = canManage || canStock || user?.role === 'admin';
   const [params, setParams] = useSearchParams();
   const [search, setSearch] = useState('');
   // ?status=low_stock / out_of_stock / unrecorded (from the dashboard tiles) opens the list already filtered.
@@ -156,7 +158,7 @@ export default function Medicines() {
             <thead>
               <tr>
                 <th className="col-no">No.</th><th>Medicine ID</th><th>Generic Name</th><th>Category</th><th>Strength</th><th>Dosage Form</th>
-                <th>Quantity in Stock</th><th>Expiration Date</th><th>Stock Status</th><th>Date Last Updated</th><th></th>
+                <th>Quantity in Stock</th><th>Expiration Date</th><th>Stock Status</th><th>Date Last Updated</th>{showActions && <th className="right">Actions</th>}
               </tr>
             </thead>
             <tbody>
@@ -183,7 +185,7 @@ export default function Medicines() {
                   </td>
                   <td><Badge value={m.status} /></td>
                   <td className="nowrap">{m.last_updated ? formatDate(m.last_updated, true) : '—'}</td>
-                  <td className="right nowrap">
+                  {showActions && <td className="right nowrap">
                     {m.status === 'unrecorded' && (
                       <>
                         {canStock && <><Link className="btn btn-sm" to={`/inventory?stockin=${m.medicine_id}`}>Record stock</Link>{' '}</>}
@@ -192,7 +194,7 @@ export default function Medicines() {
                     )}
                     {canManage && <><button className="btn btn-outline btn-sm" onClick={() => open(m)}>Edit</button>{' '}</>}
                     {user?.role === 'admin' && <button className="btn btn-danger btn-sm" onClick={() => remove(m)}>Delete</button>}
-                  </td>
+                  </td>}
                 </tr>
               ))}
             </tbody>
