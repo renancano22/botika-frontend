@@ -5,7 +5,7 @@ import { LoadError, toast } from '../../components/feedback';
 import { useApi } from '../../hooks';
 import { Badge, Card, Empty, Loading, Message, Modal } from '../../components/ui';
 import { ICONS, quantityText, Svg, unitPlural } from '../../components/RequestCards';
-import type { ForecastMethod, ForecastMethodResult, ForecastReport, ForecastResult } from '../../types';
+import type { ForecastMethod, ForecastMethodResult, ForecastReport, ForecastResult, SeasonalReport } from '../../types';
 import { jumpTo } from '../../scroll';
 import { Pagination, useClientPages } from '../../components/Pagination';
 import BackButton from '../../components/BackButton';
@@ -195,6 +195,110 @@ function RankList({ items, empty, unit }: { items: { name: string; total: number
         </li>
       ))}
     </ol>
+  );
+}
+
+/** "20 tablets" / "2.5 tablets" for an average per month. */
+const perMonthText = (n: number, unit: string) => (Number.isInteger(n) ? quantityText(n, unit) : `${n} ${unitPlural(unit)}`);
+
+/**
+ * Seasonal Demand: the medicines given out most in the rainy season (June–November) and the dry season
+ * (December–May), with the expected quantity per month and for a whole season, from the dispensing records.
+ * For information only: the suggested restock comes from the forecast above.
+ */
+function SeasonalDemand() {
+  const { data, errorInfo, loading, reload } = useApi<SeasonalReport>('/forecasts/seasonal');
+  const [picked, setPicked] = useState<'rainy' | 'dry' | null>(null);
+  const key = picked ?? data?.current ?? 'rainy';
+  const season = data?.seasons.find((x) => x.key === key);
+  const other = data?.seasons.find((x) => x.key !== key);
+  const pages = useClientPages(season?.medicines ?? [], key, 'seasonal');
+
+  const head = (
+    <div className="chips" role="tablist" aria-label="Season">
+      {(data?.seasons ?? []).map((x) => (
+        <button key={x.key} role="tab" aria-selected={key === x.key} className={`chip ${key === x.key ? 'active' : ''}`} onClick={() => setPicked(x.key)}>
+          {x.label}<span className="chip-count">{x.is_current ? 'Now' : 'Next'}</span>
+        </button>
+      ))}
+    </div>
+  );
+
+  if (loading && !data) return <Card title="Seasonal Demand"><Loading /></Card>;
+  if (!data || !season || !other) return <Card title="Seasonal Demand"><LoadError error={errorInfo} onRetry={() => reload()} /></Card>;
+
+  const used = season.months_used;
+  const top = season.medicines[0];
+  const basis = !used.length ? 'No records yet'
+    : season.partial ? `${monthText(used[0])} so far`
+    : used.length === 1 ? monthText(used[0]) : `${monthText(used[0])} – ${monthText(used[used.length - 1])}`;
+  const name = season.label.toLowerCase();
+
+  return (
+    <Card title="Seasonal Demand" actions={head}>
+      <p className="fc-season-when">
+        <strong>{season.label}</strong> <span className="muted">({season.months_label})</span> ·{' '}
+        {season.is_current ? <>now, until {dayText(season.ends)}</> : <>next, from {dayText(season.starts)} to {dayText(season.ends)}</>}
+      </p>
+      {!season.medicines.length ? (
+        <Empty>
+          {used.length
+            ? `No medicines were given out in the ${name} months recorded so far.`
+            : `No dispensing records from a ${name} yet. The expected demand appears once medicines are given out in this season.`}
+        </Empty>
+      ) : (
+        <>
+          <div className="da-kpis fc-season-kpis">
+            <div className="da-kpi"><small>Most given out</small><strong className="fc-season-top">{top.medicine_name}</strong><span>{perMonthText(top.avg_per_month, top.unit)} / month</span></div>
+            <div className="da-kpi"><small>Medicines given out</small><strong>{season.medicines.length}</strong><span>different medicines this season</span></div>
+            <div className="da-kpi"><small>Records used</small><strong>{season.partial ? '—' : monthsText(used.length)}</strong><span>{basis}</span></div>
+          </div>
+          {season.provisional && (
+            <Message type="info">
+              {season.partial
+                ? <>Provisional: there is no complete {name} month in the records yet, so this is based on {monthText(used[0])} so far.</>
+                : <>Provisional: based on {monthsText(used.length).toLowerCase()} of {name} records. It becomes more reliable after a whole season (6 months) is recorded.</>}
+            </Message>
+          )}
+          <div className="fc-table-wrap">
+            <table className="fc-table">
+              <thead>
+                <tr>
+                  <th className="col-no">No.</th><th>Medicine</th><th className="right">Expected per month</th><th className="right">Expected for the season<br /><small>(6 months)</small></th>
+                  <th className="right">Times given out</th><th className="right">Residents</th><th>Compared with the {other.label.toLowerCase()}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pages.rows.map((m, i) => (
+                  <tr key={m.medicine_id}>
+                    <td className="col-no">{(pages.meta.from ?? 1) + i}</td>
+                    <td><strong>{m.medicine_name}</strong><div className="muted small">{m.unit}</div></td>
+                    <td className="right">{perMonthText(m.avg_per_month, m.unit)}</td>
+                    <td className="right"><strong>{quantityText(m.expected_season, m.unit)}</strong></td>
+                    <td className="right">{m.times_dispensed}</td>
+                    <td className="right">{m.residents}</td>
+                    <td>
+                      {m.other_avg_per_month === null ? <span className="muted small">No {other.label.toLowerCase()} records yet</span>
+                        : m.only_this_season ? <span className="season-change up">Only in the {name}</span>
+                        : m.change_percent === 0 ? <span className="season-change">About the same</span>
+                        : <span className={`season-change ${(m.change_percent ?? 0) > 0 ? 'up' : 'down'}`}>
+                            {(m.change_percent ?? 0) > 0 ? '▲' : '▼'} {Math.abs(m.change_percent ?? 0)}% {(m.change_percent ?? 0) > 0 ? 'more' : 'less'}
+                          </span>}
+                      {m.other_avg_per_month !== null && !m.only_this_season && <div className="muted small">{perMonthText(m.other_avg_per_month, m.unit)} / month in the {other.label.toLowerCase()}</div>}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <Pagination meta={pages.meta} onPage={pages.setPage} onPerPage={pages.setPerPage} noun="medicines" />
+        </>
+      )}
+      <p className="muted small fc-season-foot">
+        Based on the dispensing records of past {name} months (complete months only). Expected per month = average given out per month in those months;
+        expected for the season = that average × 6 months. For information only: the suggested restock uses the forecast above.
+      </p>
+    </Card>
   );
 }
 
@@ -584,6 +688,8 @@ export default function Forecasting() {
               </div>
             </Card>
           </div>
+
+          <SeasonalDemand />
         </div>
       )}
 

@@ -283,6 +283,34 @@ export interface ForecastResult {
   priority: 'high' | 'medium' | null;
 }
 
+/** Demand Forecasting → Seasonal Demand (rainy season June–November, dry season December–May). */
+export interface SeasonalMedicine {
+  medicine_id: number;
+  medicine_name: string;
+  unit: string;
+  total: number;
+  avg_per_month: number;
+  expected_season: number;
+  times_dispensed: number;
+  residents: number;
+  other_avg_per_month: number | null; // null: no records from the other season yet
+  change_percent: number | null;
+  only_this_season: boolean;
+}
+export interface SeasonDemand {
+  key: 'rainy' | 'dry';
+  label: string;
+  months_label: string;
+  is_current: boolean;
+  starts: string;
+  ends: string;
+  months_used: string[];
+  partial: boolean;
+  provisional: boolean;
+  medicines: SeasonalMedicine[];
+}
+export interface SeasonalReport { current: 'rainy' | 'dry'; next: 'rainy' | 'dry'; first_record: string | null; seasons: SeasonDemand[] }
+
 export interface ForecastReport {
   generated_at: string;
   history_months: number;
