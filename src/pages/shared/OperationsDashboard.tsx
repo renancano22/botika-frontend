@@ -6,7 +6,7 @@ import { useAuth } from '../../auth';
 import { useApi } from '../../hooks';
 import { Badge, Card, Empty, Loading } from '../../components/ui';
 import type { Alerts, MedicineRequest } from '../../types';
-import { ExpiryBanner, expiryText } from '../../components/ExpiryAlerts';
+import { ExpiryBanner } from '../../components/ExpiryAlerts';
 import { ICONS, PickupCountdown, Svg } from '../../components/RequestCards';
 import { LoadError } from '../../components/feedback';
 
@@ -36,7 +36,6 @@ interface OpsDashboard {
   sections: Sections;
   counts: Record<string, number>;
   alerts?: Alerts;
-  recent_requests?: MedicineRequest[];
   ready_for_pickup?: MedicineRequest[];
   analytics?: Analytics;
 }
@@ -102,7 +101,7 @@ export default function OperationsDashboard() {
         <div>
           <h1>{isAdmin ? 'Administrator Dashboard' : 'Pharmacy Staff Dashboard'}</h1>
           <p className="muted">Live overview from the BulanBotikaCare records · updates every 30 seconds</p>
-          <People residents={c.residents} staff={c.staff ?? 0} links={isAdmin} />
+          {isAdmin && <People residents={c.residents} staff={c.staff ?? 0} />}
         </div>
         <div className="actions">
           {can('dispensing.dispense|residents.register') && <Link className="btn" to="/dispense">Dispense medicine</Link>}
@@ -112,57 +111,18 @@ export default function OperationsDashboard() {
       {/* A failed refresh keeps the last numbers on screen and says so. */}
       <LoadError error={errorInfo} onRetry={() => reload()} />
 
-      {sec.stock && data.alerts && canInventory && <ExpiryBanner alerts={data.alerts} />}
+      {isAdmin && sec.stock && data.alerts && canInventory && <ExpiryBanner alerts={data.alerts} />}
 
-      {(sec.requests || sec.dispensing) && <RequestsPanel c={c} today={today} sections={sec} />}
+      {(sec.requests || sec.dispensing) && <RequestsPanel c={c} today={today} sections={sec} isAdmin={isAdmin} />}
       {sec.stock && <StockOverview c={c} canMedicines={canMedicines} canInventory={canInventory} />}
 
       {sec.requests && <ReadyForPickup requests={data.ready_for_pickup ?? []} total={c.approved_to_dispense} />}
 
-      {data.analytics && (
+      {isAdmin && data.analytics && (
         <DemandAnalysis a={data.analytics} preset={preset} custom={custom} badRange={badRange} busy={loading} isAdmin={isAdmin}
           onPreset={(p) => setPreset(p)} onCustom={(next) => { setCustom(next); setPreset('custom'); }} />
       )}
 
-      {sec.stock && data.alerts && (
-        <div className="grid-2">
-          <Card title="Stock alerts" actions={canMedicines && <Link to="/medicines">Open Medicine List</Link>}>
-            {data.alerts.low_stock.length === 0 ? <Empty>All medicines are above their reorder level.</Empty> : (
-              <table>
-                <thead><tr><th>Medicine</th><th>Available</th><th>Reorder level</th><th>Status</th></tr></thead>
-                <tbody>
-                  {data.alerts.low_stock.map((m) => (
-                    <tr key={m.medicine_id}>
-                      <td>{m.medicine_name}</td><td>{m.available_stock} {m.unit}</td><td>{m.reorder_level}</td><td><Badge value={m.status} /></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </Card>
-
-          <Card title="Expiration alerts (within 1 month)">
-            {data.alerts.expired.length + data.alerts.near_expiry.length === 0 ? <Empty>No medicine will expire within 1 month.</Empty> : (
-              <table>
-                <thead><tr><th>Medicine</th><th>Qty</th><th>Expires</th><th>Status</th></tr></thead>
-                <tbody>
-                  {[...data.alerts.expired, ...data.alerts.near_expiry].map((b) => {
-                    const expired = data.alerts!.expired.includes(b);
-                    return (
-                      <tr key={b.inventory_id}>
-                        <td>{b.medicine.medicine_name}</td><td>{b.quantity}</td><td>{formatDate(b.expiration_date)}<div className="muted small">{expiryText(b).replace(/ \(.*\)$/, '')}</div></td>
-                        <td><Badge value={expired ? 'expired' : 'near_expiry'} /></td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            )}
-          </Card>
-        </div>
-      )}
-
-      {sec.requests && <PendingRequests requests={data.recent_requests ?? []} />}
     </div>
   );
 }
@@ -373,44 +333,21 @@ function ReadyForPickup({ requests, total }: { requests: MedicineRequest[]; tota
   );
 }
 
-function PendingRequests({ requests }: { requests: MedicineRequest[] }) {
-  return (
-    <Card title="Pending requests" actions={<Link to="/requests">Review requests</Link>}>
-      {requests.length === 0 ? <Empty>No pending requests.</Empty> : (
-        <table>
-          <thead><tr><th>Request No.</th><th>Type</th><th>Resident</th><th>Medicines</th><th>Date</th></tr></thead>
-          <tbody>
-            {requests.map((r) => (
-              <tr key={r.request_id}>
-                <td className="nowrap">No. {r.request_id}</td><td><Badge value={r.request_type} /></td><td>{r.resident?.name}</td>
-                <td>{r.items.map((i) => `${i.medicine.medicine_name} ×${i.quantity}`).join(', ')}</td>
-                <td>{formatDate(r.request_date, true)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-    </Card>
-  );
-}
-
 /** People overview, inside the dashboard header: registered residents and active pharmacy staff. */
-function People({ residents, staff, links }: { residents: number; staff: number; links: boolean }) {
+function People({ residents, staff }: { residents: number; staff: number }) {
   const items = [
     { to: '/users?role=resident', icon: ICON.users, text: `${residents.toLocaleString('en-PH')} registered ${plural(residents, 'resident')}` },
     { to: '/users?role=staff', icon: ICON.staff, text: `${staff} active pharmacy staff` },
   ];
   return (
     <p className="db-people">
-      {items.map((p) => (links
-        ? <Link key={p.to} to={p.to} className="db-person"><Svg d={p.icon} size={16} /> {p.text}</Link>
-        : <span key={p.to} className="db-person"><Svg d={p.icon} size={16} /> {p.text}</span>))}
+      {items.map((p) => <Link key={p.to} to={p.to} className="db-person"><Svg d={p.icon} size={16} /> {p.text}</Link>)}
     </p>
   );
 }
 
 /** Requests & Dispensing: one summary panel with four sections (tap a section to open it). */
-function RequestsPanel({ c, today, sections }: { c: Record<string, number>; today: string; sections: Sections }) {
+function RequestsPanel({ c, today, sections, isAdmin }: { c: Record<string, number>; today: string; sections: Sections; isAdmin: boolean }) {
   const all = [
     { to: '/requests?type=medicine&status=pending', tone: 'review', icon: ICON.review, value: c.pending_requests, label: 'Pending requests',
       hint: c.pending_requests ? 'Waiting for review' : 'All reviewed', alert: c.pending_requests > 0 },
@@ -422,7 +359,8 @@ function RequestsPanel({ c, today, sections }: { c: Record<string, number>; toda
       hint: c.pending_restock ? 'Needs admin review' : 'None waiting', alert: c.pending_restock > 0 },
   ];
   // Only what this user may open (User Permissions): request numbers need Requests, "Dispensed today" needs Dispensing Records.
-  const items = all.filter((m) => (m.label === 'Dispensed today' ? sections.dispensing : sections.requests));
+  const items = all.filter((m) => (m.label === 'Dispensed today' ? sections.dispensing : sections.requests))
+    .filter((m) => isAdmin || m.label !== 'Pending restock'); // restock requests are reviewed by the administrator
   return (
     <section className="card db-panel" aria-labelledby="db-req-title">
       <div className="db-panel-head">
