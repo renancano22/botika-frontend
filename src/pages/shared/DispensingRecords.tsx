@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../auth';
 import { Empty, Loading } from '../../components/ui';
-import { ICONS, RequestNo, Svg, unitPlural } from '../../components/RequestCards';
+import { RequestNo, Svg, unitPlural } from '../../components/RequestCards';
 import type { Dispensing } from '../../types';
 import BackButton from '../../components/BackButton';
 import { LoadError } from '../../components/feedback';
@@ -134,7 +134,10 @@ export default function DispensingRecords() {
                 <th className="col-no">No.</th>
                 <th>Date &amp; time</th>
                 {!isResident && <th>Resident</th>}
-                <th>Medicines given</th>
+                <th>
+                  {/* Two labels: the medicine names, and the quantity of each one (right side, above the quantities). */}
+                  <span className="dr-meds-head"><span>Medicines given</span><span>Number of medicine</span></span>
+                </th>
                 <th className="center">Total qty</th>
                 <th>Request</th>
                 <th>Dispensed by</th>
@@ -159,9 +162,9 @@ export default function DispensingRecords() {
                     )}
                     <td data-label="Medicines given">
                       <ul className="dr-meds">
-                        {d.items.map((i) => (
+                        {d.items.map((i, n) => (
                           <li key={i.dispensing_item_id}>
-                            <span className="dr-med-icon"><Svg d={ICONS.pill} size={14} width={2.2} /></span>
+                            <span className="dr-med-icon dr-med-no" aria-label={`Medicine ${n + 1}`}>{n + 1}</span>
                             <span>{i.medicine.medicine_name}</span>
                             <b>{i.quantity} {i.quantity === 1 ? i.medicine.unit : unitPlural(i.medicine.unit)}</b>
                           </li>

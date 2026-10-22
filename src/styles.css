@@ -1137,6 +1137,7 @@ html { scroll-behavior: auto; }
 
 .dr-card { padding: 0; overflow: hidden; }
 .dr-card .empty { padding: 32px 18px; }
+.dr-card .pager { padding: 14px 18px; } /* the card has no padding (the table reaches its edges), so the pager row gets its own */
 .dr-table th { padding: 13px 16px; }
 .dr-table td { padding: 14px 16px; vertical-align: top; }
 .dr-table tbody tr:hover td { background: #f7fbfa; }
@@ -1147,7 +1148,9 @@ html { scroll-behavior: auto; }
 .dr-meds li { display: flex; align-items: center; gap: 8px; }
 .dr-meds li > span:nth-child(2) { flex: 1; min-width: 0; }
 .dr-meds b { white-space: nowrap; font-weight: 700; color: #33443f; }
+.dr-meds-head { display: flex; justify-content: space-between; gap: 16px; }
 .dr-med-icon { width: 24px; height: 24px; border-radius: 8px; display: grid; place-items: center; flex-shrink: 0; background: var(--primary-soft); color: var(--primary); }
+.dr-med-no { font-size: 0.78rem; font-weight: 800; font-variant-numeric: tabular-nums; }
 .dr-total { display: inline-grid; place-items: center; min-width: 36px; height: 28px; padding: 0 10px; border-radius: 999px; background: #eef2f1; font-weight: 800; }
 .dr-tag { display: inline-block; margin-top: 4px; padding: 2px 8px; border-radius: 999px; font-size: 0.72rem; font-weight: 700; background: #e0f2fe; color: #0369a1; }
 .dr-tag-walkin { background: #fef3c7; color: #b45309; }
@@ -1162,6 +1165,7 @@ html { scroll-behavior: auto; }
 /* Phones: each record becomes a card with labelled fields */
 @media (max-width: 700px) {
   .dr-card { background: transparent; border: none; box-shadow: none; }
+  .dr-card .pager { padding: 14px 0 0; }
   .dr-table thead { display: none; }
   .dr-table, .dr-table tbody, .dr-table tr, .dr-table td { display: block; width: 100%; }
   .dr-table tr { background: #fff; border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow-sm); margin-bottom: 12px; overflow: hidden; }
