@@ -1,12 +1,11 @@
 import { useState, type ReactNode } from 'react';
 import { Link, type LinkProps } from 'react-router-dom';
-import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { formatDate } from '../../api';
 import { useAuth } from '../../auth';
 import { useApi } from '../../hooks';
 import { Badge, Card, Empty, Loading } from '../../components/ui';
-import type { Alerts, MedicineRequest } from '../../types';
-import { ExpiryBanner } from '../../components/ExpiryAlerts';
+import type { MedicineRequest } from '../../types';
 import { ICONS, PickupCountdown, Svg } from '../../components/RequestCards';
 import { LoadError } from '../../components/feedback';
 
@@ -35,7 +34,6 @@ interface Analytics {
 interface OpsDashboard {
   sections: Sections;
   counts: Record<string, number>;
-  alerts?: Alerts;
   ready_for_pickup?: MedicineRequest[];
   analytics?: Analytics;
 }
@@ -111,7 +109,6 @@ export default function OperationsDashboard() {
       {/* A failed refresh keeps the last numbers on screen and says so. */}
       <LoadError error={errorInfo} onRetry={() => reload()} />
 
-      {isAdmin && sec.stock && data.alerts && canInventory && <ExpiryBanner alerts={data.alerts} />}
 
       {(sec.requests || sec.dispensing) && <RequestsPanel c={c} today={today} sections={sec} isAdmin={isAdmin} />}
       {sec.stock && <StockOverview c={c} canMedicines={canMedicines} canInventory={canInventory} />}
@@ -126,15 +123,6 @@ export default function OperationsDashboard() {
     </div>
   );
 }
-
-const STATUS_PARTS: { key: keyof NonNullable<Analytics['requests']>['by_status']; label: string; tone: string }[] = [
-  { key: 'pending', label: 'Pending', tone: 'pending' },
-  { key: 'approved', label: 'Ready for pickup', tone: 'approved' },
-  { key: 'dispensed', label: 'Completed', tone: 'dispensed' },
-  { key: 'rejected', label: 'Rejected', tone: 'rejected' },
-  { key: 'cancelled', label: 'Cancelled', tone: 'cancelled' },
-  { key: 'expired', label: 'Expired (not claimed)', tone: 'expired' },
-];
 
 /**
  * Demand Analysis: medicine requests and dispensing within a period, the request trend and the most
@@ -211,22 +199,7 @@ function DemandAnalysis({ a, preset, custom, badRange, busy, isAdmin, onPreset, 
           )}
         </div>
 
-        {r && r.total > 0 && (
-          <div className="da-status" aria-label="Medicine requests by status">
-            <div className="da-status-bar" role="img" aria-label={STATUS_PARTS.map((p) => `${p.label} ${r.by_status[p.key]}`).join(', ')}>
-              {STATUS_PARTS.filter((p) => r.by_status[p.key] > 0).map((p) => (
-                <span key={p.key} className={`da-seg da-${p.tone}`} style={{ flexGrow: r.by_status[p.key] }} title={`${p.label}: ${r.by_status[p.key]}`} />
-              ))}
-            </div>
-            <ul className="da-status-list">
-              {STATUS_PARTS.map((p) => (
-                <li key={p.key}><span className={`da-dot da-${p.tone}`} aria-hidden="true" />{p.label} <b>{r.by_status[p.key]}</b></li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        <div className="grid-2 da-charts">
+        <div className="da-charts">
           <div className="da-chart">
             <h3>{r && d ? 'Requests submitted and releases dispensed' : r ? 'Requests submitted' : 'Releases dispensed'}</h3>
             <ResponsiveContainer width="100%" height={230}>
@@ -241,20 +214,6 @@ function DemandAnalysis({ a, preset, custom, badRange, busy, isAdmin, onPreset, 
               </BarChart>
             </ResponsiveContainer>
           </div>
-          {d && (
-            <div className="da-chart">
-              <h3>Quantity dispensed</h3>
-              <ResponsiveContainer width="100%" height={230}>
-                <LineChart data={chart} margin={{ top: 8, right: 12, left: -18, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
-                  <XAxis dataKey="label" fontSize={11} interval="preserveStartEnd" minTickGap={12} />
-                  <YAxis fontSize={11} allowDecimals={false} />
-                  <Tooltip />
-                  <Line type="monotone" dataKey="quantity" name="Quantity dispensed" stroke="#228b39" strokeWidth={2} dot={period.group === 'month'} />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          )}
         </div>
 
         <h3 className="da-table-title">Most requested medicines</h3>
