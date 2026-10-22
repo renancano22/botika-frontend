@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { Link, type LinkProps } from 'react-router-dom';
-import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { formatDate } from '../../api';
 import { useAuth } from '../../auth';
 import { useApi } from '../../hooks';
@@ -202,7 +202,7 @@ function DemandAnalysis({ a, preset, custom, badRange, busy, isAdmin, onPreset, 
           )}
         </div>
 
-        <div className="da-charts">
+        <div className="grid-2 da-charts">
           <div className="da-chart">
             <h3>{r && d ? 'Requests submitted and releases dispensed' : r ? 'Requests submitted' : 'Releases dispensed'}</h3>
             <ResponsiveContainer width="100%" height={230}>
@@ -217,6 +217,20 @@ function DemandAnalysis({ a, preset, custom, badRange, busy, isAdmin, onPreset, 
               </BarChart>
             </ResponsiveContainer>
           </div>
+          {d && (
+            <div className="da-chart">
+              <h3>Quantity dispensed</h3>
+              <ResponsiveContainer width="100%" height={230}>
+                <LineChart data={chart} margin={{ top: 8, right: 12, left: -18, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
+                  <XAxis dataKey="label" fontSize={11} interval="preserveStartEnd" minTickGap={12} />
+                  <YAxis fontSize={11} allowDecimals={false} />
+                  <Tooltip />
+                  <Line type="monotone" dataKey="quantity" name="Quantity dispensed" stroke="#228b39" strokeWidth={2} dot={period.group === 'month'} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          )}
         </div>
 
         <h3 className="da-table-title">Top 10 most requested medicines</h3>
