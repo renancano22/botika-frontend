@@ -76,7 +76,7 @@ export default function Permissions() {
   // Related features (the server applies the same rule): turning a feature on also turns on the one it is
   // used from, and turning that one off also turns off the features that need it.
   const byKey = useMemo(() => Object.fromEntries((current?.permissions ?? []).map((p) => [p.key, p])), [current]);
-  const dependents = (key: string) => (current?.permissions ?? []).filter((x) => x.requires === key);
+  const dependents = (key: string) => (current?.permissions ?? []).filter((x) => x.requires?.includes(key));
   const toggle = (p: PermissionItem) => {
     const next = !value(p);
     setDraft((d) => {
@@ -87,7 +87,7 @@ export default function Permissions() {
         if (v === item.allowed) delete copy[key]; else copy[key] = v;
       };
       set(p.key, next);
-      if (next && p.requires) set(p.requires, true);
+      if (next) (p.requires ?? []).forEach((k) => set(k, true));
       if (!next) dependents(p.key).forEach((x) => set(x.key, false));
       return copy;
     });
@@ -200,9 +200,16 @@ export default function Permissions() {
                         <div className="perm-text" id={`perm-${p.key}`}>
                           <strong>{p.label}{changed && <span className="perm-changed">Not saved</span>}</strong>
                           <span>{p.description}</span>
-                          {p.requires && byKey[p.requires] && (
-                            <small className="perm-needs">Needs “{byKey[p.requires].label}” — turned on with it, and off when it is off.</small>
-                          )}
+                          {(() => {
+                            const needs = (p.requires ?? []).filter((k) => byKey[k]).map((k) => `“${byKey[k].label}”`);
+                            if (!needs.length) return null;
+                            const one = needs.length === 1;
+                            return (
+                              <small className="perm-needs">
+                                Needs {one ? needs[0] : `${needs.slice(0, -1).join(', ')} and ${needs[needs.length - 1]}`} — turned on with {one ? 'it' : 'them'}, and off when {one ? 'it is' : 'either is'} off.
+                              </small>
+                            );
+                          })()}
                         </div>
                         <button type="button" role="switch" aria-checked={on} aria-labelledby={`perm-${p.key}`}
                           className={`switch ${on ? 'on' : ''}`} onClick={() => toggle(p)} disabled={saving}>

@@ -126,7 +126,7 @@ export default function RequestDetail() {
               <Svg d={ICONS.trash} size={18} /> Cancel Request
             </button>
           )}
-          {r.status === 'fulfilled' && <Link className="btn btn-block" to="/medicines">Request this medicine</Link>}
+          {r.status === 'fulfilled' && can('requests.create') && <Link className="btn btn-block" to="/medicines">Request this medicine</Link>}
         </div>
       </>}
 
