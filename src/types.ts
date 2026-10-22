@@ -39,6 +39,8 @@ export interface PermissionItem {
   description: string;
   default: boolean;
   allowed: boolean;
+  /** The feature this one is used from (it is off whenever that one is off). Null = none. */
+  requires?: string | null;
 }
 
 export interface RolePermissions {

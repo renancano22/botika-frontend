@@ -2212,3 +2212,8 @@ td.col-no { font-weight: 600; }
   .fc-legend { gap: 10px; }
 }
 .fc-table td:nth-child(2) { min-width: 170px; }
+.perm-text .perm-needs { font-size: 0.78rem; color: var(--muted); font-style: italic; }
+/* Dashboard parts shown without a link when the user may not open that page (User Permissions) */
+.is-static { cursor: default; }
+a.db-legend-item, .db-legend-item.is-static { text-decoration: none; }
+.db-req.db-req-n2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }

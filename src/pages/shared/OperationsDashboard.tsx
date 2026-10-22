@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, type ReactNode } from 'react';
+import { Link, type LinkProps } from 'react-router-dom';
 import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { formatDate } from '../../api';
 import { useAuth } from '../../auth';
@@ -72,8 +72,15 @@ const PRESETS: { key: Exclude<Preset, 'custom'>; label: string; range: () => { f
 ];
 
 /** Dashboard for the administrator and pharmacy staff. Refreshes every 30 seconds. */
+/** A link only when the user may open that page (User Permissions); otherwise the same content without a link. */
+function MaybeLink({ to, allowed, className, children, ...rest }: { to: string; allowed: boolean; className?: string; children: ReactNode } & Omit<LinkProps, 'to'>) {
+  return allowed ? <Link to={to} className={className} {...rest}>{children}</Link> : <span className={`${className ?? ''} is-static`}>{children}</span>;
+}
+
 export default function OperationsDashboard() {
-  const { user } = useAuth();
+  const { user, can } = useAuth();
+  const canMedicines = can('medicines.view');
+  const canInventory = can('inventory.view|inventory.manage');
   const isAdmin = user?.role === 'admin';
   const [preset, setPreset] = useState<Preset>('6m');
   const [custom, setCustom] = useState({ from: '', to: '' });
@@ -98,17 +105,17 @@ export default function OperationsDashboard() {
           <People residents={c.residents} staff={c.staff ?? 0} links={isAdmin} />
         </div>
         <div className="actions">
-          <Link className="btn" to="/dispense">Dispense medicine</Link>
+          {can('dispensing.dispense|residents.register') && <Link className="btn" to="/dispense">Dispense medicine</Link>}
           {isAdmin && <Link className="btn btn-outline" to="/forecasting">Demand forecast</Link>}
         </div>
       </header>
       {/* A failed refresh keeps the last numbers on screen and says so. */}
       <LoadError error={errorInfo} onRetry={() => reload()} />
 
-      {sec.stock && data.alerts && <ExpiryBanner alerts={data.alerts} />}
+      {sec.stock && data.alerts && canInventory && <ExpiryBanner alerts={data.alerts} />}
 
       {(sec.requests || sec.dispensing) && <RequestsPanel c={c} today={today} sections={sec} />}
-      {sec.stock && <StockOverview c={c} />}
+      {sec.stock && <StockOverview c={c} canMedicines={canMedicines} canInventory={canInventory} />}
 
       {sec.requests && <ReadyForPickup requests={data.ready_for_pickup ?? []} total={c.approved_to_dispense} />}
 
@@ -119,7 +126,7 @@ export default function OperationsDashboard() {
 
       {sec.stock && data.alerts && (
         <div className="grid-2">
-          <Card title="Stock alerts" actions={<Link to="/medicines">Open Medicine List</Link>}>
+          <Card title="Stock alerts" actions={canMedicines && <Link to="/medicines">Open Medicine List</Link>}>
             {data.alerts.low_stock.length === 0 ? <Empty>All medicines are above their reorder level.</Empty> : (
               <table>
                 <thead><tr><th>Medicine</th><th>Available</th><th>Reorder level</th><th>Status</th></tr></thead>
@@ -439,7 +446,7 @@ function RequestsPanel({ c, today, sections }: { c: Record<string, number>; toda
  * Medicine Stock Overview: all medicines split by stock status (one bar, labelled legend with counts),
  * plus batch expiry. Orange = low stock / expiring, red = out of stock / expired, grey = not recorded.
  */
-function StockOverview({ c }: { c: Record<string, number> }) {
+function StockOverview({ c, canMedicines, canInventory }: { c: Record<string, number>; canMedicines: boolean; canInventory: boolean }) {
   const unrecorded = c.unrecorded ?? 0;
   const available = c.available ?? 0; // counted by the server (each medicine once, by its non-expired stock)
   const segments = [
@@ -455,47 +462,47 @@ function StockOverview({ c }: { c: Record<string, number> }) {
     <section className="card db-panel" aria-labelledby="db-stock-title">
       <div className="db-panel-head">
         <h2 id="db-stock-title">Medicine Stock Overview <span className="muted small db-asof">as of now</span></h2>
-        <Link to="/medicines" className="db-more">Medicine List <Svg d={ICONS.chevron} size={16} /></Link>
+        {canMedicines && <Link to="/medicines" className="db-more">Medicine List <Svg d={ICONS.chevron} size={16} /></Link>}
       </div>
       <div className="db-stock">
         <div className="db-stock-main">
-          <Link to="/medicines" className="db-total">
+          <MaybeLink to="/medicines" allowed={canMedicines} className="db-total">
             <strong>{c.medicines}</strong>
             <span>All medicines</span>
-          </Link>
+          </MaybeLink>
           {c.medicines > 0 && (
             <div className="db-bar" role="img" aria-label={`Stock status of ${c.medicines} medicines: ${summary}`}>
               {segments.filter((s) => s.value > 0).map((s) => (
-                <Link key={s.key} to={s.to} className={`db-seg tone-${s.key}`} style={{ flexGrow: s.value }}
-                  title={`${s.label}: ${s.value} ${plural(s.value, 'medicine')} (${pct(s.value)}%)`} aria-hidden="true" tabIndex={-1} />
+                <span key={s.key} className={`db-seg tone-${s.key}`} style={{ flexGrow: s.value }}
+                  title={`${s.label}: ${s.value} ${plural(s.value, 'medicine')} (${pct(s.value)}%)`} aria-hidden="true" />
               ))}
             </div>
           )}
           <ul className="db-legend">
             {segments.map((s) => (
               <li key={s.key}>
-                <Link to={s.to} className={`db-legend-item tone-${s.key}`}>
+                <MaybeLink to={s.to} allowed={canMedicines} className={`db-legend-item tone-${s.key}`}>
                   <span className="db-swatch" aria-hidden="true"><Svg d={s.icon} size={13} width={2.6} /></span>
                   <span className="db-legend-label">{s.label}</span>
                   <strong>{s.value}</strong>
                   <span className="db-legend-pct">{pct(s.value)}%</span>
-                </Link>
+                </MaybeLink>
               </li>
             ))}
           </ul>
         </div>
         <div className="db-expiry">
           <h3>Batch expiry</h3>
-          <Link to="/inventory?expiry=near_expiry" className={`db-exp-row tone-low ${c.near_expiry ? 'is-alert' : ''}`}>
+          <MaybeLink to="/inventory?expiry=near_expiry" allowed={canInventory} className={`db-exp-row tone-low ${c.near_expiry ? 'is-alert' : ''}`}>
             <span className="db-exp-icon"><Svg d={ICONS.clock} size={20} /></span>
             <span className="db-exp-text"><span>Expiring in 1 month</span><small>{c.near_expiry ? 'Dispense these first' : 'Nothing expiring soon'}</small></span>
             <strong>{c.near_expiry}</strong>
-          </Link>
-          <Link to="/inventory?expiry=expired" className={`db-exp-row tone-out ${c.expired ? 'is-alert' : ''}`}>
+          </MaybeLink>
+          <MaybeLink to="/inventory?expiry=expired" allowed={canInventory} className={`db-exp-row tone-out ${c.expired ? 'is-alert' : ''}`}>
             <span className="db-exp-icon"><Svg d={ICONS.x} size={20} /></span>
             <span className="db-exp-text"><span>Expired batches</span><small>{c.expired ? 'Remove from stock' : 'No expired stock'}</small></span>
             <strong>{c.expired}</strong>
-          </Link>
+          </MaybeLink>
         </div>
       </div>
     </section>

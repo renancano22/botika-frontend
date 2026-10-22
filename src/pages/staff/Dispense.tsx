@@ -37,7 +37,8 @@ export default function Dispense() {
   const [msg, setMsg] = useState<{ type: 'error' | 'success' | 'info'; title?: string; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
   const [walkIn, setWalkIn] = useState<{ medicine_id: number; quantity: number }[]>([]);
-  const { data: medicines, reload: reloadMedicines } = useApi<Medicine[]>('/medicines');
+  // The medicine list is only needed to dispense (walk-in releases); registering a resident does not use it.
+  const { data: medicines, reload: reloadMedicines } = useApi<Medicine[]>(canDispense ? '/medicines' : null);
   // Prescription medicines: the staff confirm they checked the resident's original prescription before releasing.
   const [confirming, setConfirming] = useState<MedicineRequest | null>(null);
   const [rxChecked, setRxChecked] = useState(false);
