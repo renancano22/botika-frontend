@@ -52,8 +52,9 @@ function BatchLine({ b, expired, onOpen }: { b: InventoryBatch; expired: boolean
 }
 
 /**
- * Top-bar warning bell for admin and staff: shows how many batches expire within 1 month
- * (or have already expired) and lists them.
+ * Top-bar alert icon (warning triangle) for admin and staff: lists the batches that expire within 1 month (or have
+ * already expired). These are alerts, not messages: the number stays until the problem is fixed (the batch is used
+ * up or removed with a stock-out), even after the list has been viewed.
  */
 export function ExpiryBell() {
   const alerts = useStockAlerts();
@@ -83,7 +84,8 @@ export function ExpiryBell() {
     <div className="bell" ref={ref}>
       <button type="button" className="topbar-icon" onClick={() => setOpen(!open)} aria-expanded={open}
         aria-label={count ? `Expiry alerts, ${count} batches` : 'Expiry alerts'} title="Expiry alerts">
-        <Svg d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10 21h4" size={22} width={1.8} />
+        {/* Warning triangle: these are alerts about stock (residents' notifications use the bell). */}
+        <Svg d="M12 3 2 20h20zM12 10v4M12 17h.01" size={22} width={1.8} />
         {count > 0 && <span className="bell-badge">{count > 99 ? '99+' : count}</span>}
       </button>
       {open && (
