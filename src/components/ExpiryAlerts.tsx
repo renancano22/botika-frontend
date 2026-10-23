@@ -82,10 +82,14 @@ export function ExpiryBell() {
 
   return (
     <div className="bell" ref={ref}>
-      <button type="button" className="topbar-icon" onClick={() => setOpen(!open)} aria-expanded={open}
+      <button type="button" className={`topbar-icon alert-icon ${count > 0 ? 'has-alerts' : ''}`} onClick={() => setOpen(!open)} aria-expanded={open}
         aria-label={count ? `Expiry alerts, ${count} batches` : 'Expiry alerts'} title="Expiry alerts">
-        {/* Warning triangle: these are alerts about stock (residents' notifications use the bell). */}
-        <Svg d="M12 3 2 20h20zM12 10v4M12 17h.01" size={22} width={1.8} />
+        {/* Warning triangle: these are alerts about stock (residents' notifications use the bell).
+            Amber with a dark "!" while there are alerts; a plain outline when there are none. */}
+        <svg viewBox="0 0 24 24" width={24} height={24} aria-hidden="true">
+          <path className="alert-tri" d="M10.3 3.9 1.9 18a2 2 0 0 0 1.7 3h16.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" />
+          <path className="alert-mark" d="M12 9.5v4.5M12 17.2h.01" />
+        </svg>
         {count > 0 && <span className="bell-badge">{count > 99 ? '99+' : count}</span>}
       </button>
       {open && (

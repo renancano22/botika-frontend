@@ -412,6 +412,13 @@ input[type='password']::-ms-reveal, input[type='password']::-ms-clear { display:
   background: rgba(255, 255, 255, 0.1); color: #eefcf0; cursor: pointer; display: grid; place-items: center;
 }
 .topbar-icon:hover, .topbar-icon[aria-expanded='true'] { background: rgba(255, 255, 255, 0.2); }
+/* Admin/staff expiry alerts: a warning sign. Amber with a dark "!" while there are alerts, an outline when none. */
+.alert-icon .alert-tri { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linejoin: round; }
+.alert-icon .alert-mark { fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; }
+.alert-icon.has-alerts .alert-tri { fill: #fbbf24; stroke: #fbbf24; }
+.alert-icon.has-alerts .alert-mark { stroke: #7c2d12; }
+.alert-icon.has-alerts { background: rgba(251, 191, 36, 0.16); }
+.alert-icon.has-alerts:hover, .alert-icon.has-alerts[aria-expanded='true'] { background: rgba(251, 191, 36, 0.28); }
 .topbar-profile { display: block; border-radius: 50%; padding: 2px; border: 2px solid rgba(255, 255, 255, 0.35); }
 .topbar-profile:hover { border-color: #fff; }
 .bell { position: relative; }
