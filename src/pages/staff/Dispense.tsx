@@ -287,11 +287,11 @@ export default function Dispense() {
               <div className="dv-approved">
                 <h3 className="dv-sub">Approved requests ({found.approved_requests.length})</h3>
                 <table>
-                  <thead><tr><th>No.</th><th>Medicines</th><th>Approved</th><th className="right">Actions</th></tr></thead>
+                  <thead><tr><th>Request No.</th><th>Medicines</th><th>Approved</th><th className="right">Actions</th></tr></thead>
                   <tbody>
                     {found.approved_requests.map((r) => (
                       <tr key={r.request_id}>
-                        <td>{r.request_id}</td>
+                        <td className="nowrap">No. {r.request_id}</td>
                         <td>
                           {r.items.map((i) => `${i.medicine.medicine_name} ×${i.quantity}`).join(', ')}
                           {requiresPrescription(r) && <div className="rx-cell"><RxBadge small /></div>}

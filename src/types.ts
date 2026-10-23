@@ -206,7 +206,7 @@ export interface SmsNotification {
   sent_at: string;
   /** null = not read yet */
   read_at: string | null;
-  resident?: Pick<Resident, 'resident_id' | 'name' | 'contact_no'>;
+  resident?: Pick<Resident, 'resident_id' | 'name' | 'contact_no' | 'qr_code'>;
 }
 
 export type ForecastMethod = 'moving_average' | 'linear_regression' | 'exponential_smoothing';

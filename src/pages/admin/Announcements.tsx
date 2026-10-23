@@ -116,8 +116,10 @@ export default function Announcements() {
                 <tr key={n.notification_id}>
                   <td className="col-no">{rowNo(meta, i)}</td>
                   <td className="nowrap">{formatDate(n.sent_at, true)}</td>
-                  <td>{n.resident?.name}</td><td>{n.resident?.contact_no}</td>
-                  <td>{n.message}</td><td><Badge value={n.channel === 'app' ? 'app' : n.status} /></td>
+                  <td>{n.resident?.name}{n.resident?.qr_code && <div className="muted small nowrap">{n.resident.qr_code}</div>}</td>
+                  <td>{n.resident?.contact_no ?? '—'}</td>
+                  <td>{n.message}{n.request_id && <div className="muted small">Request No. {n.request_id}</div>}</td>
+                  <td><Badge value={n.channel === 'app' ? 'app' : n.status} /></td>
                 </tr>
               ))}
             </tbody>

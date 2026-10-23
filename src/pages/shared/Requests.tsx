@@ -219,6 +219,7 @@ export default function Requests() {
                     {r.reviewer && (
                       <div className="muted small">
                         {r.status === 'rejected' ? 'Rejected by' : r.status === 'pending' ? 'by' : r.status === 'cancelled' || r.status === 'expired' ? 'Earlier approved by' : 'Approved by'} {r.reviewer.name}
+                        {r.reviewed_at && <> · {formatDate(r.reviewed_at, true)}</>}
                       </div>
                     )}
                   </td>
