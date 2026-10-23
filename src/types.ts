@@ -136,7 +136,7 @@ export interface Alerts {
 export interface RequestItem {
   request_item_id: number;
   medicine_id: number;
-  quantity: number;
+  quantity: number | null; // null: restock requests have no quantity
   medicine: Pick<Medicine, 'medicine_id' | 'medicine_name' | 'unit'> & { requires_prescription?: boolean };
 }
 

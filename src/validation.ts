@@ -54,8 +54,9 @@ export function tomorrow(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-/** Most a resident can ask for of one medicine in a single request (same as the backend setting). */
-export const MAX_REQUEST_QUANTITY = 30;
+/** Most a resident can ask for of one medicine in a medicine request, also per medicine in a walk-in release
+ *  (same as the backend setting). Restock requests have no quantity. */
+export const MAX_REQUEST_QUANTITY = 10;
 
 /**
  * Checks a requested quantity and returns a warning to show under the field, or null when it is fine.

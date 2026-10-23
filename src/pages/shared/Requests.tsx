@@ -13,12 +13,12 @@ import { PickupCountdown, Svg } from '../../components/RequestCards';
 import type { MedicineRequest } from '../../types';
 import BackButton from '../../components/BackButton';
 
-/** Same short list as in the SMS: "Paracetamol 500mg x10, Amoxicillin x21 and 1 more". */
+/** Same short list as in the SMS: "Paracetamol 500mg x10, Amoxicillin x21 and 1 more" (restock requests: names only). */
 const itemsSummary = (r: MedicineRequest) => {
-  const parts = r.items.map((i) => `${i.medicine.medicine_name} x${i.quantity}`);
+  const parts = r.items.map((i) => `${i.medicine.medicine_name}${i.quantity === null ? '' : ` x${i.quantity}`}`);
   return parts.slice(0, 2).join(', ') + (parts.length > 2 ? ` and ${parts.length - 2} more` : '');
 };
-const itemsText = (r: MedicineRequest) => r.items.map((i) => `${i.medicine.medicine_name} ×${i.quantity}`).join(', ');
+const itemsText = (r: MedicineRequest) => r.items.map((i) => `${i.medicine.medicine_name}${i.quantity === null ? '' : ` ×${i.quantity}`}`).join(', ');
 
 /** Common reasons for not approving a request (shown in the Reject dropdown). Sent to the resident by SMS after "Reason:". */
 const PRESCRIPTION_REASONS = [

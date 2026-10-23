@@ -145,7 +145,7 @@ export function RequestRow({ request: r }: { request: MedicineRequest }) {
           <span className="req-row-med">{first.medicine.medicine_name}{more > 0 && <span className="req-row-more">+{more} more</span>}</span>
           <span className="req-row-sub">
             <span className="req-type">{restock ? 'Restock request' : 'Medicine request'}</span>
-            <span>{quantityText(first.quantity, first.medicine.unit)}</span>
+            {first.quantity !== null && <span>{quantityText(first.quantity, first.medicine.unit)}</span>}
           </span>
         </span>
       )}

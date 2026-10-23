@@ -76,7 +76,7 @@ export function RequestSummaryCard({ r, prescriptionAction }: { r: MedicineReque
             </span>
             <span>
               <strong>{i.medicine.medicine_name}</strong>
-              <span className="muted small">{quantityText(i.quantity, i.medicine.unit)}</span>
+              {i.quantity !== null && <span className="muted small">{quantityText(i.quantity, i.medicine.unit)}</span>}
               {i.medicine.requires_prescription && r.request_type === 'medicine' && <RxBadge small />}
             </span>
           </li>

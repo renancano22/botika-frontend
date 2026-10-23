@@ -36,7 +36,7 @@ export default function RequestDetail() {
       setEditing(structuredClone(r));
     }
   }, [navState, r]);
-  const editWarnings = editing?.items.map((i) => quantityWarning(i.quantity, unitPlural(i.medicine.unit))) ?? [];
+  const editWarnings = editing?.items.map((i) => quantityWarning(i.quantity ?? 0, unitPlural(i.medicine.unit))) ?? [];
 
   const replacePrescription = async () => {
     if (!r || !newRx || busy) return;
@@ -120,7 +120,8 @@ export default function RequestDetail() {
         <StatusBox r={r} />
 
         <div className="detail-actions">
-          {r.status === 'pending' && can('requests.create') && <button className="btn btn-outline btn-block" disabled={busy} onClick={() => { setMsg(null); setEditing(structuredClone(r)); }}>Update Request</button>}
+          {/* Restock requests have no quantity to update (they can be cancelled). */}
+          {r.status === 'pending' && r.request_type === 'medicine' && can('requests.create') && <button className="btn btn-outline btn-block" disabled={busy} onClick={() => { setMsg(null); setEditing(structuredClone(r)); }}>Update Request</button>}
           {(r.status === 'pending' || r.status === 'approved') && can('requests.cancel') && (
             <button className="btn btn-outline-danger btn-block" disabled={busy} onClick={cancel}>
               <Svg d={ICONS.trash} size={18} /> Cancel Request
@@ -148,7 +149,7 @@ export default function RequestDetail() {
           {editing.items.map((item, idx) => (
             <div className="cart-row" key={item.medicine_id}>
               <div><strong>{item.medicine.medicine_name}</strong><div className="muted small">{unitPlural(item.medicine.unit)}</div></div>
-              <input type="number" min={1} max={MAX_REQUEST_QUANTITY} value={Number.isNaN(item.quantity) ? '' : item.quantity} onChange={(e) => {
+              <input type="number" min={1} max={MAX_REQUEST_QUANTITY} value={item.quantity === null || Number.isNaN(item.quantity) ? '' : item.quantity} onChange={(e) => {
                 const items = editing.items.map((x, i) => (i === idx ? { ...x, quantity: e.target.value === '' ? NaN : Number(e.target.value) } : x));
                 setEditing({ ...editing, items });
               }} aria-label={`Quantity of ${item.medicine.medicine_name}`} />

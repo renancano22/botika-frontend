@@ -665,7 +665,7 @@ export default function Forecasting() {
                           </td>
                           <td className="right">
                             {r.waiting_demand}
-                            {r.restock_requests > 0 && <div className="muted small">{r.restock_requests} in restock requests</div>}
+                            {r.restock_requests > 0 && <div className="muted small">+ {r.restock_requests} restock request{r.restock_requests === 1 ? '' : 's'} waiting</div>}
                           </td>
                           <td className="right">{r.predicted_demand}</td>
                           <td className="right"><strong>{r.recommended_restock}</strong></td>
@@ -680,8 +680,9 @@ export default function Forecasting() {
               <Pagination meta={fcPages.meta} onPage={fcPages.setPage} onPerPage={fcPages.setPerPage} noun="medicines" />
               <div className="fc-foot">
                 <p className="muted small">
-                  Forecasts are estimates based on historical dispensing records. The suggested restock also counts the requests still waiting (pending medicine
-                  requests and restock requests) and the stock set aside for approved requests. Review recommendations before restocking.
+                  Forecasts are estimates based on historical dispensing records. The suggested restock also counts the quantities in pending medicine
+                  requests and the stock set aside for approved requests. Restock requests have no quantity: medicines residents are waiting for are
+                  marked High priority while out of stock. Review recommendations before restocking.
                   {' '}Method: {METHOD_LABEL[data.method]} · last run {formatDate(data.generated_at, true)}.
                 </p>
                 <button className="btn btn-outline" onClick={exportReport} disabled={!tableRows.length}><Svg d={ICON.download} size={18} /> Export report</button>

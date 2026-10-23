@@ -64,7 +64,6 @@ export default function ResidentMedicines() {
   const [adding, setAdding] = useState<CartItem | null>(null);       // "Add to request" sheet
   const [cartOpen, setCartOpen] = useState(false);                   // request sheet on phones
   const [restockFor, setRestockFor] = useState<Medicine | null>(null);
-  const [restockQty, setRestockQty] = useState(1);
   const [sheetError, setSheetError] = useState('');
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState('');
@@ -147,7 +146,6 @@ export default function ResidentMedicines() {
     setSheetError('');
     setRestockNote('');
     setRestockFor(m);
-    setRestockQty(m.available_stock + 1);
   };
 
   const submitRestock = async () => {
@@ -155,7 +153,7 @@ export default function ResidentMedicines() {
     setBusy(true);
     setSheetError('');
     try {
-      await api.post('/requests', { request_type: 'restock', note: restockNote.trim() || null, items: [{ medicine_id: restockFor.medicine_id, quantity: restockQty }] });
+      await api.post('/requests', { request_type: 'restock', note: restockNote.trim() || null, items: [{ medicine_id: restockFor.medicine_id }] }); // no quantity
       setRestockFor(null);
       reloadMine(true);
       toast.success('Restock request sent', { description: `You will be notified once ${restockFor.medicine_name} is available. You can follow it in My Requests.` });
@@ -165,7 +163,6 @@ export default function ResidentMedicines() {
   };
 
   const addWarning = adding ? quantityWarning(adding.quantity, unitPlural(adding.medicine.unit), { available: adding.medicine.available_stock }) : null;
-  const restockWarning = restockFor ? quantityWarning(restockQty, unitPlural(restockFor.unit), { min: restockFor.available_stock + 1 }) : null;
 
   /** The list of medicines in the request with editable quantities (side card on computers, sheet on phones). */
   const cartList = (
@@ -533,11 +530,6 @@ export default function ResidentMedicines() {
               : restockFor.available_stock > 0 ? `has only ${quantityText(restockFor.available_stock, restockFor.unit)} left.` : 'is currently out of stock.'}{' '}
             The administrator will review your restock request and you will get an SMS once it is available.
           </p>
-          <label>Quantity you need ({unitPlural(restockFor.unit)})
-            <QtyStepper value={restockQty} min={restockFor.available_stock + 1} max={MAX_REQUEST_QUANTITY} onChange={setRestockQty} />
-          </label>
-          <p className="field-hint">Up to {MAX_REQUEST_QUANTITY} {unitPlural(restockFor.unit)} per request.</p>
-          {restockWarning && <p className="field-warning">{restockWarning}</p>}
           <label>Note for the administrator (optional)
             <textarea rows={2} maxLength={500} value={restockNote} onChange={(e) => setRestockNote(e.target.value)}
               placeholder="e.g. I need this maintenance medicine every month." />
@@ -545,7 +537,7 @@ export default function ResidentMedicines() {
           {sheetError && <Message>{sheetError}</Message>}
           <div className="modal-actions">
             <button className="btn btn-outline" onClick={() => setRestockFor(null)}>Cancel</button>
-            <button className="btn" disabled={busy || !!restockWarning} onClick={submitRestock}>{busy ? 'Sending…' : 'Send restock request'}</button>
+            <button className="btn" disabled={busy} onClick={submitRestock}>{busy ? 'Sending…' : 'Send restock request'}</button>
           </div>
         </Modal>
       )}
