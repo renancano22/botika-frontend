@@ -64,3 +64,18 @@ export function useGoBack(fallback: string) {
     else navigate(fallback, { replace: true });
   };
 }
+
+/** Phone-size screen (up to 700px wide, where tables turn into cards). Follows rotation and window resizing. */
+export function usePhone(): boolean {
+  const query = '(max-width: 700px)';
+  const [phone, setPhone] = useState(() => typeof window !== 'undefined' && !!window.matchMedia?.(query).matches);
+  useEffect(() => {
+    const mq = window.matchMedia?.(query);
+    if (!mq) return;
+    const update = () => setPhone(mq.matches);
+    update();
+    mq.addEventListener('change', update);
+    return () => mq.removeEventListener('change', update);
+  }, []);
+  return phone;
+}

@@ -1,14 +1,14 @@
 import { useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../auth';
-import { useApi } from '../../hooks';
+import { useApi, usePhone } from '../../hooks';
+import { Pagination, useClientPages } from '../../components/Pagination';
 import { Empty, Loading } from '../../components/ui';
 import { RequestRow, STATUS_COLOR_KEY, STATUS_LABEL, statusKey, Svg, type StatusKey } from '../../components/RequestCards';
 import StatusDropdown from '../../components/StatusDropdown';
 import type { MedicineRequest } from '../../types';
 import BackButton from '../../components/BackButton';
 import { LoadError } from '../../components/feedback';
-import { Pagination, useClientPages } from '../../components/Pagination';
 
 const FILTERS: ('all' | StatusKey)[] = ['all', 'review', 'claim', 'stock', 'claimed', 'available', 'cancelled', 'expired', 'rejected'];
 
@@ -41,12 +41,14 @@ export default function MyRequests() {
   }, [data]);
 
   const term = search.trim().toLowerCase().replace(/^(request\s*)?(no\.?|#)\s*(?=\d)/, ''); // "41", "#41", "No. 41", "Request No. 41"
+  const phone = usePhone();
   const shown = (data ?? []).filter((r) =>
     (filter === '' || filter === 'all' || statusKey(r) === filter)
     && (!term || String(r.request_id) === term || r.items.some((i) => i.medicine.medicine_name.toLowerCase().includes(term))));
 
-  // All of the resident's requests are kept; they are shown a page at a time, newest first.
+  // All of the resident's requests are kept, newest first: on a phone all in one list, on a computer a page at a time.
   const pages = useClientPages(shown, `${filter}|${term}`, 'my-requests');
+  const list = phone ? shown : pages.rows;
 
   return (
     <div className="page">
@@ -89,9 +91,9 @@ export default function MyRequests() {
         ) : (
           <>
             <div className="req-rows">
-              {pages.rows.map((r) => <RequestRow key={r.request_id} request={r} />)}
+              {list.map((r) => <RequestRow key={r.request_id} request={r} />)}
             </div>
-            <Pagination meta={pages.meta} onPage={pages.setPage} onPerPage={pages.setPerPage} noun="requests" />
+            {!phone && <Pagination meta={pages.meta} onPage={pages.setPage} onPerPage={pages.setPerPage} noun="requests" />}
           </>
         )}
       </section>

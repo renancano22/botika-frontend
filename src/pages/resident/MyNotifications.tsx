@@ -1,11 +1,11 @@
 import { useState } from 'react';
-import { useApi } from '../../hooks';
+import { useApi, usePhone } from '../../hooks';
+import { Pagination, useClientPages } from '../../components/Pagination';
 import { Empty, Loading } from '../../components/ui';
 import { markAllRead, NotificationItem } from '../../components/Notifications';
 import type { SmsNotification } from '../../types';
 import BackButton from '../../components/BackButton';
 import { LoadError, toast } from '../../components/feedback';
-import { Pagination, useClientPages } from '../../components/Pagination';
 
 /**
  * Resident notifications: every SMS sent to them (request updates and the administrator's
@@ -17,7 +17,8 @@ export default function MyNotifications() {
 
   const unread = data?.filter((n) => !n.read_at).length ?? 0;
   const shown = tab === 'unread' ? data?.filter((n) => !n.read_at) : data;
-  // Every notification is kept; they are shown a page at a time, newest first.
+  // Every notification is kept, newest first: on a phone all in one list, on a computer a page at a time.
+  const phone = usePhone();
   const pages = useClientPages(shown ?? [], tab, 'my-notifications');
 
   const readAll = async () => {
@@ -60,9 +61,9 @@ export default function MyNotifications() {
       ) : (
         <>
           <ul className="notif-list">
-            {pages.rows.map((n) => <NotificationItem key={n.notification_id} n={n} />)}
+            {(phone ? shown ?? [] : pages.rows).map((n) => <NotificationItem key={n.notification_id} n={n} />)}
           </ul>
-          <Pagination meta={pages.meta} onPage={pages.setPage} onPerPage={pages.setPerPage} noun="notifications" />
+          {!phone && <Pagination meta={pages.meta} onPage={pages.setPage} onPerPage={pages.setPerPage} noun="notifications" />}
         </>
       )}
     </div>

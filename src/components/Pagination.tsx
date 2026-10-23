@@ -4,6 +4,8 @@ import type { PageMeta, Paged } from '../types';
 
 /** Rows per page offered in every data table. */
 export const PAGE_SIZES = [5, 10, 25, 50];
+/** The most rows the server sends in one page (Listing::MAX_PER_PAGE): residents on a phone get all their records at once. */
+export const ALL_ROWS = 100;
 const DEFAULT_SIZE = 5; // every table starts with 5 rows per page
 
 /** The value after the user stops typing for `ms` (so a search is not sent to the server on every key press). */
@@ -38,9 +40,11 @@ function saveSize(table: string, n: number) {
 export function usePagedApi<T, Extra extends object = object>(
   url: string,
   params: Record<string, unknown>,
-  { table, refreshMs = 0, focus }: { table: string; refreshMs?: number; focus?: string | number | null },
+  { table, refreshMs = 0, focus, fixedSize }: { table: string; refreshMs?: number; focus?: string | number | null; fixedSize?: number },
 ) {
-  const [perPage, setPerPageState] = useState(() => savedSize(table));
+  // fixedSize: always this many rows, with no "Rows per page" choice (residents on a phone see all their records).
+  const [chosenSize, setPerPageState] = useState(() => savedSize(table));
+  const perPage = fixedSize ?? chosenSize;
   const key = JSON.stringify(params);
   const [pg, setPg] = useState({ key, page: 1 });
   const page = pg.key === key ? pg.page : 1;
@@ -104,12 +108,12 @@ function pageList(current: number, last: number): (number | 'gap')[] {
 
 /**
  * Below a data table: "Showing 1–5 of 10 records", rows per page (5, 10, 25, 50) and
- * Previous / page numbers / Next.
+ * Previous / page numbers / Next. Without onPerPage (resident pages) there is no "Rows per page" choice.
  */
 export function Pagination({ meta, onPage, onPerPage, noun = 'records', busy = false }: {
   meta: PageMeta | undefined;
   onPage: (page: number) => void;
-  onPerPage: (size: number) => void;
+  onPerPage?: (size: number) => void;
   noun?: string;
   busy?: boolean;
 }) {
@@ -126,12 +130,14 @@ export function Pagination({ meta, onPage, onPerPage, noun = 'records', busy = f
       <p className="pager-info" aria-live="polite">
         {total === 0 ? `No ${noun}` : <>Showing <b>{from}–{to}</b> of <b>{total.toLocaleString('en-PH')}</b> {total === 1 ? one : noun}</>}
       </p>
-      <label className="pager-size">
-        <span>Rows per page</span>
-        <select value={meta.per_page} onChange={(e) => onPerPage(Number(e.target.value))} aria-label="Rows per page">
-          {PAGE_SIZES.map((n) => <option key={n} value={n}>{n}</option>)}
-        </select>
-      </label>
+      {onPerPage && (
+        <label className="pager-size">
+          <span>Rows per page</span>
+          <select value={meta.per_page} onChange={(e) => onPerPage(Number(e.target.value))} aria-label="Rows per page">
+            {PAGE_SIZES.map((n) => <option key={n} value={n}>{n}</option>)}
+          </select>
+        </label>
+      )}
       {last > 1 && (
         <div className="pager-nav">
           <button type="button" className="pager-btn" onClick={() => go(page - 1)} disabled={page <= 1} aria-label="Previous page">

@@ -6,7 +6,8 @@ import { RequestNo, Svg, unitPlural } from '../../components/RequestCards';
 import type { Dispensing } from '../../types';
 import BackButton from '../../components/BackButton';
 import { LoadError } from '../../components/feedback';
-import { Pagination, rowNo, useDebounced, usePagedApi } from '../../components/Pagination';
+import { usePhone } from '../../hooks';
+import { ALL_ROWS, Pagination, rowNo, useDebounced, usePagedApi } from '../../components/Pagination';
 
 interface Summary { records: number; residents: number; total_quantity: number }
 
@@ -31,6 +32,8 @@ const SEARCH = 'M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14M21 21l-5-5';
 export default function DispensingRecords() {
   const { user } = useAuth();
   const isResident = user?.role === 'resident';
+  const phone = usePhone();
+  const allAtOnce = isResident && phone; // residents on a phone: all their records, no pages
   // ?from=YYYY-MM-DD&to=YYYY-MM-DD (e.g. "Dispensed today" on the dashboard) opens the records already filtered.
   const [params, setParams] = useSearchParams();
   const from = params.get('from') ?? '';
@@ -47,7 +50,7 @@ export default function DispensingRecords() {
   const searchTerm = useDebounced(search.trim());
   // One page at a time from the server; the search, dates and sort are applied to ALL records there.
   const list = usePagedApi<Dispensing, { summary: Summary }>('/dispensing',
-    { ...(badRange ? { from: to, to: from } : { from, to }), search: searchTerm, sort }, { table: 'dispensing', refreshMs: 30000 });
+    { ...(badRange ? { from: to, to: from } : { from, to }), search: searchTerm, sort }, { table: 'dispensing', refreshMs: 30000, fixedSize: allAtOnce ? ALL_ROWS : undefined });
   const { data, errorInfo, loading, reload, rows, meta } = list;
 
   const activePreset = PRESETS.find((p) => { const [f, t] = p.range(); return f === from && t === to; })?.key;
@@ -183,7 +186,8 @@ export default function DispensingRecords() {
             </tbody>
           </table>
         </>)}
-        <Pagination meta={meta} onPage={list.setPage} onPerPage={list.setPerPage} busy={loading} />
+        {/* Residents on a phone see all their records in one list (page buttons only if there are ever more than 100). */}
+        {(!allAtOnce || (meta?.last_page ?? 1) > 1) && <Pagination meta={meta} onPage={list.setPage} onPerPage={allAtOnce ? undefined : list.setPerPage} busy={loading} />}
       </section>
     </div>
   );
