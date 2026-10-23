@@ -61,7 +61,6 @@ export default function ResidentMedicines() {
     || (availability === 'out_of_stock' ? noStock(m) : !noStock(m)));
   const listTitle = `${availability === 'in_stock' ? 'Available' : availability === 'out_of_stock' ? 'Out of Stock' : 'All'} ${category || 'Medicines'}`;
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [adding, setAdding] = useState<CartItem | null>(null);       // "Add to request" sheet
   const [cartOpen, setCartOpen] = useState(false);                   // request sheet on phones
   const [restockFor, setRestockFor] = useState<Medicine | null>(null);
   const [sheetError, setSheetError] = useState('');
@@ -97,23 +96,15 @@ export default function ResidentMedicines() {
   const rxItems = cart.filter((c) => c.medicine.requires_prescription);
   const needsRx = rxItems.length > 0;
 
-  const openAdd = (m: Medicine) => {
+  /** "Request": goes straight to the Medicine Request Form with this medicine (the quantity is chosen there). */
+  const startRequest = (m: Medicine) => {
     setSheetError('');
     setDetails(null);
     // Already in one of the resident's open requests: go to that request instead of making a new one.
     const open = openMedicineReq.get(m.medicine_id);
     if (open && !inCart(m)) { setInRequest({ medicine: m, ...open }); return; }
-    setAdding({ medicine: m, quantity: inCart(m)?.quantity ?? 1 });
-  };
-
-  const confirmAdd = () => {
-    if (!adding) return;
-    const exists = inCart(adding.medicine);
-    setCart(exists
-      ? cart.map((c) => (c.medicine.medicine_id === adding.medicine.medicine_id ? adding : c))
-      : [...cart, adding]);
-    toast.success(exists ? 'Request updated' : 'Added to your request', { description: `${adding.medicine.medicine_name} × ${adding.quantity}`, duration: 2600 });
-    setAdding(null);
+    if (!inCart(m)) setCart([...cart, { medicine: m, quantity: 1 }]);
+    goStep('form');
   };
 
   const submitRequest = async () => {
@@ -162,12 +153,11 @@ export default function ResidentMedicines() {
     } finally { setBusy(false); }
   };
 
-  const addWarning = adding ? quantityWarning(adding.quantity, unitPlural(adding.medicine.unit), { available: adding.medicine.available_stock }) : null;
 
   /** The list of medicines in the request with editable quantities (side card on computers, sheet on phones). */
   const cartList = (
     <>
-      {cart.length === 0 ? <Empty>Tap “Add” on a medicine to include it in your request.</Empty> : (
+      {cart.length === 0 ? <Empty>Tap “Request” on a medicine to fill in the request form.</Empty> : (
         <ul className="cart-list">
           {cart.map((c, idx) => (
             <li key={c.medicine.medicine_id}>
@@ -315,7 +305,7 @@ export default function ResidentMedicines() {
       <header className="page-head">
         <div>
           <div className="page-title"><h1>Check Medicine Availability</h1></div>
-          <p className="muted">Add available medicines to your request. If a medicine is out of stock, send a restock request.</p>
+          <p className="muted">Tap “Request” on an available medicine to fill in the request form. If a medicine is out of stock, send a restock request.</p>
         </div>
       </header>
 
@@ -367,8 +357,8 @@ export default function ResidentMedicines() {
                         ? <span className="med-stock muted">Availability not yet confirmed</span>
                         : <span className="med-stock"><b>{m.available_stock}</b> {m.available_stock === 1 ? m.unit : unitPlural(m.unit)} available</span>}
                       <div className="med-actions">
-                        {/* Low stock: the resident may need more than what is left, so restock can be requested too. */}
-                        {m.status !== 'available' && canRestock && (openRestock.has(m.medicine_id) ? (
+                        {/* Restock requests are only for medicines that are out of stock (or not recorded yet). */}
+                        {noStock(m) && canRestock && (openRestock.has(m.medicine_id) ? (
                           <button className="btn btn-sm btn-added" onClick={() => startRestock(m)} title="You already asked for a restock of this medicine">
                             <Svg d={ICONS.check} size={16} width={2.6} /> Restock requested
                           </button>
@@ -377,12 +367,12 @@ export default function ResidentMedicines() {
                         ))}
                         {!noStock(m) && canRequest && (
                           openMedicineReq.has(m.medicine_id) && !added ? (
-                            <button className="btn btn-sm btn-added" onClick={() => openAdd(m)} title="Already in one of your requests">
+                            <button className="btn btn-sm btn-added" onClick={() => startRequest(m)} title="Already in one of your requests">
                               <Svg d={ICONS.note} size={16} width={2.2} /> In request No. {openMedicineReq.get(m.medicine_id)?.requestId}
                             </button>
                           ) : (
-                            <button className={`btn btn-sm ${added ? 'btn-added' : ''}`} onClick={() => openAdd(m)}>
-                              {added ? <><Svg d={ICONS.check} size={16} width={2.6} /> Added ({added.quantity})</> : '+ Add'}
+                            <button className={`btn btn-sm ${added ? 'btn-added' : ''}`} onClick={() => startRequest(m)}>
+                              {added ? <><Svg d={ICONS.check} size={16} width={2.6} /> In your request ({added.quantity})</> : 'Request'}
                             </button>
                           )
                         )}
@@ -442,36 +432,12 @@ export default function ResidentMedicines() {
             {noStock(details) ? canRestock && (
               <button className="btn" onClick={() => startRestock(details)}>{openRestock.has(details.medicine_id) ? 'Restock requested' : 'Request restock'}</button>
             ) : canRequest && (
-              <button className="btn" onClick={() => openAdd(details)}>
-                {inCart(details) ? 'Change quantity'
+              <button className="btn" onClick={() => startRequest(details)}>
+                {inCart(details) ? 'Open request form'
                   : openMedicineReq.has(details.medicine_id) ? `In request No. ${openMedicineReq.get(details.medicine_id)?.requestId}`
-                    : details.requires_prescription ? 'Request with Prescription' : 'Add to request'}
+                    : details.requires_prescription ? 'Request with Prescription' : 'Request'}
               </button>
             )}
-          </div>
-        </Modal>
-      )}
-
-      {adding && (
-        <Modal title={inCart(adding.medicine) ? 'Change quantity' : 'Add to request'} onClose={() => setAdding(null)}>
-          <div className="sheet-med">
-            <span className="med-icon"><Svg d={ICONS.pill} size={22} width={1.9} /></span>
-            <div>
-              <strong>{adding.medicine.medicine_name}</strong>
-              <span className="muted small">{quantityText(adding.medicine.available_stock, adding.medicine.unit)} available</span>
-            </div>
-          </div>
-          <label>How many {unitPlural(adding.medicine.unit)} do you need?
-            <QtyStepper value={adding.quantity} max={Math.min(adding.medicine.available_stock, MAX_REQUEST_QUANTITY)}
-              onChange={(v) => setAdding({ ...adding, quantity: v })} />
-          </label>
-          {addWarning && <p className="field-warning">{addWarning}</p>}
-          {adding.medicine.requires_prescription && (
-            <p className="rx-note"><Svg d={RX_ICON} size={16} width={2.4} /> You will upload your prescription in the request form.</p>
-          )}
-          <div className="modal-actions">
-            <button className="btn btn-outline" onClick={() => setAdding(null)}>Cancel</button>
-            <button className="btn" disabled={!!addWarning} onClick={confirmAdd}>{inCart(adding.medicine) ? 'Update' : 'Add to request'}</button>
           </div>
         </Modal>
       )}
