@@ -448,6 +448,21 @@ export default function Forecasting() {
         <div>
           <div className="page-title"><h1>Demand Forecasting</h1></div>
           <p className="muted">Predicted medicine needs from the dispensing records, with restocking recommendations.</p>
+          {data && (
+            <p className="fc-last-gen">
+              <Svg d={ICONS.check} size={15} width={2.4} />
+              {data.last_generated ? (
+                <span>
+                  Forecast last generated on <b>{formatDate(data.last_generated.generated_at, true)}</b>
+                  {data.last_generated.generated_by && <> by <b>{data.last_generated.generated_by}</b></>}
+                  {' · '}{METHOD_LABEL[data.last_generated.method] ?? data.last_generated.method}
+                  {' · '}{periodText(data.last_generated.period_start === data.last_generated.period_end
+                    ? [data.last_generated.period_start] : [data.last_generated.period_start, data.last_generated.period_end])}
+                  {' · '}based on the last {monthsText(data.last_generated.history_months).toLowerCase()}
+                </span>
+              ) : <span>Not generated yet. Click Generate Forecast to save this forecast.</span>}
+            </p>
+          )}
         </div>
         <div className="actions">{generateButton()}</div>
       </header>
@@ -683,7 +698,7 @@ export default function Forecasting() {
                   Forecasts are estimates based on historical dispensing records. The suggested restock also counts the quantities in pending medicine
                   requests and the stock set aside for approved requests. Restock requests have no quantity: medicines residents are waiting for are
                   marked High priority while out of stock. Review recommendations before restocking.
-                  {' '}Method: {METHOD_LABEL[data.method]} · last run {formatDate(data.generated_at, true)}.
+                  {' '}Method: {METHOD_LABEL[data.method]} · {data.last_generated ? `last generated ${formatDate(data.last_generated.generated_at, true)}` : 'not generated yet'}.
                 </p>
                 <button className="btn btn-outline" onClick={exportReport} disabled={!tableRows.length}><Svg d={ICON.download} size={18} /> Export report</button>
               </div>

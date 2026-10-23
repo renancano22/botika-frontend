@@ -311,8 +311,22 @@ export interface SeasonDemand {
 }
 export interface SeasonalReport { current: 'rainy' | 'dry'; next: 'rainy' | 'dry'; first_record: string | null; seasons: SeasonDemand[] }
 
+/** The last "Generate Forecast": when, by whom and with which settings the forecast (D6) was saved. */
+export interface ForecastRunInfo {
+  generated_at: string;
+  generated_by: string | null;
+  method: ForecastMethod;
+  history_months: number;
+  horizon: number;
+  period_start: string; // '2026-11'
+  period_end: string;
+  medicines: number;
+}
+
 export interface ForecastReport {
   generated_at: string;
+  /** null: a forecast was never generated (saved) yet */
+  last_generated?: ForecastRunInfo | null;
   history_months: number;
   horizon: number;
   method: ForecastMethod;

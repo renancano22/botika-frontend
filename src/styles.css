@@ -2192,6 +2192,10 @@ td.col-no { font-weight: 600; }
 .da-kpi-link:hover { border-color: color-mix(in srgb, var(--primary) 40%, white); box-shadow: var(--shadow-sm); }
 .da-kpi-link:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 .fc-kpis { margin-bottom: 0; }
+/* "Forecast last generated on … by …" under the Demand Forecasting title */
+.fc-last-gen { display: flex; align-items: flex-start; gap: 6px; margin: 8px 0 0; font-size: 0.85rem; color: var(--muted); }
+.fc-last-gen svg { flex-shrink: 0; margin-top: 2px; color: var(--primary); }
+.fc-last-gen b { color: var(--text, #10201c); font-weight: 600; }
 /* Demand Forecasting → Seasonal Demand */
 .fc-season-when { margin: 0 0 12px; }
 .fc-season-kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); }
