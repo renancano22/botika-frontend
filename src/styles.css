@@ -225,6 +225,10 @@ select::-ms-expand { display: none; }
 .msg-success { background: var(--ok-soft); color: var(--ok); border-color: #bbf7d0; }
 .msg-info { background: var(--info-soft); color: #1d4ed8; border-color: #bfdbfe; }
 .msg-warning { background: #fff7ed; color: #9a3412; border-color: #fed7aa; }
+/* Add / Edit medicine: the medicine is already registered */
+.mi-duplicate { margin: 4px 0 12px; }
+.mi-duplicate p { margin: 4px 0 10px; font-weight: 400; }
+.mi-duplicate .btn { text-decoration: none; }
 
 /* ---------- feedback: toasts, connection notice, dialogs, load errors, field errors */
 .toaster { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); z-index: 120; display: flex; flex-direction: column; align-items: stretch; gap: 10px; width: min(420px, calc(100vw - 24px)); pointer-events: none; }

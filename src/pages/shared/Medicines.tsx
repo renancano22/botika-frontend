@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useMemo, useState, type FormEvent } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { api, formatDate } from '../../api';
 import { useAuth } from '../../auth';
@@ -18,6 +18,11 @@ type Form = typeof EMPTY;
 /** "Amoxicillin 500mg Capsule" — the same name the server builds. */
 const displayName = (f: Form) => [f.generic_name, f.strength, f.dosage_form].map((v) => v.trim()).filter(Boolean).join(' ');
 const qty = (n: number, unit: string) => `${n} ${n === 1 ? unit : unitPlural(unit)}`;
+
+/** A registered medicine that is the same as the one being added (duplicate medicine detection). */
+interface Duplicate { medicine_id: number; medicine_code: string; medicine_name: string; exact: boolean }
+/** GET /medicines/check: is it already registered, and does the category fit the medicine? */
+interface MedicineCheck { duplicate: Duplicate | null; duplicate_message: string | null; categories: string[] | null; category_message: string | null }
 
 /**
  * Medicine List (admin & staff): the Botika ng Bayan medicine list with generic name, category,
@@ -54,9 +59,27 @@ export default function Medicines() {
   const [form, setForm] = useState<Form | null>(null);
   const fe = useFormErrors(['generic_name', 'strength', 'dosage_form', 'category', 'unit', 'reorder_level', 'requires_prescription']);
   const [busy, setBusy] = useState(false);
+  const [savedDuplicate, setSavedDuplicate] = useState<{ duplicate: Duplicate; message: string } | null>(null);
+
+  // While typing in Add / Edit medicine: the server checks for the same medicine and the right category.
+  const checkKey = useDebounced(form ? JSON.stringify({
+    generic_name: form.generic_name.trim(), strength: form.strength.trim(), dosage_form: form.dosage_form, category: form.category,
+    ...(editing ? { ignore: editing.medicine_id } : {}),
+  }) : '', 400);
+  const checkParams = useMemo(() => (checkKey ? JSON.parse(checkKey) as Record<string, string> : null), [checkKey]);
+  const canCheck = !!form && canManage && (checkParams?.generic_name.length ?? 0) >= 2;
+  const { data: check } = useApi<MedicineCheck>(canCheck ? '/medicines/check' : null, checkParams ?? undefined);
+  // Editing without changing the medicine itself (name, strength, form) is never treated as a duplicate.
+  const identityChanged = !editing || !form
+    || form.generic_name.trim() !== (editing.generic_name ?? editing.medicine_name) || form.strength.trim() !== (editing.strength ?? '')
+    || form.dosage_form !== (editing.dosage_form ?? '');
+  const live = canCheck && check ? check : null;
+  const duplicate = (identityChanged && live?.duplicate && live.duplicate_message ? { duplicate: live.duplicate, message: live.duplicate_message } : null) ?? savedDuplicate;
+  const categoryWarning = live && form?.category ? live.category_message : null;
 
   const open = (m?: Medicine) => {
     setEditing(m ?? null);
+    setSavedDuplicate(null);
     fe.clear();
     setForm(m ? {
       generic_name: m.generic_name ?? m.medicine_name, strength: m.strength ?? '', dosage_form: m.dosage_form ?? '',
@@ -82,7 +105,10 @@ export default function Medicines() {
       setForm(null);
       reload(true);
     } catch (err) {
-      fe.fromError(err);
+      // Already registered: show the warning with the way to the existing medicine's stock-in.
+      const body = (err as { response?: { data?: { duplicate?: Duplicate; message?: string } } }).response?.data;
+      if (body?.duplicate && body.message) setSavedDuplicate({ duplicate: body.duplicate, message: body.message });
+      else fe.fromError(err);
     } finally { setBusy(false); }
   };
 
@@ -208,14 +234,14 @@ export default function Medicines() {
           <form onSubmit={save}>
             <Message>{fe.general}</Message>
             <label>Generic name
-              <input value={form.generic_name} onChange={(e) => setForm({ ...form, generic_name: e.target.value })} placeholder="e.g. Amoxicillin" required minLength={2} maxLength={150} {...FIELD.medicineName} {...fe.invalid('generic_name')} />{fe.error('generic_name')}
+              <input value={form.generic_name} onChange={(e) => { setSavedDuplicate(null); setForm({ ...form, generic_name: e.target.value }); }} placeholder="e.g. Amoxicillin" required minLength={2} maxLength={150} {...FIELD.medicineName} {...fe.invalid('generic_name')} />{fe.error('generic_name')}
             </label>
             <div className="row">
               <label>Strength
-                <input value={form.strength} onChange={(e) => setForm({ ...form, strength: e.target.value })} placeholder="e.g. 500mg or 100mg/5ml" maxLength={50} {...FIELD.strength} {...fe.invalid('strength')} />{fe.error('strength')}
+                <input value={form.strength} onChange={(e) => { setSavedDuplicate(null); setForm({ ...form, strength: e.target.value }); }} placeholder="e.g. 500mg or 100mg/5ml" maxLength={50} {...FIELD.strength} {...fe.invalid('strength')} />{fe.error('strength')}
               </label>
               <label>Dosage form
-                <select value={form.dosage_form} onChange={(e) => chooseForm(e.target.value)} {...fe.invalid('dosage_form')}>
+                <select value={form.dosage_form} onChange={(e) => { setSavedDuplicate(null); chooseForm(e.target.value); }} {...fe.invalid('dosage_form')}>
                   <option value="">Not specified</option>
                   {Object.keys(forms ?? {}).map((f) => <option key={f} value={f}>{f}</option>)}
                 </select>{fe.error('dosage_form')}
@@ -227,12 +253,27 @@ export default function Medicines() {
                   <option value="">Select category…</option>
                   {categories?.map((c) => <option key={c} value={c}>{c}</option>)}
                 </select>{fe.error('category')}
+                {categoryWarning && !fe.fields.category && <span className="field-warning" role="alert">{categoryWarning}</span>}
+                {!form.category && live?.categories && <span className="field-hint">Classified as {live.categories.join(' or ')}</span>}
               </label>
               <label>Counted per (unit)
                 <input value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })} placeholder="tablet, capsule, bottle, tube…" required maxLength={50} {...FIELD.unit} {...fe.invalid('unit')} />{fe.error('unit')}
               </label>
             </div>
             {displayName(form) && <p className="mi-preview">Shown to residents and in records as <strong>{displayName(form)}</strong></p>}
+            {duplicate && (
+              <div className="msg msg-warning mi-duplicate" role="alert">
+                <div>
+                  <strong>{duplicate.duplicate.exact ? 'This medicine is already registered' : 'This may be a medicine that is already registered'}</strong>
+                  <p>{duplicate.message}</p>
+                  {canStock && (
+                    <Link className="btn btn-sm" to={`/inventory?stockin=${duplicate.duplicate.medicine_id}`} onClick={() => setForm(null)}>
+                      Record stock-in for {duplicate.duplicate.medicine_code}
+                    </Link>
+                  )}
+                </div>
+              </div>
+            )}
             <label>Reorder level (alert when stock is at or below)
               <input type="number" min={0} max={100000} step={1} value={form.reorder_level} onChange={(e) => setForm({ ...form, reorder_level: Number(e.target.value) })} required {...fe.invalid('reorder_level')} />{fe.error('reorder_level')}
             </label>
@@ -243,7 +284,7 @@ export default function Medicines() {
             <p className="field-hint">Stock and expiration dates are recorded in Stock &amp; Batches → Stock-in.</p>
             <div className="modal-actions">
               <button type="button" className="btn btn-outline" onClick={() => setForm(null)}>Cancel</button>
-              <button className="btn" disabled={busy}>{busy ? 'Saving…' : 'Save'}</button>
+              <button className="btn" disabled={busy || !!duplicate || !!categoryWarning}>{busy ? 'Saving…' : 'Save'}</button>
             </div>
           </form>
         </Modal>
