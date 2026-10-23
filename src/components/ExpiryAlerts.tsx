@@ -88,7 +88,10 @@ export function ExpiryBell() {
       </button>
       {open && (
         <div className="bell-panel" role="dialog" aria-label="Expiry alerts">
-          <div className="bell-head"><strong>Expiry alerts</strong></div>
+          <div className="bell-head">
+            <strong>Expiry alerts</strong>
+            {count > 0 && <span className="muted small">{count} batch{count === 1 ? '' : 'es'}</span>}
+          </div>
           {!alerts ? <p className="empty">Loading…</p> : count === 0 ? (
             <p className="empty">No medicine will expire within 1 month.</p>
           ) : (
@@ -97,7 +100,7 @@ export function ExpiryBell() {
               {near.map((b) => <BatchLine key={b.inventory_id} b={b} expired={false} onOpen={() => setOpen(false)} />)}
             </ul>
           )}
-          <Link to="/inventory" className="bell-all" onClick={() => setOpen(false)}>Open Stock &amp; Batches</Link>
+          {/* Every alert is listed above and opens its batch, so there is no separate "open page" link. */}
         </div>
       )}
     </div>

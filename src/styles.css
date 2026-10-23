@@ -429,6 +429,7 @@ input[type='password']::-ms-reveal, input[type='password']::-ms-clear { display:
 .bell-head { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px 8px; }
 .bell-head strong { font-size: 1.1rem; }
 .bell-panel .notif-list { overflow-y: auto; padding: 0 8px; }
+.bell-panel .expiry-list { overflow-y: auto; } /* many alerts: the list scrolls inside the panel */
 .bell-all { display: block; padding: 12px; text-align: center; border-top: 1px solid var(--border); font-weight: 600; text-decoration: none; }
 .bell-all:hover { background: var(--bg); }
 
