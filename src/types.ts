@@ -138,7 +138,11 @@ export interface RequestItem {
   medicine_id: number;
   quantity: number | null; // null: restock requests have no quantity
   medicine: Pick<Medicine, 'medicine_id' | 'medicine_name' | 'unit'> & { requires_prescription?: boolean };
+  /** Asked for in the online request, or in person at the Botika ng Bayan (walk-in, e.g. added when claiming it). */
+  source?: ItemSource;
 }
+
+export type ItemSource = 'request' | 'walk_in';
 
 /** Prescription uploaded with a request (the file itself is loaded separately). */
 export interface PrescriptionInfo {
@@ -188,7 +192,7 @@ export interface Dispensing {
   request_id: number;
   dispensed_by: number | null;
   dispensed_at: string;
-  items: { dispensing_item_id: number; medicine_id: number; quantity: number; medicine: Pick<Medicine, 'medicine_id' | 'medicine_name' | 'unit'> }[];
+  items: { dispensing_item_id: number; medicine_id: number; quantity: number; source?: ItemSource; medicine: Pick<Medicine, 'medicine_id' | 'medicine_name' | 'unit'> }[];
   request?: MedicineRequest;
   dispenser?: { user_id: number; name: string } | null;
 }

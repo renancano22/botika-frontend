@@ -9,7 +9,7 @@ import { Badge, Card, Empty, Loading, Message, Modal } from '../../components/ui
 import RequestTracker from '../../components/RequestTracker';
 import { PrescriptionViewer, requiresPrescription, RxBadge, RX_ICON } from '../../components/Prescription';
 import { prescriptionStatus } from '../../components/RequestDetailParts';
-import { PickupCountdown, Svg } from '../../components/RequestCards';
+import { isMixed, PickupCountdown, SourceTag, Svg } from '../../components/RequestCards';
 import type { MedicineRequest } from '../../types';
 import BackButton from '../../components/BackButton';
 import { Hl, HlId, rowHit } from '../../components/SearchHighlight';
@@ -19,7 +19,8 @@ const itemsSummary = (r: MedicineRequest) => {
   const parts = r.items.map((i) => `${i.medicine.medicine_name}${i.quantity === null ? '' : ` x${i.quantity}`}`);
   return parts.slice(0, 2).join(', ') + (parts.length > 2 ? ` and ${parts.length - 2} more` : '');
 };
-const itemsText = (r: MedicineRequest) => r.items.map((i) => `${i.medicine.medicine_name}${i.quantity === null ? '' : ` ×${i.quantity}`}`).join(', ');
+const itemsText = (r: MedicineRequest) => r.items.map((i) => `${i.medicine.medicine_name}${i.quantity === null ? '' : ` ×${i.quantity}`}`
+  + (isMixed(r.items) ? (i.source === 'walk_in' ? ' (walk-in)' : ' (request)') : '')).join(', ');
 
 /** Common reasons for not approving a request (shown in the Reject dropdown). Sent to the resident by SMS after "Reason:". */
 const PRESCRIPTION_REASONS = [
@@ -206,7 +207,7 @@ export default function Requests() {
                   <td><Badge value={r.request_type} /></td>
                   <td>
                     {r.items.map((it, n) => (
-                      <Fragment key={it.request_item_id}>{n > 0 && ', '}<Hl q={term}>{it.medicine.medicine_name}</Hl>{it.quantity === null ? '' : ` ×${it.quantity}`}</Fragment>
+                      <Fragment key={it.request_item_id}>{n > 0 && ', '}<Hl q={term}>{it.medicine.medicine_name}</Hl>{it.quantity === null ? '' : ` ×${it.quantity}`}{isMixed(r.items) && <> <SourceTag source={it.source} /></>}</Fragment>
                     ))}
                     {requiresPrescription(r) && (
                       <div className="rx-cell"><RxBadge small /> <span className={r.prescription_verified_at ? 'rx-ok small' : 'muted small'}>{r.prescription ? (r.prescription_verified_at ? 'checked' : 'uploaded') : 'not uploaded'}</span></div>

@@ -5,7 +5,7 @@ import { useApi } from '../../hooks';
 import { Badge, Card, Empty, Message, Modal } from '../../components/ui';
 import { PrescriptionViewer, requiresPrescription, RX_ICON, RxBadge } from '../../components/Prescription';
 import { prescriptionStatus } from '../../components/RequestDetailParts';
-import { ICONS, Svg, unitPlural } from '../../components/RequestCards';
+import { ICONS, isMixed, SourceTag, Svg, unitPlural } from '../../components/RequestCards';
 import type { Medicine, MedicineRequest } from '../../types';
 import { MAX_REQUEST_QUANTITY, quantityWarning } from '../../validation';
 import QrScanner from './QrScanner';
@@ -39,7 +39,7 @@ export default function Dispense() {
   const [walkIn, setWalkIn] = useState<{ medicine_id: number; quantity: number }[]>([]);
   // The medicine list is only needed to dispense (walk-in releases); registering a resident does not use it.
   const { data: medicines, reload: reloadMedicines } = useApi<Medicine[]>(canDispense ? '/medicines' : null);
-  // Prescription medicines: the staff confirm they checked the resident's original prescription before releasing.
+  // Before releasing a request: prescription check, and the medicines asked for in person added to the same record.
   const [confirming, setConfirming] = useState<MedicineRequest | null>(null);
   const [rxChecked, setRxChecked] = useState(false);
   const [walkInRxChecked, setWalkInRxChecked] = useState(false);
@@ -123,14 +123,25 @@ export default function Dispense() {
     buttonLabel: 'Check history',
   }).then(() => { if (found) lookup(found.resident.qr_code); });
 
+  /**
+   * Releases an approved request. Medicines the resident asked for in person (added under "+ Add Medicine") are given
+   * in the same visit, so they are saved in the SAME dispensing record, marked Walk-in (the requested ones: Request).
+   */
   const dispenseRequest = async (r: MedicineRequest) => {
     if (!found || busy) return;
     setBusy(true);
+    const extra = walkIn.length;
     try {
-      await api.post('/dispensing', { request_id: r.request_id, qr_code: found.resident.qr_code, prescription_checked: requiresPrescription(r) ? rxChecked : false });
+      await api.post('/dispensing', {
+        request_id: r.request_id, qr_code: found.resident.qr_code,
+        ...(extra ? { items: walkIn } : {}),
+        prescription_checked: requiresPrescription(r) || walkInRx.length > 0 ? rxChecked : false,
+      });
       setConfirming(null);
+      setWalkIn([]);
+      setWalkInRxChecked(false);
       await afterDispense(`Request No. ${r.request_id} dispensed`,
-        `The medicines were released to ${found.resident.name}. Inventory updated${found.resident.contact_no ? ' and SMS sent' : ''}.`);
+        `The medicines were released to ${found.resident.name}${extra ? `, with ${extra} ${extra === 1 ? 'medicine' : 'medicines'} asked for in person (walk-in) in the same record` : ''}. Inventory updated${found.resident.contact_no ? ' and SMS sent' : ''}.`);
     } catch (err) {
       // Releasing an approved request twice is refused by the server, so trying again is safe.
       toast.fromError(err, { title: `Request No. ${r.request_id} was not dispensed`, retry: () => dispenseRequest(r) });
@@ -164,6 +175,19 @@ export default function Dispense() {
     return m ? quantityWarning(i.quantity, unitPlural(m.unit), { available: m.free_stock ?? m.available_stock }) : null;
   });
   const walkInRx = walkIn.map((i) => medicines?.find((m) => m.medicine_id === i.medicine_id)).filter((m): m is Medicine => !!m?.requires_prescription);
+  const cartIncomplete = walkIn.some((i) => !i.medicine_id) || walkInWarnings.some(Boolean);
+  const hasApproved = (found?.approved_requests.length ?? 0) > 0;
+  // The limit per medicine counts the request and the same medicine asked for in person together.
+  const limitWarning = (r: MedicineRequest, item: { medicine_id: number; quantity: number }) => {
+    const inRequest = r.items.filter((i) => i.medicine_id === item.medicine_id).reduce((a, i) => a + (i.quantity ?? 0), 0);
+    if (!inRequest || inRequest + item.quantity <= MAX_REQUEST_QUANTITY) return null;
+    const left = Math.max(0, MAX_REQUEST_QUANTITY - inRequest);
+    return `Already ${inRequest} in this request. At most ${MAX_REQUEST_QUANTITY} per medicine, so ${left ? `add at most ${left}` : 'no more can be added'}.`;
+  };
+  const openDispense = (r: MedicineRequest) => {
+    if (requiresPrescription(r) || walkIn.length > 0) { setRxChecked(false); setConfirming(r); } else dispenseRequest(r);
+  };
+  const medName = (id: number) => medicines?.find((m) => m.medicine_id === id);
 
   return (
     <div className="page">
@@ -271,10 +295,13 @@ export default function Dispense() {
                       </label>
                     </div>
                   )}
+                  {hasApproved && (
+                    <p className="dv-combine-hint"><Svg d={ICONS.info} size={16} /> To give these together with the resident's approved request, click <b>Dispense</b> on the request below: everything is saved in one record, each medicine marked Request or Walk-in.</p>
+                  )}
                   <div className="dv-actions">
                     <button type="button" className="btn btn-outline" onClick={() => { setWalkIn([]); setWalkInRxChecked(false); }} disabled={busy}>Clear</button>
-                    <button className="btn" disabled={busy || walkIn.some((i) => !i.medicine_id) || walkInWarnings.some(Boolean) || (walkInRx.length > 0 && !walkInRxChecked)}>
-                      {busy ? 'Dispensing…' : `Dispense (${walkIn.length})`}
+                    <button className={hasApproved ? 'btn btn-outline' : 'btn'} disabled={busy || cartIncomplete || (walkInRx.length > 0 && !walkInRxChecked)}>
+                      {busy ? 'Dispensing…' : hasApproved ? `Dispense walk-in only (${walkIn.length})` : `Dispense (${walkIn.length})`}
                     </button>
                   </div>
                 </>
@@ -298,8 +325,9 @@ export default function Dispense() {
                         </td>
                         <td>{formatDate(r.reviewed_at, true)}</td>
                         <td className="right">
-                          <button className="btn btn-sm" disabled={busy}
-                            onClick={() => (requiresPrescription(r) ? (setRxChecked(false), setConfirming(r)) : dispenseRequest(r))}>Dispense</button>
+                          <button className="btn btn-sm" disabled={busy || (walkIn.length > 0 && cartIncomplete)} onClick={() => openDispense(r)}>
+                            {walkIn.length ? `Dispense + ${walkIn.length} walk-in` : 'Dispense'}
+                          </button>
                         </td>
                       </tr>
                     ))}
@@ -317,7 +345,7 @@ export default function Dispense() {
                   {found.dispensing_history.map((d) => (
                     <tr key={d.dispensing_id}>
                       <td className="nowrap">{formatDate(d.dispensed_at, true)}</td>
-                      <td>{d.items.map((i) => `${i.medicine.medicine_name} ×${i.quantity}`).join(', ')}</td>
+                      <td>{d.items.map((i) => `${i.medicine.medicine_name} ×${i.quantity}${isMixed(d.items) ? (i.source === 'walk_in' ? ' (walk-in)' : ' (request)') : ''}`).join(', ')}</td>
                       <td>{d.dispenser?.name ?? '—'}</td>
                       <td><Badge value="dispensed" /></td>
                     </tr>
@@ -331,10 +359,29 @@ export default function Dispense() {
 
       {confirming && (
         <Modal title={`Dispense request No. ${confirming.request_id}`} onClose={() => !busy && setConfirming(null)}>
-          <p className="req-items">{confirming.items.map((i) => `${i.medicine.medicine_name} ×${i.quantity}`).join(', ')}</p>
-          <div className="rx-box">
+          {walkIn.length === 0 ? <p className="req-items">{confirming.items.map((i) => `${i.medicine.medicine_name} ×${i.quantity}`).join(', ')}</p> : (
+            <>
+              <p className="muted small">Given in one dispensing record. Each medicine is marked as asked for in the request or in person (walk-in).</p>
+              <ul className="dv-confirm-list">
+                {confirming.items.map((i) => (
+                  <li key={`r${i.request_item_id}`}><span>{i.medicine.medicine_name} <SourceTag source="request" /></span><b>{i.quantity} {i.quantity === 1 ? i.medicine.unit : unitPlural(i.medicine.unit)}</b></li>
+                ))}
+                {walkIn.map((i, n) => {
+                  const m = medName(i.medicine_id);
+                  const warn = limitWarning(confirming, i);
+                  return (
+                    <li key={`w${n}`}>
+                      <span>{m?.medicine_name} <SourceTag source="walk_in" /></span><b>{i.quantity} {m ? (i.quantity === 1 ? m.unit : unitPlural(m.unit)) : ''}</b>
+                      {warn && <p className="field-warning">{warn}</p>}
+                    </li>
+                  );
+                })}
+              </ul>
+            </>
+          )}
+          {(requiresPrescription(confirming) || walkInRx.length > 0) && <div className="rx-box">
             <strong><Svg d={RX_ICON} size={18} width={2.4} /> Prescription medicine</strong>
-            {confirming.prescription ? (
+            {!requiresPrescription(confirming) ? <p>{walkInRx.map((m) => m.medicine_name).join(', ')} (walk-in) can only be given with a doctor's prescription.</p> : confirming.prescription ? (
               <div className="rx-review-row">
                 <div className="rx-file-info">
                   <span className="small">Uploaded copy</span>
@@ -344,14 +391,16 @@ export default function Dispense() {
                 <button type="button" className="btn btn-outline btn-sm" onClick={() => setViewRxId(confirming.request_id)}>View</button>
               </div>
             ) : <p>No prescription copy was uploaded with this request.</p>}
+            {requiresPrescription(confirming) && walkInRx.length > 0 && <p>Also asked for in person (walk-in): {walkInRx.map((m) => m.medicine_name).join(', ')}.</p>}
             <label className="rx-check">
               <input type="checkbox" checked={rxChecked} onChange={(e) => setRxChecked(e.target.checked)} />
-              <span>I checked the resident's original prescription: it is valid, written for this resident, and matches the uploaded copy and the medicines being released.</span>
+              <span>I checked the resident's original prescription: it is valid, written for this resident, and matches {requiresPrescription(confirming) && confirming.prescription ? 'the uploaded copy and ' : ''}the medicines being released.</span>
             </label>
-          </div>
+          </div>}
           <div className="modal-actions">
             <button className="btn btn-outline" onClick={() => setConfirming(null)} disabled={busy}>Cancel</button>
-            <button className="btn" disabled={busy || !rxChecked} onClick={() => dispenseRequest(confirming)}>{busy ? 'Dispensing…' : 'Dispense'}</button>
+            <button className="btn" disabled={busy || ((requiresPrescription(confirming) || walkInRx.length > 0) && !rxChecked) || walkIn.some((i) => limitWarning(confirming, i))}
+              onClick={() => dispenseRequest(confirming)}>{busy ? 'Dispensing…' : walkIn.length ? `Dispense all (${confirming.items.length + walkIn.length})` : 'Dispense'}</button>
           </div>
         </Modal>
       )}

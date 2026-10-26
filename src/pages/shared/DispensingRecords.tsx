@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../auth';
 import { Empty, Loading } from '../../components/ui';
-import { RequestNo, Svg, unitPlural } from '../../components/RequestCards';
+import { isMixed, RequestNo, SourceTag, Svg, unitPlural } from '../../components/RequestCards';
 import type { Dispensing } from '../../types';
 import BackButton from '../../components/BackButton';
 import { LoadError } from '../../components/feedback';
@@ -151,6 +151,8 @@ export default function DispensingRecords() {
               {rows.map((d, i) => {
                 const at = new Date(d.dispensed_at);
                 const walkIn = d.request?.remarks === 'Walk-in';
+                // Request claimed + medicines asked for in person in the same visit: one record, each medicine marked.
+                const mixed = !walkIn && isMixed(d.items);
                 return (
                   <tr key={d.dispensing_id} className={rowHit(searchTerm, d.request_id) || undefined}>
                     <td data-label="No." className="col-no">{rowNo(meta, i)}</td>
@@ -169,7 +171,7 @@ export default function DispensingRecords() {
                         {d.items.map((i, n) => (
                           <li key={i.dispensing_item_id}>
                             <span className="dr-med-icon dr-med-no" aria-label={`Medicine ${n + 1}`}>{n + 1}</span>
-                            <span><Hl q={searchTerm}>{i.medicine.medicine_name}</Hl></span>
+                            <span><Hl q={searchTerm}>{i.medicine.medicine_name}</Hl>{mixed && <> <SourceTag source={i.source} /></>}</span>
                             <b>{i.quantity} {i.quantity === 1 ? i.medicine.unit : unitPlural(i.medicine.unit)}</b>
                           </li>
                         ))}
@@ -179,6 +181,7 @@ export default function DispensingRecords() {
                     <td data-label="Request">
                       <HlId q={searchTerm} id={d.request_id}><RequestNo id={d.request_id} /></HlId>
                       <span className={`dr-tag ${walkIn ? 'dr-tag-walkin' : ''}`}>{walkIn ? 'Walk-in' : 'Online request'}</span>
+                      {mixed && <span className="dr-tag dr-tag-walkin">+ Walk-in</span>}
                     </td>
                     <td data-label="Dispensed by">{d.dispenser?.name ?? '—'}</td>
                   </tr>

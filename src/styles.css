@@ -2282,3 +2282,14 @@ tr.row-hit > td:first-child { box-shadow: inset 4px 0 0 #eab308; }
   .dr-table tr.row-hit > td { background: #fefce8; }
   .dr-table tr.row-hit > td:first-child { box-shadow: none; }
 }
+
+/* ---------- One visit, one record: each medicine marked as asked for in the request or in person (walk-in). */
+.src-tag { display: inline-block; margin-left: 4px; padding: 1px 7px; border-radius: 999px; font-size: 0.68rem; font-weight: 700; vertical-align: 1px; white-space: nowrap; }
+.src-request { background: #e0f2fe; color: #0369a1; }
+.src-walkin { background: #fef3c7; color: #b45309; }
+.dr-tag + .dr-tag { margin-left: 4px; }
+.dv-combine-hint { display: flex; align-items: flex-start; gap: 6px; margin: 10px 0 0; padding: 8px 10px; border-radius: 10px; background: #f0f9ff; color: #075985; font-size: 0.85rem; }
+.dv-combine-hint svg { flex-shrink: 0; margin-top: 2px; }
+.dv-confirm-list { list-style: none; margin: 8px 0 12px; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.dv-confirm-list li { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 4px 12px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 10px; }
+.dv-confirm-list li .field-warning { flex-basis: 100%; margin: 0; }

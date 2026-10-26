@@ -2,7 +2,7 @@ import { useState, type ReactNode } from 'react';
 import { formatDate } from '../api';
 import type { MedicineRequest } from '../types';
 import { pickupPeriod, statusSummary } from './RequestTracker';
-import { dateTime, ICONS, PickupCountdown, quantityText, RequestNo, STATUS_COLOR_KEY, statusKey, StatusPill, Svg } from './RequestCards';
+import { dateTime, ICONS, isMixed, PickupCountdown, quantityText, RequestNo, SourceTag, STATUS_COLOR_KEY, statusKey, StatusPill, Svg } from './RequestCards';
 import { PrescriptionViewer, requiresPrescription, RX_ICON, RxBadge } from './Prescription';
 
 /** "Pickup schedule" row: approval means the medicines are ready at Botika ng Bayan until the claim deadline. */
@@ -78,6 +78,7 @@ export function RequestSummaryCard({ r, prescriptionAction }: { r: MedicineReque
               <strong>{i.medicine.medicine_name}</strong>
               {i.quantity !== null && <span className="muted small">{quantityText(i.quantity, i.medicine.unit)}</span>}
               {i.medicine.requires_prescription && r.request_type === 'medicine' && <RxBadge small />}
+              {isMixed(r.items) && <SourceTag source={i.source} />}
             </span>
           </li>
         ))}

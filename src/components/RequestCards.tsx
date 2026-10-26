@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { formatDate } from '../api';
-import type { MedicineRequest } from '../types';
+import type { ItemSource, MedicineRequest } from '../types';
 import { Hl, HlId, rowHit } from './SearchHighlight';
 
 /** Small line icons used on request and notification cards. */
@@ -34,6 +34,14 @@ export function Svg({ d, size = 20, width = 2 }: { d: string; size?: number; wid
 }
 
 /** "Request No. 41" — the label in a lighter weight, the number in bold. */
+/** A record with medicines from the online request AND medicines asked for in person (same visit). */
+export const isMixed = (items: { source?: ItemSource }[]) => items.some((i) => i.source === 'walk_in') && items.some((i) => i.source !== 'walk_in');
+
+/** Marks a medicine as asked for in the request or in person (walk-in); shown when a record has both. */
+export function SourceTag({ source }: { source?: ItemSource }) {
+  return source === 'walk_in' ? <span className="src-tag src-walkin">Walk-in</span> : <span className="src-tag src-request">Request</span>;
+}
+
 export function RequestNo({ id, className = '' }: { id: number; className?: string }) {
   return (
     <span className={`req-no ${className}`}>
