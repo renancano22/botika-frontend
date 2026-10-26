@@ -11,6 +11,7 @@ import BackButton from '../../components/BackButton';
 import { LoadError, toast, useFormErrors } from '../../components/feedback';
 import { useAuth } from '../../auth';
 import { Pagination, rowNo, useDebounced, usePagedApi } from '../../components/Pagination';
+import { Hl, HlId, rowHit } from '../../components/SearchHighlight';
 
 const STOCK_OUT_REASONS = ['Expired', 'Damaged', 'Lost', 'Returned to supplier', 'Other'];
 const TX_LABEL: Record<StockTransaction['type'], string> = { stock_in: 'Stock-in', stock_out: 'Stock-out', dispensed: 'Dispensed' };
@@ -26,7 +27,8 @@ export default function Inventory() {
   const [batchSort, setBatchSort] = useState('expiry');
   // A batch opened from an expiry alert: the server returns the page that contains it.
   const [focus, setFocus] = useState<string | null>(() => new URLSearchParams(window.location.search).get('batch'));
-  const batchList = usePagedApi<InventoryBatch>('/inventory', { search: useDebounced(search.trim()), expiry, sort: batchSort },
+  const batchTerm = useDebounced(search.trim()); // what the list was searched for (marked in the rows)
+  const batchList = usePagedApi<InventoryBatch>('/inventory', { search: batchTerm, expiry, sort: batchSort },
     { table: 'batches', refreshMs: 30000, focus });
   const { data, errorInfo, loading, reload, rows: batches, meta: batchMeta } = batchList;
   const { data: medicines } = useApi<Medicine[]>('/medicines');
@@ -74,8 +76,9 @@ export default function Inventory() {
   const [txTo, setTxTo] = useState('');
   const [txSort, setTxSort] = useState<'newest' | 'oldest'>('newest');
   const txBadRange = !!txFrom && !!txTo && txFrom > txTo;
+  const txTerm = useDebounced(txSearch.trim());
   const tx = usePagedApi<StockTransaction>('/inventory/transactions',
-    { type: txType, search: useDebounced(txSearch.trim()), ...(txBadRange ? { from: txTo, to: txFrom } : { from: txFrom, to: txTo }), sort: txSort },
+    { type: txType, search: txTerm, ...(txBadRange ? { from: txTo, to: txFrom } : { from: txFrom, to: txTo }), sort: txSort },
     { table: 'transactions', refreshMs: 30000 });
   const txFiltered = !!txType || !!txSearch.trim() || !!txFrom || !!txTo;
   const fe = useFormErrors(['medicine_id', 'quantity', 'expiration_date', 'reason']);
@@ -151,10 +154,10 @@ export default function Inventory() {
             <thead><tr><th className="col-no">No.</th><th>Batch #</th><th>Medicine</th><th>Quantity</th><th>Expiration date</th><th>Expiry status</th><th>Last updated</th>{canManage && <th className="right">Actions</th>}</tr></thead>
             <tbody>
               {batches.map((b, i) => (
-                <tr key={b.inventory_id} id={`batch-${b.inventory_id}`} className={b.expiry_status === 'expired' ? 'row-danger' : b.expiry_status === 'near_expiry' ? 'row-warn' : ''}>
+                <tr key={b.inventory_id} id={`batch-${b.inventory_id}`} className={`${b.expiry_status === 'expired' ? 'row-danger' : b.expiry_status === 'near_expiry' ? 'row-warn' : ''} ${rowHit(batchTerm, b.inventory_id)}`.trim() || undefined}>
                   <td className="col-no">{rowNo(batchMeta, i)}</td>
-                  <td>{b.inventory_id}</td>
-                  <td>{b.medicine.medicine_name}</td>
+                  <td><HlId q={batchTerm} id={b.inventory_id}>{b.inventory_id}</HlId></td>
+                  <td><Hl q={batchTerm}>{b.medicine.medicine_name}</Hl></td>
                   <td>{b.quantity} {b.medicine.unit}</td>
                   <td>{formatDate(b.expiration_date)}</td>
                   <td><Badge value={b.expiry_status ?? 'ok'} /></td>
@@ -194,13 +197,13 @@ export default function Inventory() {
             <thead><tr><th className="col-no">No.</th><th>Date</th><th>Type</th><th>Medicine</th><th>Quantity</th><th>Batch #</th><th>Reason</th><th>By</th></tr></thead>
             <tbody>
               {tx.rows.map((t, i) => (
-                <tr key={t.transaction_id}>
+                <tr key={t.transaction_id} className={rowHit(txTerm, t.inventory_id) || undefined}>
                   <td className="col-no">{rowNo(tx.meta, i)}</td>
                   <td className="nowrap">{formatDate(t.created_at, true)}</td>
                   <td><span className={`badge badge-tx-${t.type}`}>{TX_LABEL[t.type]}</span></td>
-                  <td>{t.medicine?.medicine_name}</td>
+                  <td><Hl q={txTerm}>{t.medicine?.medicine_name}</Hl></td>
                   <td>{t.type === 'stock_in' ? '+' : '−'}{t.quantity} {t.medicine?.unit}</td>
-                  <td>{t.inventory_id ?? '—'}</td>
+                  <td><HlId q={txTerm} id={t.inventory_id}>{t.inventory_id ?? '—'}</HlId></td>
                   <td>{t.reason_text ?? t.reason ?? '—'}</td>
                   <td>{t.performer?.name ?? '—'}</td>
                 </tr>

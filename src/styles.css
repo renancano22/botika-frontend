@@ -2269,3 +2269,16 @@ a.db-legend-item, .db-legend-item.is-static { text-decoration: none; }
 }
 .da-kpi-link[class*=' t-']:hover { border-color: color-mix(in srgb, var(--t) 45%, white); background: color-mix(in srgb, var(--t) 18%, white); }
 .da-kpi-link[class*=' t-']:focus-visible { outline-color: color-mix(in srgb, var(--t) 60%, white); }
+
+/* ---------- Search highlight: what was searched for is marked in yellow in the rows found (all tables and lists);
+   the row of the batch # / Request No. searched for is highlighted as a whole. */
+mark.search-hit, .rs-mark { background: #fef08a; color: inherit; padding: 0 1px; border-radius: 3px; box-shadow: 0 0 0 1px #fde047; }
+mark.search-hit-id { padding: 1px 6px; font-weight: 700; }
+tr.row-hit > td, tr.row-hit:hover > td { background: #fef9c3; }
+tr.row-hit > td:first-child { box-shadow: inset 4px 0 0 #eab308; }
+.req-row.row-hit { box-shadow: 0 0 0 2px #facc15, var(--shadow-sm); }
+@media (max-width: 700px) {
+  .dr-table tr.row-hit { border-color: #facc15; box-shadow: 0 0 0 2px #fde047; }
+  .dr-table tr.row-hit > td { background: #fefce8; }
+  .dr-table tr.row-hit > td:first-child { box-shadow: none; }
+}

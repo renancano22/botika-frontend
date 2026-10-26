@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api, errorMessage, formatDate } from '../../api';
 import { LoadError, toast } from '../../components/feedback';
@@ -12,6 +12,7 @@ import { prescriptionStatus } from '../../components/RequestDetailParts';
 import { PickupCountdown, Svg } from '../../components/RequestCards';
 import type { MedicineRequest } from '../../types';
 import BackButton from '../../components/BackButton';
+import { Hl, HlId, rowHit } from '../../components/SearchHighlight';
 
 /** Same short list as in the SMS: "Paracetamol 500mg x10, Amoxicillin x21 and 1 more" (restock requests: names only). */
 const itemsSummary = (r: MedicineRequest) => {
@@ -193,18 +194,20 @@ export default function Requests() {
             </thead>
             <tbody>
               {rows.map((r, i) => (
-                <tr key={r.request_id}>
+                <tr key={r.request_id} className={rowHit(term, r.request_id) || undefined}>
                   <td className="col-no">{rowNo(meta, i)}</td>
-                  <td className="nowrap">No. {r.request_id}</td>
+                  <td className="nowrap"><HlId q={term} id={r.request_id}>No. {r.request_id}</HlId></td>
                   <td className="nowrap rq-date">{formatDate(r.request_date, true)}</td>
                   <td className="rq-resident">
-                    {r.resident?.name}
-                    <div className="muted small nowrap">{r.resident?.qr_code}</div>
+                    <Hl q={term}>{r.resident?.name}</Hl>
+                    <div className="muted small nowrap"><Hl q={term}>{r.resident?.qr_code}</Hl></div>
                     {r.status === 'approved' && r.resident?.contact_no && <div className="muted small nowrap">{r.resident.contact_no}</div>}
                   </td>
                   <td><Badge value={r.request_type} /></td>
                   <td>
-                    {itemsText(r)}
+                    {r.items.map((it, n) => (
+                      <Fragment key={it.request_item_id}>{n > 0 && ', '}<Hl q={term}>{it.medicine.medicine_name}</Hl>{it.quantity === null ? '' : ` ×${it.quantity}`}</Fragment>
+                    ))}
                     {requiresPrescription(r) && (
                       <div className="rx-cell"><RxBadge small /> <span className={r.prescription_verified_at ? 'rx-ok small' : 'muted small'}>{r.prescription ? (r.prescription_verified_at ? 'checked' : 'uploaded') : 'not uploaded'}</span></div>
                     )}

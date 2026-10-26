@@ -11,6 +11,7 @@ import BackButton from '../../components/BackButton';
 import { FIELD } from '../../validation';
 import { confirmAction, LoadError, toast, useFormErrors } from '../../components/feedback';
 import { Pagination, rowNo, useDebounced, usePagedApi } from '../../components/Pagination';
+import { Hl } from '../../components/SearchHighlight';
 
 const EMPTY = { generic_name: '', strength: '', dosage_form: '', category: '', unit: '', reorder_level: 20, requires_prescription: false };
 type Form = typeof EMPTY;
@@ -47,7 +48,8 @@ export default function Medicines() {
     setParams(next, { replace: true });
   };
   // One page at a time; the search, category and stock status are applied to the whole list on the server.
-  const list = usePagedApi<Medicine, { unrecorded: number }>('/medicines', { search: useDebounced(search.trim()), category, status },
+  const term = useDebounced(search.trim()); // what the list was searched for (marked in the rows)
+  const list = usePagedApi<Medicine, { unrecorded: number }>('/medicines', { search: term, category, status },
     { table: 'medicines', refreshMs: 30000 });
   const { data, errorInfo, loading, reload, rows: shown, meta } = list;
   const { data: categories } = useApi<string[]>('/medicines/categories');
@@ -193,10 +195,10 @@ export default function Medicines() {
                   <td className="col-no">{rowNo(meta, i)}</td>
                   <td className="nowrap mi-code">{m.medicine_code}</td>
                   <td>
-                    <strong>{m.generic_name ?? m.medicine_name}</strong>
+                    <strong><Hl q={term}>{m.generic_name ?? m.medicine_name}</Hl></strong>
                     {m.requires_prescription && <div><RxBadge small /></div>}
                   </td>
-                  <td>{m.category}</td>
+                  <td><Hl q={term}>{m.category}</Hl></td>
                   <td>{m.strength || <span className="mi-missing">Not specified</span>}</td>
                   <td>{m.dosage_form || <span className="mi-missing">Not specified</span>}</td>
                   <td className="nowrap">

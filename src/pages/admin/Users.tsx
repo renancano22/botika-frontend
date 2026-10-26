@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { api, formatDate, ROLE_LABEL } from '../../api';
 import { useAuth } from '../../auth';
 import { Pagination, rowNo, useDebounced, usePagedApi } from '../../components/Pagination';
+import { Hl } from '../../components/SearchHighlight';
 import { Badge, Card, Empty, Loading, Message, Modal } from '../../components/ui';
 import type { Role, User } from '../../types';
 import { FIELD } from '../../validation';
@@ -83,7 +84,8 @@ export default function Users() {
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
   const [sort, setSort] = useState('name');
-  const list = usePagedApi<User>('/users', { role, search: useDebounced(search.trim()), status, sort }, { table: 'users' });
+  const term = useDebounced(search.trim()); // what the list was searched for (marked in the rows)
+  const list = usePagedApi<User>('/users', { role, search: term, status, sort }, { table: 'users' });
   const { data, errorInfo, loading, reload, rows, meta } = list;
   const [editing, setEditing] = useState<User | null>(null);
   const [form, setForm] = useState<Form | null>(null);
@@ -210,10 +212,10 @@ export default function Users() {
               {rows.map((u, i) => (
                 <tr key={u.user_id} className={u.is_active ? '' : 'row-muted'}>
                   <td className="col-no">{rowNo(meta, i)}</td>
-                  <td>{u.name}</td><td>{u.email ?? '—'}</td><td><Badge value={u.role} /></td>
+                  <td><Hl q={term}>{u.name}</Hl></td><td>{u.email ? <Hl q={term}>{u.email}</Hl> : '—'}</td><td><Badge value={u.role} /></td>
                   <td>
                     {u.resident ? <>
-                      {u.resident.qr_code}{u.resident.contact_no ? ` · ${u.resident.contact_no}` : ''}
+                      <Hl q={term}>{u.resident.qr_code}</Hl>{u.resident.contact_no && <> · <Hl q={term}>{u.resident.contact_no}</Hl></>}
                       {u.resident.address && <div className="muted small">{u.resident.address}</div>}
                     </> : '—'}
                   </td>

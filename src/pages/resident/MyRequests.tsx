@@ -91,7 +91,7 @@ export default function MyRequests() {
         ) : (
           <>
             <div className="req-rows">
-              {list.map((r) => <RequestRow key={r.request_id} request={r} />)}
+              {list.map((r) => <RequestRow key={r.request_id} request={r} q={search.trim()} />)}
             </div>
             {!phone && <Pagination meta={pages.meta} onPage={pages.setPage} onPerPage={pages.setPerPage} noun="requests" />}
           </>

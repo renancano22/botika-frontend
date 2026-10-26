@@ -11,6 +11,7 @@ import { jumpToTop } from '../../scroll';
 import BackButton from '../../components/BackButton';
 import { LoadError, toast } from '../../components/feedback';
 import { useAuth } from '../../auth';
+import { Hl } from '../../components/SearchHighlight';
 
 type CartItem = { medicine: Medicine; quantity: number };
 
@@ -341,10 +342,10 @@ export default function ResidentMedicines() {
                     <button type="button" className="med-top med-open" onClick={() => setDetails(m)} aria-label={`${m.medicine_name} details`}>
                       <span className="med-icon"><Svg d={m.requires_prescription ? RX_ICON : ICONS.pill} size={22} width={1.9} /></span>
                       <span className="med-name">
-                        <strong>{m.generic_name || m.medicine_name}</strong>
+                        <strong><Hl q={search}>{m.generic_name || m.medicine_name}</Hl></strong>
                         <span className="med-sub">
-                          {m.generic_name && [m.strength, m.dosage_form].filter(Boolean).join(' ')}
-                          {m.generic_name && (m.strength || m.dosage_form) ? ' · ' : ''}{m.category}
+                          {m.generic_name && <Hl q={search}>{[m.strength, m.dosage_form].filter(Boolean).join(' ')}</Hl>}
+                          {m.generic_name && (m.strength || m.dosage_form) ? ' · ' : ''}<Hl q={search}>{m.category}</Hl>
                         </span>
                         <span className="med-tags">
                           <StockBadge m={m} />

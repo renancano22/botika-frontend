@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { formatDate } from '../api';
 import type { MedicineRequest } from '../types';
+import { Hl, HlId, rowHit } from './SearchHighlight';
 
 /** Small line icons used on request and notification cards. */
 export const ICONS = {
@@ -121,20 +122,22 @@ function rowHint(r: MedicineRequest): string {
  * One request in a list (card with a full border in the status colour): request number, date and status,
  * the medicines, then a short status line and "View details".
  */
-export function RequestRow({ request: r }: { request: MedicineRequest }) {
+export function RequestRow({ request: r, q = '' }: { request: MedicineRequest; q?: string }) {
   const colour = STATUS_COLOR_KEY[statusKey(r)];
   const restock = r.request_type === 'restock';
-  const first = r.items[0];
+  // While searching, the medicine that matches the search is the one shown (the others are in "+N more").
+  const term = q.toLowerCase();
+  const first = (term && r.items.find((i) => i.medicine.medicine_name.toLowerCase().includes(term))) || r.items[0];
   const more = r.items.length - 1;
   return (
-    <Link to={`/requests/${r.request_id}`} className={`req-row k-${colour}`}>
+    <Link to={`/requests/${r.request_id}`} className={`req-row k-${colour} ${rowHit(q, r.request_id)}`}>
       <span className="req-row-head">
         <span className="req-icon kicon">
           <Svg d={restock ? ICONS.box : ICONS.pill} size={22} width={1.9} />
         </span>
         <span className="req-row-title">
           <span className="req-row-title-top">
-            <RequestNo id={r.request_id} />
+            <HlId q={q} id={r.request_id}><RequestNo id={r.request_id} /></HlId>
             <StatusPill request={r} />
           </span>
           <span className="req-row-date">{dateTime(r.request_date)}</span>
@@ -142,7 +145,7 @@ export function RequestRow({ request: r }: { request: MedicineRequest }) {
       </span>
       {first && (
         <span className="req-row-body">
-          <span className="req-row-med">{first.medicine.medicine_name}{more > 0 && <span className="req-row-more">+{more} more</span>}</span>
+          <span className="req-row-med"><Hl q={q}>{first.medicine.medicine_name}</Hl>{more > 0 && <span className="req-row-more">+{more} more</span>}</span>
           <span className="req-row-sub">
             <span className="req-type">{restock ? 'Restock request' : 'Medicine request'}</span>
             {first.quantity !== null && <span>{quantityText(first.quantity, first.medicine.unit)}</span>}

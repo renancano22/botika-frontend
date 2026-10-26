@@ -8,6 +8,7 @@ import BackButton from '../../components/BackButton';
 import { LoadError } from '../../components/feedback';
 import { usePhone } from '../../hooks';
 import { ALL_ROWS, Pagination, rowNo, useDebounced, usePagedApi } from '../../components/Pagination';
+import { Hl, HlId, rowHit } from '../../components/SearchHighlight';
 
 interface Summary { records: number; residents: number; total_quantity: number }
 
@@ -151,7 +152,7 @@ export default function DispensingRecords() {
                 const at = new Date(d.dispensed_at);
                 const walkIn = d.request?.remarks === 'Walk-in';
                 return (
-                  <tr key={d.dispensing_id}>
+                  <tr key={d.dispensing_id} className={rowHit(searchTerm, d.request_id) || undefined}>
                     <td data-label="No." className="col-no">{rowNo(meta, i)}</td>
                     <td data-label="Date & time">
                       <strong className="dr-date">{at.toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}</strong>
@@ -159,8 +160,8 @@ export default function DispensingRecords() {
                     </td>
                     {!isResident && (
                       <td data-label="Resident">
-                        <strong>{d.request?.resident?.name ?? '—'}</strong>
-                        <span className="muted small dr-sub">{d.request?.resident?.qr_code}</span>
+                        <strong><Hl q={searchTerm}>{d.request?.resident?.name ?? '—'}</Hl></strong>
+                        <span className="muted small dr-sub"><Hl q={searchTerm}>{d.request?.resident?.qr_code}</Hl></span>
                       </td>
                     )}
                     <td data-label="Medicines given">
@@ -168,7 +169,7 @@ export default function DispensingRecords() {
                         {d.items.map((i, n) => (
                           <li key={i.dispensing_item_id}>
                             <span className="dr-med-icon dr-med-no" aria-label={`Medicine ${n + 1}`}>{n + 1}</span>
-                            <span>{i.medicine.medicine_name}</span>
+                            <span><Hl q={searchTerm}>{i.medicine.medicine_name}</Hl></span>
                             <b>{i.quantity} {i.quantity === 1 ? i.medicine.unit : unitPlural(i.medicine.unit)}</b>
                           </li>
                         ))}
@@ -176,7 +177,7 @@ export default function DispensingRecords() {
                     </td>
                     <td data-label="Total qty" className="center"><span className="dr-total">{d.items.reduce((a, i) => a + i.quantity, 0)}</span></td>
                     <td data-label="Request">
-                      <RequestNo id={d.request_id} />
+                      <HlId q={searchTerm} id={d.request_id}><RequestNo id={d.request_id} /></HlId>
                       <span className={`dr-tag ${walkIn ? 'dr-tag-walkin' : ''}`}>{walkIn ? 'Walk-in' : 'Online request'}</span>
                     </td>
                     <td data-label="Dispensed by">{d.dispenser?.name ?? '—'}</td>

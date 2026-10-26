@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { api, describeError, formatDate } from '../../api';
 import { Pagination, rowNo, useDebounced, usePagedApi } from '../../components/Pagination';
+import { Hl } from '../../components/SearchHighlight';
 import { Badge, Card, Empty, Loading, Message } from '../../components/ui';
 import type { SmsNotification } from '../../types';
 import BackButton from '../../components/BackButton';
@@ -22,8 +23,9 @@ export default function Announcements() {
   const [to, setTo] = useState('');
   const [sort, setSort] = useState<'newest' | 'oldest'>('newest');
   const badRange = !!from && !!to && from > to;
+  const term = useDebounced(search.trim()); // what the log was searched for (marked in the rows)
   const log = usePagedApi<SmsNotification>('/notifications',
-    { search: useDebounced(search.trim()), status, ...(badRange ? { from: to, to: from } : { from, to }), sort }, { table: 'sms-log', refreshMs: 30000 });
+    { search: term, status, ...(badRange ? { from: to, to: from } : { from, to }), sort }, { table: 'sms-log', refreshMs: 30000 });
   const { data, errorInfo, loading, reload, rows, meta } = log;
   const filtered = !!search.trim() || !!status || !!from || !!to;
   const [message, setMessage] = useState('');
@@ -116,9 +118,9 @@ export default function Announcements() {
                 <tr key={n.notification_id}>
                   <td className="col-no">{rowNo(meta, i)}</td>
                   <td className="nowrap">{formatDate(n.sent_at, true)}</td>
-                  <td>{n.resident?.name}{n.resident?.qr_code && <div className="muted small nowrap">{n.resident.qr_code}</div>}</td>
-                  <td>{n.resident?.contact_no ?? '—'}</td>
-                  <td>{n.message}{n.request_id && <div className="muted small">Request No. {n.request_id}</div>}</td>
+                  <td><Hl q={term}>{n.resident?.name}</Hl>{n.resident?.qr_code && <div className="muted small nowrap">{n.resident.qr_code}</div>}</td>
+                  <td>{n.resident?.contact_no ? <Hl q={term}>{n.resident.contact_no}</Hl> : '—'}</td>
+                  <td><Hl q={term}>{n.message}</Hl>{n.request_id && <div className="muted small">Request No. {n.request_id}</div>}</td>
                   <td><Badge value={n.channel === 'app' ? 'app' : n.status} /></td>
                 </tr>
               ))}
