@@ -2246,3 +2246,26 @@ td.col-no { font-weight: 600; }
 .is-static { cursor: default; }
 a.db-legend-item, .db-legend-item.is-static { text-decoration: none; }
 .db-req.db-req-n2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+/* ---------- Demand Forecasting: the same colours as the dashboard (green banner, accent bars, coloured summary boxes). */
+.t-danger { --t: var(--st-rejected); }
+.t-forecast { --t: #2563eb; }
+.fc-hero .fc-last-gen { color: rgba(238, 251, 240, 0.85); }
+.fc-hero .fc-last-gen svg { color: #86efac; }
+.fc-hero .fc-last-gen b { color: #fff; }
+.fc-page .card-head h2 { display: flex; align-items: center; gap: 8px; }
+.fc-page .card-head h2::before { content: ''; width: 4px; height: 18px; border-radius: 4px; background: linear-gradient(180deg, #2fb350, var(--primary)); flex-shrink: 0; }
+.da-kpi[class*=' t-'] {
+  position: relative; overflow: hidden; border-color: color-mix(in srgb, var(--t) 22%, white);
+  background: linear-gradient(160deg, color-mix(in srgb, var(--t) 14%, white) 0%, color-mix(in srgb, var(--t) 3%, white) 80%);
+}
+.da-kpi[class*=' t-']::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 4px; background: linear-gradient(90deg, var(--t), color-mix(in srgb, var(--t) 55%, white)); }
+.da-kpi[class*=' t-'] small { display: flex; align-items: center; gap: 7px; color: color-mix(in srgb, var(--t) 45%, #1f2d29); }
+.da-kpi[class*=' t-'] strong, .fc-story .da-kpi[class*=' t-'] strong { color: color-mix(in srgb, var(--t) 85%, black); }
+.da-kpi-icon {
+  width: 24px; height: 24px; border-radius: 7px; display: grid; place-items: center; flex-shrink: 0; color: #fff;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--t, var(--primary)) 80%, white), var(--t, var(--primary)));
+  box-shadow: 0 3px 8px color-mix(in srgb, var(--t, var(--primary)) 35%, transparent);
+}
+.da-kpi-link[class*=' t-']:hover { border-color: color-mix(in srgb, var(--t) 45%, white); background: color-mix(in srgb, var(--t) 18%, white); }
+.da-kpi-link[class*=' t-']:focus-visible { outline-color: color-mix(in srgb, var(--t) 60%, white); }

@@ -10,6 +10,13 @@ import { jumpTo } from '../../scroll';
 import { Pagination, useClientPages } from '../../components/Pagination';
 import BackButton from '../../components/BackButton';
 
+const WARN = 'M12 3 2 20h20zM12 10v4M12 17h.01';
+
+/** Small coloured icon in a summary box (the same style as the dashboard boxes). */
+function KpiIcon({ d }: { d: string }) {
+  return <i className="da-kpi-icon"><Svg d={d} size={15} width={2.2} /></i>;
+}
+
 const METHODS: { key: ForecastMethod; label: string; hint: string }[] = [
   { key: 'moving_average', label: 'Moving Average', hint: 'Average of the last 3 months' },
   { key: 'linear_regression', label: 'Linear Regression', hint: 'Straight trend line through the monthly totals' },
@@ -188,7 +195,7 @@ function RankList({ items, empty, unit }: { items: { name: string; total: number
     <ol className="rank-list">
       {items.map((item, i) => (
         <li key={item.name} title={`${item.name}: ${item.total} ${unit}`}>
-          <span className="rank-no">{i + 1}</span>
+          <span className={`rank-no${i < 3 ? ` rank-medal rank-${i + 1}` : ''}`}>{i + 1}</span>
           <span className="rank-name">{item.name}</span>
           <strong className="rank-total">{item.total}</strong>
           <span className="rank-bar"><span style={{ width: `${(item.total / max) * 100}%` }} /></span>
@@ -249,9 +256,9 @@ function SeasonalDemand() {
       ) : (
         <>
           <div className="da-kpis fc-season-kpis">
-            <div className="da-kpi"><small>Most given out</small><strong className="fc-season-top">{top.medicine_name}</strong><span>{perMonthText(top.avg_per_month, top.unit)} / month</span></div>
-            <div className="da-kpi"><small>Medicines given out</small><strong>{season.medicines.length}</strong><span>different medicines this season</span></div>
-            <div className="da-kpi"><small>Records used</small><strong>{season.partial ? '—' : monthsText(used.length)}</strong><span>{basis}</span></div>
+            <div className="da-kpi t-available"><small><KpiIcon d={ICONS.pill} />Most given out</small><strong className="fc-season-top">{top.medicine_name}</strong><span>{perMonthText(top.avg_per_month, top.unit)} / month</span></div>
+            <div className="da-kpi t-ready"><small><KpiIcon d={ICONS.box} />Medicines given out</small><strong>{season.medicines.length}</strong><span>different medicines this season</span></div>
+            <div className="da-kpi t-review"><small><KpiIcon d={ICONS.calendar} />Records used</small><strong>{season.partial ? '—' : monthsText(used.length)}</strong><span>{basis}</span></div>
           </div>
           {season.provisional && (
             <Message type="info">
@@ -444,7 +451,7 @@ export default function Forecasting() {
   return (
     <div className="page fc-page">
       <BackButton linkedOnly />
-      <header className="page-head">
+      <header className="page-head hero-head db-hero fc-hero">
         <div>
           <div className="page-title"><h1>Demand Forecasting</h1></div>
           <p className="muted">Predicted medicine needs from the dispensing records, with restocking recommendations.</p>
@@ -516,17 +523,17 @@ export default function Forecasting() {
           </Card>
 
           <div className="da-kpis fc-kpis">
-            <button type="button" className="da-kpi da-kpi-link" onClick={() => go('all', tableRef)}>
-              <small>Medicines analyzed</small><strong>{data.summary.medicines_analyzed}</strong><span>all medicines in the list</span>
+            <button type="button" className="da-kpi da-kpi-link t-ready" onClick={() => go('all', tableRef)}>
+              <small><KpiIcon d={ICONS.pill} />Medicines analyzed</small><strong>{data.summary.medicines_analyzed}</strong><span>all medicines in the list</span>
             </button>
-            <button type="button" className="da-kpi da-kpi-link" onClick={() => go('high', tableRef)}>
-              <small>Potential stockouts</small><strong>{data.summary.potential_stockouts}</strong><span>would run out in the forecast period</span>
+            <button type="button" className="da-kpi da-kpi-link t-danger" onClick={() => go('high', tableRef)}>
+              <small><KpiIcon d={WARN} />Potential stockouts</small><strong>{data.summary.potential_stockouts}</strong><span>would run out in the forecast period</span>
             </button>
-            <button type="button" className="da-kpi da-kpi-link" onClick={() => go('restock', tableRef)}>
-              <small>Restock recommendations</small><strong>{data.summary.restock_recommendations}</strong><span>medicines need restocking</span>
+            <button type="button" className="da-kpi da-kpi-link t-restock" onClick={() => go('restock', tableRef)}>
+              <small><KpiIcon d={ICONS.box} />Restock recommendations</small><strong>{data.summary.restock_recommendations}</strong><span>medicines need restocking</span>
             </button>
-            <button type="button" className="da-kpi da-kpi-link" onClick={() => go(null, chartRef)}>
-              <small>Forecast period</small><strong className="fc-kpi-period">{periodText(data.forecast_keys)}</strong><span>{horizonText.toLowerCase()}</span>
+            <button type="button" className="da-kpi da-kpi-link t-available" onClick={() => go(null, chartRef)}>
+              <small><KpiIcon d={ICONS.calendar} />Forecast period</small><strong className="fc-kpi-period">{periodText(data.forecast_keys)}</strong><span>{horizonText.toLowerCase()}</span>
             </button>
           </div>
 
@@ -568,10 +575,10 @@ export default function Forecasting() {
               ) : story && (
                 <>
                   <div className="da-kpis fc-story">
-                    <div className="da-kpi"><small>Given out, last {monthsText(data.history_months).toLowerCase()}</small><strong>{story.past.toLocaleString('en-PH')}</strong><span>{unitLabel}</span></div>
-                    <div className="da-kpi"><small>Average per month</small><strong>{story.avg.toLocaleString('en-PH')}</strong><span>{unitLabel} / month · {basisText}</span></div>
-                    <div className="da-kpi">
-                      <small>Expected, {periodText(data.forecast_keys)}</small>
+                    <div className="da-kpi t-available"><small><KpiIcon d={ICONS.pill} />Given out, last {monthsText(data.history_months).toLowerCase()}</small><strong>{story.past.toLocaleString('en-PH')}</strong><span>{unitLabel}</span></div>
+                    <div className="da-kpi t-ready"><small><KpiIcon d={ICONS.clock} />Average per month</small><strong>{story.avg.toLocaleString('en-PH')}</strong><span>{unitLabel} / month · {basisText}</span></div>
+                    <div className="da-kpi t-forecast">
+                      <small><KpiIcon d={ICON.trend} />Expected, {periodText(data.forecast_keys)}</small>
                       <strong>{story.next.toLocaleString('en-PH')}</strong>
                       <span>about {story.perMonth} / month{' '}
                         {provisional
