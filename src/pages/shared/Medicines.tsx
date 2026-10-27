@@ -59,6 +59,8 @@ export default function Medicines() {
 
   const [editing, setEditing] = useState<Medicine | null>(null);
   const [form, setForm] = useState<Form | null>(null);
+  // Edit medicine: the values when the form was opened, so Save is only possible after something was changed.
+  const [original, setOriginal] = useState<Form | null>(null);
   const fe = useFormErrors(['generic_name', 'strength', 'dosage_form', 'category', 'unit', 'reorder_level', 'requires_prescription']);
   const [busy, setBusy] = useState(false);
   const [savedDuplicate, setSavedDuplicate] = useState<{ duplicate: Duplicate; message: string } | null>(null);
@@ -78,16 +80,20 @@ export default function Medicines() {
   const live = canCheck && check ? check : null;
   const duplicate = (identityChanged && live?.duplicate && live.duplicate_message ? { duplicate: live.duplicate, message: live.duplicate_message } : null) ?? savedDuplicate;
   const categoryWarning = live && form?.category ? live.category_message : null;
+  const same = (f: Form) => JSON.stringify([f.generic_name.trim(), f.strength.trim(), f.dosage_form, f.category, f.unit, Number(f.reorder_level), f.requires_prescription]);
+  const unchanged = !!editing && !!form && !!original && same(form) === same(original);
 
   const open = (m?: Medicine) => {
     setEditing(m ?? null);
     setSavedDuplicate(null);
     fe.clear();
-    setForm(m ? {
+    const start = m ? {
       generic_name: m.generic_name ?? m.medicine_name, strength: m.strength ?? '', dosage_form: m.dosage_form ?? '',
       category: m.category, unit: m.unit, reorder_level: m.reorder_level ?? 20,
       requires_prescription: !!m.requires_prescription,
-    } : { ...EMPTY, category: category || '' });
+    } : { ...EMPTY, category: category || '' };
+    setForm(start);
+    setOriginal(m ? start : null);
   };
 
   /** Choosing a dosage form fills in the unit it is counted in (tablet, bottle, tube…). */
@@ -95,7 +101,7 @@ export default function Medicines() {
 
   const save = async (e: FormEvent) => {
     e.preventDefault();
-    if (!form || busy) return;
+    if (!form || busy || unchanged) return; // nothing was changed: nothing to save
     setBusy(true);
     fe.clear();
     try {
@@ -285,8 +291,9 @@ export default function Medicines() {
             </label>
             <p className="field-hint">Stock and expiration dates are recorded in Stock &amp; Batches → Stock-in.</p>
             <div className="modal-actions">
+              {unchanged && <span className="no-change-hint">No changes yet. Edit a detail to save.</span>}
               <button type="button" className="btn btn-outline" onClick={() => setForm(null)}>Cancel</button>
-              <button className="btn" disabled={busy || !!duplicate || !!categoryWarning}>{busy ? 'Saving…' : 'Save'}</button>
+              <button className="btn" disabled={busy || unchanged || !!duplicate || !!categoryWarning} title={unchanged ? 'Nothing was changed' : undefined}>{busy ? 'Saving…' : 'Save'}</button>
             </div>
           </form>
         </Modal>

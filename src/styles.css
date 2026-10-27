@@ -2293,3 +2293,7 @@ tr.row-hit > td:first-child { box-shadow: inset 4px 0 0 #eab308; }
 .dv-confirm-list { list-style: none; margin: 8px 0 12px; padding: 0; display: flex; flex-direction: column; gap: 6px; }
 .dv-confirm-list li { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 4px 12px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 10px; }
 .dv-confirm-list li .field-warning { flex-basis: 100%; margin: 0; }
+
+/* Edit forms: Save is off until something was changed. */
+.no-change-hint { margin-right: auto; align-self: center; font-size: 0.82rem; color: var(--muted); }
+@media (max-width: 480px) { .modal-actions:has(.no-change-hint) { flex-wrap: wrap; } .modal-actions .no-change-hint { flex-basis: 100%; } }
