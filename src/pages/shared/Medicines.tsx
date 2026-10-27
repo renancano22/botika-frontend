@@ -13,7 +13,9 @@ import { ChangeList, confirmAction, confirmSave, LoadError, toast, useFormErrors
 import { Pagination, rowNo, useDebounced, usePagedApi } from '../../components/Pagination';
 import { Hl } from '../../components/SearchHighlight';
 
-const EMPTY = { generic_name: '', strength: '', dosage_form: '', category: '', unit: '', reorder_level: 20, requires_prescription: false };
+/** Reorder level given automatically to a new medicine (same as botika.default_reorder_level in the backend). */
+const DEFAULT_REORDER_LEVEL = 100;
+const EMPTY = { generic_name: '', strength: '', dosage_form: '', category: '', unit: '', reorder_level: DEFAULT_REORDER_LEVEL, requires_prescription: false };
 type Form = typeof EMPTY;
 
 /** "Amoxicillin 500mg Capsule" — the same name the server builds. */
@@ -90,7 +92,7 @@ export default function Medicines() {
     fe.clear();
     const start = m ? {
       generic_name: m.generic_name ?? m.medicine_name, strength: m.strength ?? '', dosage_form: m.dosage_form ?? '',
-      category: m.category, unit: m.unit, reorder_level: m.reorder_level ?? 20,
+      category: m.category, unit: m.unit, reorder_level: m.reorder_level ?? DEFAULT_REORDER_LEVEL,
       requires_prescription: !!m.requires_prescription,
     } : { ...EMPTY, category: category || '' };
     setForm(start);
@@ -316,6 +318,7 @@ export default function Medicines() {
             )}
             <label>Reorder level (alert when stock is at or below)
               <input type="number" min={0} max={100000} step={1} value={form.reorder_level} onChange={(e) => setForm({ ...form, reorder_level: Number(e.target.value) })} required {...fe.invalid('reorder_level')} />{fe.error('reorder_level')}
+              {!fe.fields.reorder_level && <span className="field-hint">Set to {DEFAULT_REORDER_LEVEL} automatically. Change it only if this medicine needs a different alert level.</span>}
             </label>
             <label className="rx-check">
               <input type="checkbox" checked={form.requires_prescription} onChange={(e) => setForm({ ...form, requires_prescription: e.target.checked })} />
