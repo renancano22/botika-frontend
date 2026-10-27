@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { CartesianGrid, LabelList, Line, LineChart, ReferenceArea, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { api, formatDate } from '../../api';
-import { LoadError, toast } from '../../components/feedback';
+import { confirmSave, LoadError, toast } from '../../components/feedback';
 import { useApi } from '../../hooks';
 import { Badge, Card, Empty, Loading, Message, Modal } from '../../components/ui';
 import { ICONS, quantityText, Svg, unitPlural } from '../../components/RequestCards';
@@ -408,6 +408,11 @@ export default function Forecasting() {
 
   const generate = async () => {
     if (!data || busy) return;
+    if (!(await confirmSave({
+      title: 'Generate and save this forecast?',
+      message: <>The forecast for <strong>{periodText(data.forecast_keys)}</strong> ({METHOD_LABEL[data.method] ?? data.method}, based on the last {monthsText(data.history_months).toLowerCase()}) will be saved as the latest forecast.</>,
+      confirmLabel: 'Confirm and Generate',
+    }))) return;
     setBusy(true);
     try {
       const res = await api.post<ForecastReport>('/forecasts/generate', { months: data.history_months, horizon: data.horizon, method: data.method });

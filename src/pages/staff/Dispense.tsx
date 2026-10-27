@@ -1,6 +1,6 @@
 import { useCallback, useState, type FormEvent } from 'react';
 import { api, describeError, errorMessage, formatDate } from '../../api';
-import { alertDialog, toast } from '../../components/feedback';
+import { alertDialog, confirmSave, toast } from '../../components/feedback';
 import { useApi } from '../../hooks';
 import { Badge, Card, Empty, Message, Modal } from '../../components/ui';
 import { PrescriptionViewer, requiresPrescription, RX_ICON, RxBadge } from '../../components/Prescription';
@@ -151,6 +151,12 @@ export default function Dispense() {
   const dispenseWalkIn = async (e: FormEvent) => {
     e.preventDefault();
     if (!found || busy) return;
+    if (!(await confirmSave({
+      title: 'Dispense these medicines?',
+      message: <>Release to <strong>{found.resident.name}</strong> ({found.resident.qr_code}) as a walk-in. They are deducted from the stock.</>,
+      details: walkIn.map((i) => { const m = medName(i.medicine_id); return `${m?.medicine_name ?? 'Medicine'} ×${i.quantity}`; }).join(', '),
+      confirmLabel: 'Confirm and Dispense',
+    }))) return;
     setBusy(true);
     try {
       await api.post('/dispensing/walk-in', { qr_code: found.resident.qr_code, items: walkIn, prescription_checked: walkInRx.length > 0 && walkInRxChecked });
@@ -185,7 +191,7 @@ export default function Dispense() {
     return `Already ${inRequest} in this request. At most ${MAX_REQUEST_QUANTITY} per medicine, so ${left ? `add at most ${left}` : 'no more can be added'}.`;
   };
   const openDispense = (r: MedicineRequest) => {
-    if (requiresPrescription(r) || walkIn.length > 0) { setRxChecked(false); setConfirming(r); } else dispenseRequest(r);
+    setRxChecked(false); setConfirming(r); // always confirmed first (the medicines, prescription check, walk-in additions)
   };
   const medName = (id: number) => medicines?.find((m) => m.medicine_id === id);
 
@@ -359,6 +365,7 @@ export default function Dispense() {
 
       {confirming && (
         <Modal title={`Dispense request No. ${confirming.request_id}`} onClose={() => !busy && setConfirming(null)}>
+          <p className="muted small">Release these medicines to <strong>{found?.resident.name}</strong>? They are deducted from the stock.</p>
           {walkIn.length === 0 ? <p className="req-items">{confirming.items.map((i) => `${i.medicine.medicine_name} ×${i.quantity}`).join(', ')}</p> : (
             <>
               <p className="muted small">Given in one dispensing record. Each medicine is marked as asked for in the request or in person (walk-in).</p>
@@ -400,7 +407,7 @@ export default function Dispense() {
           <div className="modal-actions">
             <button className="btn btn-outline" onClick={() => setConfirming(null)} disabled={busy}>Cancel</button>
             <button className="btn" disabled={busy || ((requiresPrescription(confirming) || walkInRx.length > 0) && !rxChecked) || walkIn.some((i) => limitWarning(confirming, i))}
-              onClick={() => dispenseRequest(confirming)}>{busy ? 'Dispensing…' : walkIn.length ? `Dispense all (${confirming.items.length + walkIn.length})` : 'Dispense'}</button>
+              onClick={() => dispenseRequest(confirming)}>{busy ? 'Dispensing…' : walkIn.length ? `Confirm and Dispense all (${confirming.items.length + walkIn.length})` : 'Confirm and Dispense'}</button>
           </div>
         </Modal>
       )}

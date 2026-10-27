@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import { api, errorMessage } from '../../api';
-import { confirmAction, LoadError, toast } from '../../components/feedback';
+import { ChangeList, confirmAction, confirmSave, LoadError, toast } from '../../components/feedback';
 import { useApi } from '../../hooks';
 import BackButton from '../../components/BackButton';
 import { Loading, Message, Modal } from '../../components/ui';
@@ -37,9 +37,21 @@ export default function RequestDetail() {
     }
   }, [navState, r]);
   const editWarnings = editing?.items.map((i) => quantityWarning(i.quantity ?? 0, unitPlural(i.medicine.unit))) ?? [];
+  // What the edit changes (quantity changed / medicine removed); Save is only possible after a change.
+  const editChanges = editing && r ? r.items.flatMap((old) => {
+    const now = editing.items.find((i) => i.request_item_id === old.request_item_id);
+    const unit = (q: number | null) => (q === null ? '' : `${q} ${q === 1 ? old.medicine.unit : unitPlural(old.medicine.unit)}`);
+    if (!now) return [{ label: old.medicine.medicine_name, from: unit(old.quantity), to: 'removed' }];
+    return now.quantity !== old.quantity ? [{ label: old.medicine.medicine_name, from: unit(old.quantity), to: unit(now.quantity) }] : [];
+  }) : [];
 
   const replacePrescription = async () => {
     if (!r || !newRx || busy) return;
+    if (!(await confirmSave({
+      title: 'Save this prescription?',
+      message: <><strong>{newRx.name}</strong> will be {r.prescription ? 'used instead of the prescription uploaded before' : 'added to'} Request No. {r.request_id}.</>,
+      details: 'The pharmacy staff will check it when they review your request.',
+    }))) return;
     setBusy(true);
     setMsg(null);
     try {
@@ -74,7 +86,12 @@ export default function RequestDetail() {
   };
 
   const saveEdit = async () => {
-    if (!editing || busy) return;
+    if (!editing || busy || !r || !editChanges.length) return;
+    if (!(await confirmSave({
+      title: 'Save changes to this request?',
+      message: <>You are about to update <strong>Request No. {r.request_id}</strong>.</>,
+      details: <ChangeList rows={editChanges} />,
+    }))) return;
     setBusy(true);
     setMsg(null);
     try {
@@ -160,8 +177,9 @@ export default function RequestDetail() {
           ))}
           {msg?.type === 'error' && <Message>{msg.text}</Message>}
           <div className="modal-actions">
+            {editChanges.length === 0 && <span className="no-change-hint">No changes yet.</span>}
             <button className="btn btn-outline" onClick={() => setEditing(null)}>Close</button>
-            <button className="btn" disabled={busy || editWarnings.some(Boolean)} onClick={saveEdit}>Save changes</button>
+            <button className="btn" disabled={busy || editWarnings.some(Boolean) || editChanges.length === 0} onClick={saveEdit}>Save changes</button>
           </div>
         </Modal>
       )}

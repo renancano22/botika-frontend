@@ -9,7 +9,7 @@ import { MAX_REQUEST_QUANTITY, quantityWarning } from '../../validation';
 import { PrescriptionUpload, PrescriptionViewer, RX_ICON, RxBadge, type PrescriptionFile } from '../../components/Prescription';
 import { jumpToTop } from '../../scroll';
 import BackButton from '../../components/BackButton';
-import { LoadError, toast } from '../../components/feedback';
+import { confirmSave, LoadError, toast } from '../../components/feedback';
 import { useAuth } from '../../auth';
 import { Hl } from '../../components/SearchHighlight';
 
@@ -142,6 +142,12 @@ export default function ResidentMedicines() {
 
   const submitRestock = async () => {
     if (!restockFor || busy) return;
+    if (!(await confirmSave({
+      title: 'Send this restock request?',
+      message: <>You are asking the Botika ng Bayan to restock <strong>{restockFor.generic_name || restockFor.medicine_name}</strong>.</>,
+      details: 'You will be notified by SMS once it is available. You can follow it in My Requests.',
+      confirmLabel: 'Confirm and Send',
+    }))) return;
     setBusy(true);
     setSheetError('');
     try {

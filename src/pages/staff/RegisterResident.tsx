@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { api } from '../../api';
-import { useFormErrors } from '../../components/feedback';
+import { confirmSave, useFormErrors } from '../../components/feedback';
 import { useApi } from '../../hooks';
 import { Card, Message } from '../../components/ui';
 import { ICONS, Svg } from '../../components/RequestCards';
@@ -44,7 +44,17 @@ export default function RegisterResident({ onBack, onRegistered, onVerified }: {
       else fe.fromError(err);
     } finally { setBusy(false); }
   };
-  const submit = (e: FormEvent) => { e.preventDefault(); save(false); };
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (busy) return;
+    const ok = await confirmSave({
+      title: 'Register this resident?',
+      message: <><strong>{form.name.trim()}</strong> of {form.barangay || 'the selected barangay'} will be registered and given a Resident ID.</>,
+      details: form.contact_no.trim() ? `SMS updates go to ${form.contact_no.trim()}.` : 'No mobile number: the resident will not receive SMS.',
+      confirmLabel: 'Confirm and Register',
+    });
+    if (ok) save(false);
+  };
 
   return (
     <Card title="1. Register resident" actions={onBack && (

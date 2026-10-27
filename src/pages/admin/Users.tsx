@@ -14,7 +14,7 @@ const UF_ICON = {
   key: 'M15 7a4 4 0 1 1-3.9 4.9L3 20v-3h3v-3h3l2.1-2.1A4 4 0 0 1 15 7zM16 9h.01',
 };
 import BackButton from '../../components/BackButton';
-import { alertDialog, confirmAction, LoadError, toast, useFormErrors } from '../../components/feedback';
+import { alertDialog, ChangeList, confirmAction, confirmSave, LoadError, toast, useFormErrors } from '../../components/feedback';
 
 type Form = { name: string; email: string; role: Role };
 interface TemporaryPasswordResponse { user: User; temporary_password: string }
@@ -105,9 +105,26 @@ export default function Users() {
   // The administrator's own password is changed with "Change password" in the menu (asks for the current one).
   const editingSelf = !!editing && editing.user_id === me?.user_id;
 
+  // Edit: Save only after something was changed.
+  const changes = editing && form ? ([
+    ['Name', editing.name, form.name.trim()],
+    ['Email', editing.email ?? '', form.email.trim().toLowerCase()],
+    ['Role', ROLE_LABEL[editing.role], ROLE_LABEL[form.role]],
+  ] as const).filter(([, a, b]) => a !== b).map(([label, from, to]) => ({ label, from, to })) : [];
+  const unchanged = !!editing && changes.length === 0;
+
   const save = async (e: FormEvent) => {
     e.preventDefault();
-    if (!form || busy) return;
+    if (!form || busy || unchanged) return;
+    if (!(await confirmSave(editing ? {
+      title: 'Save changes to this account?',
+      message: <>You are about to update the account of <strong>{editing.name}</strong>.</>,
+      details: <ChangeList rows={changes} />,
+    } : {
+      title: 'Create this account?',
+      message: <><strong>{form.name.trim()}</strong> ({form.email.trim()}) will get a <strong>{ROLE_LABEL[form.role]}</strong> account. A temporary password will be shown once, to give to them.</>,
+      confirmLabel: 'Confirm and Create',
+    }))) return;
     fe.clear();
     setBusy(true);
     try {
@@ -315,8 +332,9 @@ export default function Users() {
             )}
 
             <div className="modal-actions">
+              {unchanged && <span className="no-change-hint">No changes yet. Edit a detail to save.</span>}
               <button type="button" className="btn btn-outline" onClick={() => setForm(null)}>Cancel</button>
-              <button className="btn" disabled={busy}>{busy ? 'Saving…' : 'Save'}</button>
+              <button className="btn" disabled={busy || unchanged} title={unchanged ? 'Nothing was changed' : undefined}>{busy ? 'Saving…' : 'Save'}</button>
             </div>
           </form>
         </Modal>

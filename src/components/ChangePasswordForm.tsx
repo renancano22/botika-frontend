@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { api } from '../api';
 import { useAuth } from '../auth';
 import { Message, PasswordInput } from './ui';
-import { useFormErrors } from './feedback';
+import { confirmSave, useFormErrors } from './feedback';
 import type { User } from '../types';
 import { FIELD, passwordHasPersonalInfo } from '../validation';
 
@@ -35,6 +35,11 @@ export default function ChangePasswordForm({ temporary, onDone, onCancel, submit
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     if (busy) return;
+    if (!(await confirmSave({
+      title: 'Change your password?',
+      message: 'Use your new password the next time you log in.',
+      details: 'Other phones or computers logged in to your account will be logged out.',
+    }))) return;
     fe.clear();
     setBusy(true);
     try {

@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api, errorMessage, formatDate } from '../../api';
-import { LoadError, toast } from '../../components/feedback';
+import { confirmSave, LoadError, toast } from '../../components/feedback';
 import { useAuth } from '../../auth';
 import { useApi } from '../../hooks';
 import { Pagination, rowNo, useDebounced, usePagedApi } from '../../components/Pagination';
@@ -112,6 +112,14 @@ export default function Requests() {
   const approve = async (r: MedicineRequest) => {
     if (actingId) return;
     const rx = requiresPrescription(r);
+    if (!(await confirmSave({
+      title: `Approve Request No. ${r.request_id}?`,
+      message: <><strong>{r.resident?.name ?? 'The resident'}</strong> · {itemsText(r)}</>,
+      details: r.request_type === 'restock'
+        ? 'The resident will be notified by SMS when the medicine is restocked.'
+        : 'The medicine will be set aside for the resident, who will be notified by SMS to claim it within 7 days.',
+      confirmLabel: 'Confirm and Approve',
+    }))) return;
     setActingId(r.request_id);
     try {
       await api.post(`/requests/${r.request_id}/approve`, rx ? { prescription_verified: true } : {});
@@ -314,6 +322,13 @@ export default function Requests() {
             <button className="btn btn-outline" onClick={() => setRejecting(null)} disabled={rejectBusy}>Cancel</button>
             <button className="btn btn-danger" disabled={remarks.length < 3 || rejectBusy} onClick={async () => {
               if (rejectBusy) return;
+              if (!(await confirmSave({
+                tone: 'danger',
+                title: `Reject Request No. ${rejecting.request_id}?`,
+                message: <><strong>{rejecting.resident?.name ?? 'The resident'}</strong> will be notified by SMS that the request was not approved.</>,
+                details: <>Reason: {remarks}</>,
+                confirmLabel: 'Confirm and Reject',
+              }))) return;
               setRejectBusy(true);
               setRejectError('');
               try {

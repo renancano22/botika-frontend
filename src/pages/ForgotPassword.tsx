@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../api';
 import { Message, PasswordInput } from '../components/ui';
-import { useFormErrors } from '../components/feedback';
+import { confirmSave, useFormErrors } from '../components/feedback';
 import { FIELD } from '../validation';
 
 /**
@@ -46,6 +46,11 @@ export default function ForgotPassword() {
       fe.setFieldErrors({ password_confirmation: 'The two passwords do not match.' });
       return;
     }
+    if (!(await confirmSave({
+      title: 'Change your password?',
+      message: 'Your old password will no longer work. Use the new password the next time you log in.',
+      details: 'Phones or computers logged in to your account will be logged out.',
+    }))) return;
     setBusy(true);
     try {
       await api.post('/reset-password', { login, code, password, password_confirmation: confirm });

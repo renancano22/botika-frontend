@@ -9,7 +9,7 @@ import type { Medicine } from '../../types';
 import { RxBadge } from '../../components/Prescription';
 import BackButton from '../../components/BackButton';
 import { FIELD } from '../../validation';
-import { confirmAction, LoadError, toast, useFormErrors } from '../../components/feedback';
+import { ChangeList, confirmAction, confirmSave, LoadError, toast, useFormErrors } from '../../components/feedback';
 import { Pagination, rowNo, useDebounced, usePagedApi } from '../../components/Pagination';
 import { Hl } from '../../components/SearchHighlight';
 
@@ -102,6 +102,27 @@ export default function Medicines() {
   const save = async (e: FormEvent) => {
     e.preventDefault();
     if (!form || busy || unchanged) return; // nothing was changed: nothing to save
+    // Are you sure? Edit: what will change; Add: the new medicine.
+    const yesNo = (v: boolean) => (v ? 'Yes' : 'No');
+    const rows = editing && original ? ([
+      ['Generic name', original.generic_name.trim(), form.generic_name.trim()],
+      ['Strength', original.strength.trim(), form.strength.trim()],
+      ['Dosage form', original.dosage_form, form.dosage_form],
+      ['Category', original.category, form.category],
+      ['Counted per (unit)', original.unit, form.unit],
+      ['Reorder level', String(original.reorder_level), String(form.reorder_level)],
+      ['Requires prescription', yesNo(original.requires_prescription), yesNo(form.requires_prescription)],
+    ] as const).filter(([, a, b]) => a !== b).map(([label, from, to]) => ({ label, from, to })) : [];
+    const ok = await confirmSave(editing ? {
+      title: 'Save changes to this medicine?',
+      message: <>You are about to update <strong>{displayName(original ?? form)}</strong>.</>,
+      details: <ChangeList rows={rows} />,
+    } : {
+      title: 'Add this medicine?',
+      message: <><strong>{displayName(form)}</strong> ({form.category}, counted per {form.unit}) will be added to the medicine list.</>,
+      confirmLabel: 'Confirm and Add',
+    });
+    if (!ok) return;
     setBusy(true);
     fe.clear();
     try {

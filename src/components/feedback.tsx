@@ -218,6 +218,25 @@ export function confirmAction(opts: DialogOptions): Promise<boolean> {
   });
 }
 
+/**
+ * Asks "are you sure?" before a change is saved (used for every save in the system).
+ * Resolves true when the user confirms; the caller then saves as usual (its own errors stay on its form).
+ */
+export function confirmSave(opts: { title: string; message: ReactNode; details?: ReactNode; confirmLabel?: string; tone?: DialogTone }): Promise<boolean> {
+  return confirmAction({ tone: 'primary', confirmLabel: 'Confirm and Save', cancelLabel: 'Cancel', ...opts });
+}
+
+/** What will change, shown in a save confirmation: "Category: Antibacterial → Corticosteroids". */
+export function ChangeList({ rows }: { rows: { label: string; from: ReactNode; to: ReactNode }[] }) {
+  return (
+    <ul className="dlg-changes">
+      {rows.map((r) => (
+        <li key={r.label}><span className="dlg-change-label">{r.label}</span><span><s>{r.from === '' || r.from === null ? 'none' : r.from}</s> → <b>{r.to === '' || r.to === null ? 'none' : r.to}</b></span></li>
+      ))}
+    </ul>
+  );
+}
+
 /** A dialog with a single button, for important errors or information the user must read. */
 export function alertDialog(opts: Omit<DialogOptions, 'cancelLabel'> & { buttonLabel?: string }): Promise<boolean> {
   return confirmAction({ ...opts, confirmLabel: opts.buttonLabel ?? opts.confirmLabel ?? 'OK', cancelLabel: null });

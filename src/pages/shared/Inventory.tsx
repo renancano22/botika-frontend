@@ -8,7 +8,7 @@ import { MAX_STOCK_IN, maxExpiry, tomorrow } from '../../validation';
 import { unitPlural } from '../../components/RequestCards';
 import { jumpWhenReady } from '../../scroll';
 import BackButton from '../../components/BackButton';
-import { LoadError, toast, useFormErrors } from '../../components/feedback';
+import { confirmSave, LoadError, toast, useFormErrors } from '../../components/feedback';
 import { useAuth } from '../../auth';
 import { Pagination, rowNo, useDebounced, usePagedApi } from '../../components/Pagination';
 import { Hl, HlId, rowHit } from '../../components/SearchHighlight';
@@ -87,7 +87,13 @@ export default function Inventory() {
 
   const submitIn = async (e: FormEvent) => {
     e.preventDefault();
-    if (saving) return;
+    if (saving || !stockIn) return;
+    const units = chosen ? (stockIn.quantity === 1 ? chosen.unit : unitPlural(chosen.unit)) : 'items';
+    if (!(await confirmSave({
+      title: 'Record this stock-in?',
+      message: <><strong>{stockIn.quantity} {units}</strong> of <strong>{chosen?.medicine_name ?? 'the medicine'}</strong> will be added as a new batch, expiring on <strong>{formatDate(stockIn.expiration_date)}</strong>.</>,
+      confirmLabel: 'Confirm and Save',
+    }))) return;
     setSaving(true);
     fe.clear();
     try {
@@ -105,10 +111,17 @@ export default function Inventory() {
   const submitOut = async (e: FormEvent) => {
     e.preventDefault();
     if (!stockOut || saving) return;
+    const details = stockOut.details.trim();
+    const reason = stockOut.reason === 'Other' ? details : details ? `${stockOut.reason} - ${details}` : stockOut.reason;
+    const unit = stockOut.quantity === 1 ? stockOut.batch.medicine.unit : unitPlural(stockOut.batch.medicine.unit);
+    if (!(await confirmSave({
+      tone: 'warning',
+      title: 'Record this stock-out?',
+      message: <><strong>{stockOut.quantity} {unit}</strong> will be removed from batch #{stockOut.batch.inventory_id} (<strong>{stockOut.batch.medicine.medicine_name}</strong>). This cannot be undone.</>,
+      details: <>Reason: {reason}</>,
+    }))) return;
     setSaving(true);
     try {
-      const details = stockOut.details.trim();
-      const reason = stockOut.reason === 'Other' ? details : details ? `${stockOut.reason} - ${details}` : stockOut.reason;
       await api.post(`/inventory/${stockOut.batch.inventory_id}/stock-out`, { quantity: stockOut.quantity, reason });
       toast.success('Stock-out recorded', { description: `${stockOut.quantity} removed from batch #${stockOut.batch.inventory_id} (${stockOut.batch.medicine.medicine_name}).` });
       setStockOut(null);
