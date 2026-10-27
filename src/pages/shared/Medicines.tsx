@@ -42,20 +42,21 @@ export default function Medicines() {
   // ?status=low_stock / out_of_stock / unrecorded (from the dashboard tiles) opens the list already filtered.
   const status = params.get('status') ?? '';
   const category = params.get('category') ?? '';
-  const setFilter = (key: 'status' | 'category', value: string) => {
+  const prescription = params.get('prescription') ?? ''; // required / not_required
+  const setFilter = (key: 'status' | 'category' | 'prescription', value: string) => {
     const next = new URLSearchParams(params);
     if (value) next.set(key, value); else next.delete(key);
     setParams(next, { replace: true });
   };
   // One page at a time; the search, category and stock status are applied to the whole list on the server.
   const term = useDebounced(search.trim()); // what the list was searched for (marked in the rows)
-  const list = usePagedApi<Medicine, { unrecorded: number }>('/medicines', { search: term, category, status },
+  const list = usePagedApi<Medicine, { unrecorded: number }>('/medicines', { search: term, category, status, prescription },
     { table: 'medicines', refreshMs: 30000 });
   const { data, errorInfo, loading, reload, rows: shown, meta } = list;
   const { data: categories } = useApi<string[]>('/medicines/categories');
   const { data: forms } = useApi<Record<string, string>>('/medicines/dosage-forms');
   const unrecorded = data?.unrecorded ?? 0;
-  const filtered = !!search.trim() || !!category || !!status;
+  const filtered = !!search.trim() || !!category || !!status || !!prescription;
 
   const [editing, setEditing] = useState<Medicine | null>(null);
   const [form, setForm] = useState<Form | null>(null);
@@ -204,6 +205,11 @@ export default function Medicines() {
             <option value="low_stock">Low stock</option>
             <option value="out_of_stock">Out of stock</option>
             <option value="unrecorded">Not recorded (needs verification)</option>
+          </select>
+          <select value={prescription} onChange={(e) => setFilter('prescription', e.target.value)} aria-label="Prescription">
+            <option value="">With or without prescription</option>
+            <option value="required">Requires prescription (Rx)</option>
+            <option value="not_required">No prescription needed</option>
           </select>
           <input className="search" placeholder="Search name or category…" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
