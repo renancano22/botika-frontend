@@ -331,14 +331,15 @@ export default function ResidentMedicines() {
                 <button key={key} role="tab" aria-selected={availability === key} className={`chip ${availability === key ? 'active' : ''}`} onClick={() => setAvailability(key)}>{label}</button>
               ))}
             </div>
+            <span className="filter-label">Prescription</span>
+            <div className="chips" role="tablist" aria-label="Prescription">
+              {([['', 'All'], ['required', 'Needed'], ['not_required', 'Not Needed']] as const).map(([key, label]) => (
+                <button key={key} role="tab" aria-selected={rxFilter === key} className={`chip ${rxFilter === key ? 'active' : ''}`} onClick={() => setRxFilter(key)}>{label}</button>
+              ))}
+            </div>
             <select className="select-pill" value={category} onChange={(e) => setCategory(e.target.value)} aria-label="Category">
               <option value="">All Categories</option>
               {categories?.map((c) => <option key={c} value={c}>{c}</option>)}
-            </select>
-            <select className="select-pill" value={rxFilter} onChange={(e) => setRxFilter(e.target.value as typeof rxFilter)} aria-label="Prescription">
-              <option value="">Prescription: All</option>
-              <option value="required">Requires Prescription (Rx)</option>
-              <option value="not_required">No Prescription Needed</option>
             </select>
             <div className="filter-foot">
               <h2>{listTitle}</h2>

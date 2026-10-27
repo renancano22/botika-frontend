@@ -206,14 +206,19 @@ export default function Medicines() {
             <option value="out_of_stock">Out of stock</option>
             <option value="unrecorded">Not recorded (needs verification)</option>
           </select>
-          <select value={prescription} onChange={(e) => setFilter('prescription', e.target.value)} aria-label="Prescription">
-            <option value="">Prescription: All</option>
-            <option value="required">Requires prescription (Rx)</option>
-            <option value="not_required">No prescription needed</option>
-          </select>
           <input className="search" placeholder="Search name or category…" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
       }>
+        {/* Prescription: shown as buttons so the choice is visible at a glance. */}
+        <div className="rx-filter">
+          <span className="filter-label">Prescription</span>
+          <div className="chips" role="tablist" aria-label="Prescription">
+            {([['', 'All medicines'], ['required', 'Requires prescription (Rx)'], ['not_required', 'No prescription needed']] as const).map(([key, label]) => (
+              <button key={key} type="button" role="tab" aria-selected={prescription === key} className={`chip ${prescription === key ? 'active' : ''}`}
+                onClick={() => setFilter('prescription', key)}>{label}</button>
+            ))}
+          </div>
+        </div>
         {loading && !data ? <Loading /> : !data ? null : !shown.length ? <Empty>{filtered ? 'No medicines match these filters.' : 'No medicines yet.'}</Empty> : (
           <table className={`mi-table ${loading ? 'tbl-updating' : ''}`}>
             <thead>

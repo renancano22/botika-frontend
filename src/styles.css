@@ -2304,3 +2304,7 @@ tr.row-hit > td:first-child { box-shadow: inset 4px 0 0 #eab308; }
 .dlg-change-label { font-weight: 600; color: var(--muted); }
 .dlg-changes s { color: var(--muted); }
 .dlg-changes b { color: var(--primary-dark); }
+
+/* Medicine List: Prescription filter as buttons (All / Requires prescription / No prescription needed). */
+.rx-filter { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin-bottom: 12px; }
+.rx-filter .filter-label { margin: 0; }
