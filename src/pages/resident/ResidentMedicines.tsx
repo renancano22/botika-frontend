@@ -336,7 +336,7 @@ export default function ResidentMedicines() {
               {categories?.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
             <select className="select-pill" value={rxFilter} onChange={(e) => setRxFilter(e.target.value as typeof rxFilter)} aria-label="Prescription">
-              <option value="">With or Without Prescription</option>
+              <option value="">Prescription: All</option>
               <option value="required">Requires Prescription (Rx)</option>
               <option value="not_required">No Prescription Needed</option>
             </select>

@@ -207,7 +207,7 @@ export default function Medicines() {
             <option value="unrecorded">Not recorded (needs verification)</option>
           </select>
           <select value={prescription} onChange={(e) => setFilter('prescription', e.target.value)} aria-label="Prescription">
-            <option value="">With or without prescription</option>
+            <option value="">Prescription: All</option>
             <option value="required">Requires prescription (Rx)</option>
             <option value="not_required">No prescription needed</option>
           </select>
