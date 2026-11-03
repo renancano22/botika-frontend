@@ -2296,3 +2296,6 @@ tr.row-hit > td:first-child { box-shadow: inset 4px 0 0 #eab308; }
 /* My Profile: the registered name and barangay are shown but cannot be changed. */
 .pf-locked { background: #f3f6f5 !important; color: #475569 !important; cursor: not-allowed; }
 .pf-locked-note { margin: -4px 0 6px; }
+
+/* User Accounts: a resident registered at the counter (has a Resident ID but no log-in account). */
+.no-account-badge { display: inline-block; margin-top: 3px; padding: 1px 8px; border-radius: 999px; font-size: 0.72rem; font-weight: 700; background: #eef2f1; color: #475569; border: 1px dashed #cbd5d1; white-space: nowrap; }

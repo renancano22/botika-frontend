@@ -17,6 +17,8 @@ import BackButton from '../../components/BackButton';
 import { alertDialog, ChangeList, confirmAction, confirmSave, LoadError, toast, useFormErrors } from '../../components/feedback';
 
 type Form = { name: string; email: string; role: Role };
+/** A row of User Accounts: an account, or a resident registered at the counter without an account (user_id null). */
+type AccountRow = Omit<User, 'user_id'> & { user_id: number | null; has_account?: boolean };
 interface TemporaryPasswordResponse { user: User; temporary_password: string }
 /** Reset Password: staff/admin get the temporary password shown once; residents get it by SMS and email instead. */
 type ResetResponse = TemporaryPasswordResponse | { user: User; sent_to: { sms: string | null; email: string | null } };
@@ -85,7 +87,7 @@ export default function Users() {
   const [status, setStatus] = useState('');
   const [sort, setSort] = useState('name');
   const term = useDebounced(search.trim()); // what the list was searched for (marked in the rows)
-  const list = usePagedApi<User>('/users', { role, search: term, status, sort }, { table: 'users' });
+  const list = usePagedApi<AccountRow>('/users', { role, search: term, status, sort }, { table: 'users' });
   const { data, errorInfo, loading, reload, rows, meta } = list;
   const [editing, setEditing] = useState<User | null>(null);
   const [form, setForm] = useState<Form | null>(null);
@@ -213,11 +215,12 @@ export default function Users() {
             <option value="">All statuses</option>
             <option value="active">Active</option>
             <option value="inactive">Deactivated</option>
+            <option value="no_account">No online account</option>
           </select>
           <select value={sort} onChange={(e) => setSort(e.target.value)} aria-label="Sort">
             <option value="name">Name (A–Z)</option>
-            <option value="newest">Newest accounts first</option>
-            <option value="oldest">Oldest accounts first</option>
+            <option value="newest">Newest first</option>
+            <option value="oldest">Oldest first</option>
           </select>
           <input className="search" placeholder="Search name, email, mobile or Resident ID…" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
@@ -226,8 +229,10 @@ export default function Users() {
           <table className={loading ? 'tbl-updating' : ''}>
             <thead><tr><th className="col-no">No.</th><th>Name</th><th>Email</th><th>Role</th><th>Resident ID / Mobile / Address</th><th>Status</th><th>Created</th><th className="right">Actions</th></tr></thead>
             <tbody>
-              {rows.map((u, i) => (
-                <tr key={u.user_id} className={u.is_active ? '' : 'row-muted'}>
+              {rows.map((u, i) => {
+                const noAccount = u.user_id === null; // registered at the counter (Register resident): no log-in account
+                return (
+                <tr key={noAccount ? `r${u.resident?.resident_id}` : u.user_id} className={u.is_active ? '' : 'row-muted'}>
                   <td className="col-no">{rowNo(meta, i)}</td>
                   <td><Hl q={term}>{u.name}</Hl></td><td>{u.email ? <Hl q={term}>{u.email}</Hl> : '—'}</td><td><Badge value={u.role} /></td>
                   <td>
@@ -237,7 +242,9 @@ export default function Users() {
                     </> : '—'}
                   </td>
                   <td>
-                    {u.is_active ? 'Active' : 'Deactivated'}
+                    {noAccount ? (
+                      <>No online account<div><span className="no-account-badge" title="Registered by the pharmacy staff at the counter (e.g. no cellphone). The resident has a Resident ID and QR code but cannot log in.">Registered at the counter</span></div></>
+                    ) : u.is_active ? 'Active' : 'Deactivated'}
                     {u.must_change_password && (
                       u.temp_password_expires_at && new Date(u.temp_password_expires_at) < new Date()
                         ? <div><span className="temp-badge temp-badge-expired" title="The temporary password was not used in time. Open Edit → Reset Password to generate a new one.">Temporary password expired</span></div>
@@ -248,17 +255,20 @@ export default function Users() {
                   </td>
                   <td>{formatDate(u.created_at)}</td>
                   <td className="right nowrap">
-                    <button className="btn btn-outline btn-sm" onClick={() => open(u)}>Edit</button>{' '}
-                    {u.user_id !== me?.user_id && (
-                      <button className={`btn btn-sm ${u.is_active ? 'btn-danger' : ''}`} onClick={() => toggle(u)}>{u.is_active ? 'Deactivate' : 'Activate'}</button>
-                    )}
+                    {noAccount ? <span className="muted small">—</span> : <>
+                      <button className="btn btn-outline btn-sm" onClick={() => open(u as User)}>Edit</button>{' '}
+                      {u.user_id !== me?.user_id && (
+                        <button className={`btn btn-sm ${u.is_active ? 'btn-danger' : ''}`} onClick={() => toggle(u as User)}>{u.is_active ? 'Deactivate' : 'Activate'}</button>
+                      )}
+                    </>}
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         )}
-        <Pagination meta={meta} onPage={list.setPage} onPerPage={list.setPerPage} noun="accounts" busy={loading} />
+        <Pagination meta={meta} onPage={list.setPage} onPerPage={list.setPerPage} noun="records" busy={loading} />
       </Card>
 
       {form && (
