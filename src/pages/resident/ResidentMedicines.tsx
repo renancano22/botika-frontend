@@ -402,7 +402,7 @@ export default function ResidentMedicines() {
 
         {/* Computers: the request stays visible beside the list. */}
         <section className="card cart-card">
-          <div className="card-head"><h2>My medicine request</h2>{cart.length > 0 && <span className="pill k-review">{cart.length} item{cart.length > 1 ? 's' : ''}</span>}</div>
+          <div className="card-head"><h2>My medicine request</h2>{cart.length > 0 && <span className="pill k-available">{cart.length} item{cart.length > 1 ? 's' : ''}</span>}</div>
           {cartList}
         </section>
       </div>

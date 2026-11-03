@@ -258,7 +258,7 @@ function SeasonalDemand() {
           <div className="da-kpis fc-season-kpis">
             <div className="da-kpi t-available"><small><KpiIcon d={ICONS.pill} />Most given out</small><strong className="fc-season-top">{top.medicine_name}</strong><span>{perMonthText(top.avg_per_month, top.unit)} / month</span></div>
             <div className="da-kpi t-ready"><small><KpiIcon d={ICONS.box} />Medicines given out</small><strong>{season.medicines.length}</strong><span>different medicines this season</span></div>
-            <div className="da-kpi t-review"><small><KpiIcon d={ICONS.calendar} />Records used</small><strong>{season.partial ? '—' : monthsText(used.length)}</strong><span>{basis}</span></div>
+            <div className="da-kpi t-forecast"><small><KpiIcon d={ICONS.calendar} />Records used</small><strong>{season.partial ? '—' : monthsText(used.length)}</strong><span>{basis}</span></div>
           </div>
           {season.provisional && (
             <Message type="info">
