@@ -338,8 +338,9 @@ export default function Profile() {
               <h2><span className="fb-sec-icon"><Svg d={ICON.user} size={17} /></span>Personal Information</h2>
             </div>
             <div className="fb-sec-body pf-fields">
+              {/* The registered name and barangay identify the resident (no duplicate records): they cannot be changed here. */}
               <label className="pf-field-wide">Full Name
-                <input value={form.name} onChange={set('name')} autoComplete="name" required maxLength={100} {...FIELD.name} />
+                <input value={form.name} readOnly aria-readonly="true" className="pf-locked" title="Your registered name cannot be changed" />
               </label>
               <label><span>Contact Number <span className="pf-optional">(for log in and SMS)</span></span>
                 <input type="tel" inputMode="tel" value={form.contact_no} onChange={set('contact_no')} placeholder="09XXXXXXXXX" required maxLength={16} {...FIELD.mobile} />
@@ -348,11 +349,16 @@ export default function Profile() {
                 <input type="email" value={form.email} onChange={set('email')} placeholder="name@gmail.com" autoComplete="email" maxLength={255} {...FIELD.gmail} />
               </label>
               <label>Barangay
-                <select value={form.barangay} onChange={set('barangay')} required>
-                  <option value="">{barangays ? 'Select your barangay…' : 'Loading barangays…'}</option>
-                  {barangays?.map((b) => <option key={b} value={b}>{b}</option>)}
-                </select>
+                {data.barangay ? (
+                  <input value={data.barangay} readOnly aria-readonly="true" className="pf-locked" title="Your registered barangay cannot be changed" />
+                ) : (
+                  <select value={form.barangay} onChange={set('barangay')} required>
+                    <option value="">{barangays ? 'Select your barangay…' : 'Loading barangays…'}</option>
+                    {barangays?.map((b) => <option key={b} value={b}>{b}</option>)}
+                  </select>
+                )}
               </label>
+              <p className="field-hint pf-field-wide pf-locked-note">Your registered name and barangay cannot be changed. If they are wrong, ask the Botika ng Bayan administrator.</p>
               <label><span>House Number / Street / Purok <span className="pf-optional">(optional)</span></span>
                 <input value={form.address_line} onChange={set('address_line')} maxLength={120} placeholder="e.g. Purok 3, Rizal St." />
               </label>

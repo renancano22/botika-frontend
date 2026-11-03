@@ -48,6 +48,7 @@ export default function Register() {
         <label>Full name
           <input value={form.name} onChange={set('name')} autoComplete="name" required maxLength={100} {...FIELD.name} {...fe.invalid('name')} />
           {fe.error('name')}
+          {!fe.fields.name && <span className="field-hint">Your full name and barangay cannot be changed after you register, so check them carefully.</span>}
         </label>
 
         <label>Barangay (Bulan, Sorsogon)
