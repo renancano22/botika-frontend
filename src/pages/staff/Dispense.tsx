@@ -5,7 +5,7 @@ import { useApi } from '../../hooks';
 import { Badge, Card, Empty, Message, Modal } from '../../components/ui';
 import { PrescriptionViewer, requiresPrescription, RX_ICON, RxBadge } from '../../components/Prescription';
 import { prescriptionStatus } from '../../components/RequestDetailParts';
-import { ICONS, isMixed, SourceTag, Svg, unitPlural } from '../../components/RequestCards';
+import { ICONS, isMixed, RequestNo, SourceTag, Svg, unitPlural } from '../../components/RequestCards';
 import type { Medicine, MedicineRequest } from '../../types';
 import { MAX_WALK_IN_QUANTITY, quantityWarning } from '../../validation';
 import QrScanner from './QrScanner';
@@ -340,16 +340,32 @@ export default function Dispense() {
           <Card title="Dispensing history of this resident">
             {found.dispensing_history.length === 0 ? <Empty>No previous dispensing.</Empty> : (
               <table>
-                <thead><tr><th>Date</th><th>Medicines</th><th>Dispensed by</th><th>Status</th></tr></thead>
+                <thead><tr><th>Date</th><th>Request</th><th>Medicines</th><th>Dispensed by</th><th>Status</th></tr></thead>
                 <tbody>
-                  {found.dispensing_history.map((d) => (
-                    <tr key={d.dispensing_id}>
-                      <td className="nowrap">{formatDate(d.dispensed_at, true)}</td>
-                      <td>{d.items.map((i) => `${i.medicine.medicine_name} ×${i.quantity}${isMixed(d.items) ? (i.source === 'walk_in' ? ' (walk-in)' : ' (request)') : ''}`).join(', ')}</td>
-                      <td>{d.dispenser?.name ?? '—'}</td>
-                      <td><Badge value="dispensed" /></td>
-                    </tr>
-                  ))}
+                  {found.dispensing_history.map((d) => {
+                    // Walk-in, online request, or an online request with medicines asked for in person (same visit).
+                    const walkInOnly = d.request?.remarks === 'Walk-in';
+                    const mixed = !walkInOnly && isMixed(d.items);
+                    return (
+                      <tr key={d.dispensing_id}>
+                        <td className="nowrap">{formatDate(d.dispensed_at, true)}</td>
+                        <td className="nowrap">
+                          <RequestNo id={d.request_id} />
+                          <div>
+                            <span className={`dr-tag ${walkInOnly ? 'dr-tag-walkin' : ''}`}>{walkInOnly ? 'Walk-in' : 'Online request'}</span>
+                            {mixed && <span className="dr-tag dr-tag-walkin">+ Walk-in</span>}
+                          </div>
+                        </td>
+                        <td>
+                          {d.items.map((i, n) => (
+                            <span key={i.dispensing_item_id}>{n > 0 && ', '}{i.medicine.medicine_name} ×{i.quantity}{mixed && <> <SourceTag source={i.source} /></>}</span>
+                          ))}
+                        </td>
+                        <td>{d.dispenser?.name ?? '—'}</td>
+                        <td><Badge value="dispensed" /></td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             )}
