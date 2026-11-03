@@ -7,7 +7,7 @@ import { PrescriptionViewer, requiresPrescription, RX_ICON, RxBadge } from '../.
 import { prescriptionStatus } from '../../components/RequestDetailParts';
 import { ICONS, isMixed, SourceTag, Svg, unitPlural } from '../../components/RequestCards';
 import type { Medicine, MedicineRequest } from '../../types';
-import { MAX_REQUEST_QUANTITY, quantityWarning } from '../../validation';
+import { MAX_WALK_IN_QUANTITY, quantityWarning } from '../../validation';
 import QrScanner from './QrScanner';
 import { jumpWhenReady } from '../../scroll';
 import BackButton from '../../components/BackButton';
@@ -178,18 +178,12 @@ export default function Dispense() {
   const walkInTotal = walkIn.reduce((s, i) => s + (Number.isFinite(i.quantity) ? i.quantity : 0), 0);
   const walkInWarnings = walkIn.map((i) => {
     const m = medicines?.find((x) => x.medicine_id === i.medicine_id);
-    return m ? quantityWarning(i.quantity, unitPlural(m.unit), { available: m.free_stock ?? m.available_stock }) : null;
+    // Walk-in: 1 to 100 of each medicine (the staff or administrator decides), up to the stock that is free.
+    return m ? quantityWarning(i.quantity, unitPlural(m.unit), { available: m.free_stock ?? m.available_stock, max: MAX_WALK_IN_QUANTITY }) : null;
   });
   const walkInRx = walkIn.map((i) => medicines?.find((m) => m.medicine_id === i.medicine_id)).filter((m): m is Medicine => !!m?.requires_prescription);
   const cartIncomplete = walkIn.some((i) => !i.medicine_id) || walkInWarnings.some(Boolean);
   const hasApproved = (found?.approved_requests.length ?? 0) > 0;
-  // The limit per medicine counts the request and the same medicine asked for in person together.
-  const limitWarning = (r: MedicineRequest, item: { medicine_id: number; quantity: number }) => {
-    const inRequest = r.items.filter((i) => i.medicine_id === item.medicine_id).reduce((a, i) => a + (i.quantity ?? 0), 0);
-    if (!inRequest || inRequest + item.quantity <= MAX_REQUEST_QUANTITY) return null;
-    const left = Math.max(0, MAX_REQUEST_QUANTITY - inRequest);
-    return `Already ${inRequest} in this request. At most ${MAX_REQUEST_QUANTITY} per medicine, so ${left ? `add at most ${left}` : 'no more can be added'}.`;
-  };
   const openDispense = (r: MedicineRequest) => {
     setRxChecked(false); setConfirming(r); // always confirmed first (the medicines, prescription check, walk-in additions)
   };
@@ -285,12 +279,12 @@ export default function Dispense() {
                         <option value={0}>Select medicine…</option>
                         {available.map((m) => <option key={m.medicine_id} value={m.medicine_id}>{m.medicine_name} ({m.free_stock ?? m.available_stock} {m.unit} free)</option>)}
                       </select>
-                      <input type="number" min={1} max={MAX_REQUEST_QUANTITY} value={item.quantity} onChange={(e) => setWalkIn(walkIn.map((x, i) => (i === idx ? { ...x, quantity: Number(e.target.value) } : x)))} aria-label={`Quantity ${idx + 1}`} />
+                      <input type="number" min={1} max={MAX_WALK_IN_QUANTITY} value={item.quantity} onChange={(e) => setWalkIn(walkIn.map((x, i) => (i === idx ? { ...x, quantity: Number(e.target.value) } : x)))} aria-label={`Quantity ${idx + 1}`} />
                       <button type="button" className="btn-ghost dv-remove" onClick={() => setWalkIn(walkIn.filter((_, i) => i !== idx))} aria-label="Remove medicine" title="Remove"><Svg d={ICONS.x} size={18} /></button>
                       {walkInWarnings[idx] && <p className="field-warning walkin-warning">{walkInWarnings[idx]}</p>}
                     </div>
                   ))}
-                  <p className="field-hint">Up to {MAX_REQUEST_QUANTITY} per medicine · Total: {walkInTotal}. Stock is taken from the earliest-expiring batch.</p>
+                  <p className="field-hint">Up to {MAX_WALK_IN_QUANTITY} per medicine · Total: {walkInTotal}. Stock is taken from the earliest-expiring batch.</p>
                   {walkInRx.length > 0 && (
                     <div className="rx-box">
                       <strong><Svg d={RX_ICON} size={18} width={2.4} /> Prescription medicine</strong>
@@ -375,11 +369,9 @@ export default function Dispense() {
                 ))}
                 {walkIn.map((i, n) => {
                   const m = medName(i.medicine_id);
-                  const warn = limitWarning(confirming, i);
                   return (
                     <li key={`w${n}`}>
                       <span>{m?.medicine_name} <SourceTag source="walk_in" /></span><b>{i.quantity} {m ? (i.quantity === 1 ? m.unit : unitPlural(m.unit)) : ''}</b>
-                      {warn && <p className="field-warning">{warn}</p>}
                     </li>
                   );
                 })}
@@ -406,7 +398,7 @@ export default function Dispense() {
           </div>}
           <div className="modal-actions">
             <button className="btn btn-outline" onClick={() => setConfirming(null)} disabled={busy}>Cancel</button>
-            <button className="btn" disabled={busy || ((requiresPrescription(confirming) || walkInRx.length > 0) && !rxChecked) || walkIn.some((i) => limitWarning(confirming, i))}
+            <button className="btn" disabled={busy || ((requiresPrescription(confirming) || walkInRx.length > 0) && !rxChecked)}
               onClick={() => dispenseRequest(confirming)}>{busy ? 'Dispensing…' : walkIn.length ? `Confirm and Dispense all (${confirming.items.length + walkIn.length})` : 'Confirm and Dispense'}</button>
           </div>
         </Modal>

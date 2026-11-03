@@ -54,20 +54,28 @@ export function tomorrow(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-/** Most a resident can ask for of one medicine in a medicine request, also per medicine in a walk-in release
- *  (same as the backend setting). Restock requests have no quantity. */
+/** Most a resident can ask for of one medicine in an online medicine request (same as the backend setting).
+ *  Restock requests have no quantity. */
 export const MAX_REQUEST_QUANTITY = 10;
+/** Walk-in releases: 1 to this many of each medicine (keep in sync with botika.max_walk_in_quantity in the backend). */
+export const MAX_WALK_IN_QUANTITY = 100;
 
 /**
  * Checks a requested quantity and returns a warning to show under the field, or null when it is fine.
  * `available` limits medicine requests; `min` is used by restock requests (must be more than what is left).
  */
-export function quantityWarning(quantity: number, unit: string, opts: { available?: number; min?: number } = {}): string | null {
+/** max: most per medicine (default: the limit of an online request; walk-in uses MAX_WALK_IN_QUANTITY). */
+export function quantityWarning(quantity: number, unit: string, opts: { available?: number; min?: number; max?: number } = {}): string | null {
   const min = opts.min ?? 1;
+  const max = opts.max ?? MAX_REQUEST_QUANTITY;
+  const walkIn = opts.max !== undefined && opts.max !== MAX_REQUEST_QUANTITY;
   if (!Number.isFinite(quantity) || !Number.isInteger(quantity)) return 'Enter a whole number.';
   if (quantity < min) return min > 1 ? `Enter more than ${min - 1} ${unit} (that much is still available).` : 'Enter at least 1.';
-  if (quantity > MAX_REQUEST_QUANTITY) return `You can request at most ${MAX_REQUEST_QUANTITY} ${unit} per medicine.`;
-  if (opts.available !== undefined && quantity > opts.available) return `Only ${opts.available} ${unit} available right now. Lower the quantity, or send a restock request for more.`;
+  if (quantity > max) return walkIn ? `At most ${max} ${unit} can be given per medicine.` : `You can request at most ${max} ${unit} per medicine.`;
+  if (opts.available !== undefined && quantity > opts.available) {
+    return walkIn ? `Only ${opts.available} ${unit} can be given right now (stock not set aside for approved requests).`
+      : `Only ${opts.available} ${unit} available right now. Lower the quantity, or send a restock request for more.`;
+  }
   return null;
 }
 
