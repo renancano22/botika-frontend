@@ -396,3 +396,15 @@ export interface PageMeta {
   to: number | null;
 }
 export interface Paged<T> { data: T[]; meta: PageMeta }
+
+/** A notification for the administrator / pharmacy staff (the bell): residents' new or cancelled requests. */
+export interface StaffNotification {
+  staff_notification_id: number;
+  type: 'new_request' | 'new_restock' | 'request_cancelled' | string;
+  title: string;
+  message: string;
+  request_id: number | null;
+  link: string | null;
+  read_at: string | null;
+  created_at: string;
+}

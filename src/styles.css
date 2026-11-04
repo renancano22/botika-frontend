@@ -2363,3 +2363,19 @@ tr.row-hit > td:first-child { box-shadow: inset 4px 0 0 #eab308; }
 .splash-reduced *, .splash-reduced { animation: none !important; }
 .splash-reduced.splash-leaving { transform: none; filter: none; }
 @media (prefers-reduced-motion: reduce) { .auth-card-in { animation: none; } }
+
+/* ---------- Admin / staff notifications (bell): residents' new and cancelled requests. Unread: tinted with a dot. */
+.snotif-list { list-style: none; margin: 0; padding: 0 8px 8px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; }
+.snotif { width: 100%; display: flex; align-items: flex-start; gap: 10px; padding: 10px; border: none; border-radius: 12px; background: transparent;
+  text-align: left; font: inherit; color: inherit; cursor: pointer; }
+.snotif:hover, .snotif:focus-visible { background: var(--bg); }
+.snotif.is-unread { background: color-mix(in srgb, var(--k) 8%, white); }
+.snotif.is-unread:hover { background: color-mix(in srgb, var(--k) 13%, white); }
+.snotif-icon { width: 34px; height: 34px; border-radius: 9px; display: grid; place-items: center; flex-shrink: 0; background: var(--k); color: #fff; }
+.snotif.is-read .snotif-icon { background: color-mix(in srgb, var(--k) 14%, white); color: var(--k); }
+.snotif-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.snotif-text strong { font-size: 0.9rem; }
+.snotif-text span { font-size: 0.84rem; color: #475569; line-height: 1.35; overflow-wrap: anywhere; }
+.snotif-text small { font-size: 0.74rem; color: var(--muted); }
+.snotif.is-read .snotif-text strong { font-weight: 600; color: #475569; }
+.snotif-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--k); flex-shrink: 0; margin-top: 6px; }

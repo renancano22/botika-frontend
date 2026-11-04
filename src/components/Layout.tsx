@@ -7,6 +7,7 @@ import { Avatar } from './ui';
 import { NAV_STATE } from './BackButton';
 import { NotificationBell } from './Notifications';
 import { ExpiryBell } from './ExpiryAlerts';
+import { StaffNotificationBell } from './StaffNotifications';
 
 /* Simple line icons (drawn with SVG so no extra package is needed). */
 const ICONS: Record<string, string> = {
@@ -140,6 +141,8 @@ export default function Layout() {
           </div>
         </NavLink>
         <div className="topbar-actions">
+          {/* Admin and staff: notifications (bell: residents' requests) and, separately, alerts (triangle: stock problems). */}
+          {user.role !== 'resident' && <StaffNotificationBell />}
           {user.role !== 'resident' && can('inventory.view|inventory.manage') && <ExpiryBell />}
           {user.role === 'resident' && can('notifications.view') && <NotificationBell />}
           {/* Everyone: the picture or initial opens My Profile. */}
