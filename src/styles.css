@@ -2305,3 +2305,45 @@ tr.row-hit > td:first-child { box-shadow: inset 4px 0 0 #eab308; }
 .pickup-warn p { display: flex; gap: 6px; align-items: flex-start; margin: 0; }
 .pickup-warn p + p { margin-top: 4px; }
 .pickup-warn svg { flex-shrink: 0; margin-top: 2px; }
+
+/* ---------- Splash screen before the Login page: logo zooms in, name and tagline appear, then it fades to the login. */
+.splash {
+  position: fixed; inset: 0; z-index: 200; display: grid; place-items: center; overflow: hidden; cursor: pointer; color: #fff;
+  background: radial-gradient(circle at 50% 42%, rgba(255, 255, 255, 0.14) 0, rgba(255, 255, 255, 0) 42%),
+    linear-gradient(135deg, var(--brand-900) 0%, #1c6a2c 55%, var(--primary) 100%);
+  transition: opacity 0.6s ease, transform 0.6s ease, filter 0.6s ease;
+}
+.splash-leaving { opacity: 0; transform: scale(1.04); filter: blur(2px); pointer-events: none; }
+.splash-glow { position: absolute; width: 520px; height: 520px; border-radius: 50%; background: radial-gradient(circle, rgba(134, 239, 172, 0.22), rgba(134, 239, 172, 0) 65%);
+  animation: splash-breathe 3s ease-in-out infinite; }
+.splash-content { position: relative; display: flex; flex-direction: column; align-items: center; text-align: center; padding: 24px; }
+.splash-logo { position: relative; width: 112px; height: 112px; display: grid; place-items: center; margin-bottom: 22px;
+  animation: splash-zoom 0.9s cubic-bezier(0.2, 0.9, 0.25, 1.15) both; }
+.splash-mark { width: 112px; height: 112px; filter: drop-shadow(0 14px 28px rgba(0, 0, 0, 0.28)); }
+.splash-mark rect { fill: #fff; }
+.splash-mark path { fill: var(--primary); }
+.splash-ring { position: absolute; inset: 0; border-radius: 30px; border: 2px solid rgba(255, 255, 255, 0.55); animation: splash-ring 2s ease-out 0.6s infinite; opacity: 0; }
+.splash-ring-2 { animation-delay: 1.3s; }
+.splash-name { margin: 0; font-size: clamp(1.9rem, 6vw, 2.6rem); font-weight: 800; letter-spacing: -0.02em; color: #fff;
+  animation: splash-up 0.7s ease-out 0.55s both; }
+.splash-name span { color: #bbf7d0; }
+.splash-place { margin: 8px 0 0; font-size: clamp(0.9rem, 3.2vw, 1rem); font-weight: 600; color: rgba(220, 252, 231, 0.9); letter-spacing: 0.02em; animation: splash-up 0.7s ease-out 0.85s both; }
+.splash-progress { width: 160px; height: 4px; margin-top: 26px; border-radius: 999px; background: rgba(255, 255, 255, 0.18); overflow: hidden;
+  animation: splash-up 0.5s ease-out 1.1s both; }
+.splash-progress span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #86efac, #fff);
+  transform-origin: left; animation: splash-fill 1.7s ease-in-out 1.15s both; }
+.splash-skip { position: absolute; bottom: max(20px, env(safe-area-inset-bottom)); font-size: 0.75rem; color: rgba(255, 255, 255, 0.55);
+  animation: splash-up 0.5s ease-out 1.4s both; }
+@keyframes splash-zoom { 0% { opacity: 0; transform: scale(0.55); } 100% { opacity: 1; transform: scale(1); } }
+@keyframes splash-up { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+@keyframes splash-fill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes splash-ring { 0% { opacity: 0.7; transform: scale(1); } 100% { opacity: 0; transform: scale(1.6); } }
+@keyframes splash-breathe { 0%, 100% { transform: scale(0.94); opacity: 0.8; } 50% { transform: scale(1.06); opacity: 1; } }
+/* The login card comes in after the splash. */
+.auth-card-wait { opacity: 0; } /* hidden under the splash, so it does not show through while the splash fades */
+.auth-card-in { animation: auth-card-in 0.55s cubic-bezier(0.2, 0.8, 0.3, 1) both; }
+@keyframes auth-card-in { from { opacity: 0; transform: translateY(16px) scale(0.98); } to { opacity: 1; transform: none; } }
+/* "Reduce motion": no zooming or moving, only a short fade. */
+.splash-reduced *, .splash-reduced { animation: none !important; }
+.splash-reduced.splash-leaving { transform: none; filter: none; }
+@media (prefers-reduced-motion: reduce) { .auth-card-in { animation: none; } }

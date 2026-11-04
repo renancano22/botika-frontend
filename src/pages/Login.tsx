@@ -4,6 +4,7 @@ import { SESSION_NOTICE_KEY } from '../api';
 import { useAuth } from '../auth';
 import { Message, PasswordInput } from '../components/ui';
 import { toast, useFormErrors } from '../components/feedback';
+import SplashScreen, { splashSeen } from '../components/SplashScreen';
 
 export default function Login() {
   const { login: signIn } = useAuth();
@@ -13,6 +14,8 @@ export default function Login() {
   const [busy, setBusy] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+  // Animated splash screen before the Login page (once per browser session), then the login card comes in.
+  const [splash, setSplash] = useState(() => !splashSeen());
 
   // One short pop-up message (outside the card, it closes by itself): after logging out, after the session
   // expired, or after a new password was set on the Forgot Password page. Shown once, not again on refresh.
@@ -50,7 +53,8 @@ export default function Login() {
 
   return (
     <div className="auth-page">
-      <form className="auth-card" onSubmit={submit}>
+      {splash && <SplashScreen onDone={() => setSplash(false)} />}
+      <form className={`auth-card ${splash ? 'auth-card-wait' : 'auth-card-in'}`} onSubmit={submit} aria-hidden={splash || undefined}>
         <div className="brand brand-center">
           <span className="brand-mark">✚</span>
           <div><strong>BulanBotikaCare</strong><small>Botika ng Bayan · Bulan, Sorsogon</small></div>
