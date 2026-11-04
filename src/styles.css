@@ -23,14 +23,14 @@
 
   /* Request status colour palette: health-care colours that go with the pharmacy green
      (blue = submitted, amber = waiting for review, green = approved / completed, teal = ready, red = rejected,
-     grey = cancelled, brown-orange = expired). No purple or pink. */
+     red = rejected / cancelled, brown-orange = expired). No purple or pink. */
   --st-submitted: #2563eb;
   --st-review: #d97706;
   --st-approved: #16a34a;
   --st-ready: #0891b2;
   --st-completed: #1b6e2d;
   --st-rejected: #dc2626;
-  --st-cancelled: #475569;
+  --st-cancelled: #dc2626;
   --st-expired: #9a3412;
 
   font-family: 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
@@ -177,7 +177,7 @@ tr.clickable:hover td { background: #f1faf3; }
 .badge-dispensed { background: var(--primary-soft); color: var(--st-completed); }
 .badge-fulfilled { background: #d1fae5; color: #047857; }
 .badge-rejected { background: #fee2e2; color: var(--st-rejected); }
-.badge-cancelled { background: #e2e8f0; color: var(--st-cancelled); }
+.badge-cancelled { background: #fee2e2; color: var(--st-cancelled); }
 .badge-expired { background: #ffedd5; color: var(--st-expired); }
 .badge-empty { background: #eef2f1; color: #5f6f6b; }
 .badge-medicine, .badge-staff { background: var(--primary-soft); color: var(--primary-dark); }
@@ -1758,15 +1758,17 @@ a.db-person:hover { background: rgba(255, 255, 255, 0.2); }
 @media (hover: hover) { .db-req-item[class*=' t-']:hover { transform: translateY(-2px); } }
 .db-req-item[class*=' t-']:focus-visible { outline: 2px solid color-mix(in srgb, var(--t) 50%, white); outline-offset: 2px; }
 .db-req-item[class*=' t-']:active { transform: scale(0.98); }
-/* Phones (two cards per row): the icon above the text, a little smaller. */
+/* Phones (two cards per row): compact cards, a small icon beside the text, so the cards don't fill the screen. */
 @media (max-width: 600px) {
-  .db-req:has(.db-req-item[class*=' t-']) { gap: 10px; }
-  .db-req-item[class*=' t-'] { grid-template-columns: minmax(0, 1fr); row-gap: 8px; padding: 12px; }
-  .db-req-item[class*=' t-'] .db-req-icon { display: grid; width: 32px; height: 32px; border-radius: 8px; }
-  .db-req-item[class*=' t-'] .db-req-icon svg { width: 17px; height: 17px; }
-  .db-req-item[class*=' t-'] .db-req-label { font-size: 0.8rem; }
-  .db-req-item[class*=' t-'] .db-req-value { font-size: 1.5rem; margin: 0; }
-  .db-req-item[class*=' t-'] .db-req-hint { font-size: 0.74rem; }
+  .db-req:has(.db-req-item[class*=' t-']) { gap: 8px; }
+  .db-req-item[class*=' t-'] { column-gap: 10px; padding: 10px 12px; border-radius: 10px; }
+  .db-req-item[class*=' t-'] .db-req-icon { display: grid; width: 30px; height: 30px; border-radius: 8px; box-shadow: none; }
+  .db-req-item[class*=' t-'] .db-req-icon svg { width: 16px; height: 16px; }
+  .db-req-text { gap: 1px; }
+  .db-req-item[class*=' t-'] .db-req-label { font-size: 0.78rem; line-height: 1.25; }
+  .db-req-item[class*=' t-'] .db-req-value { font-size: 1.3rem; line-height: 1.15; margin: 0; }
+  .db-req-item[class*=' t-'] .db-req-hint { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    font-size: 0.72rem; line-height: 1.3; }
 }
 @media (prefers-reduced-motion: reduce) { .db-req-item[class*=' t-'] { transition: none; transform: none !important; } }
 
@@ -2152,7 +2154,7 @@ td.col-no { font-weight: 600; }
 .da-approved { background: #0ea5e9; }
 .da-dispensed { background: #228b39; }
 .da-rejected { background: #dc2626; }
-.da-cancelled { background: #94a3b8; }
+.da-cancelled { background: #f87171; } /* red like rejected, lighter so the two parts of the bar can be told apart */
 .da-expired { background: #9a3412; }
 .da-charts { margin-bottom: 14px; }
 .da-chart { border: 1px solid var(--border); border-radius: 14px; padding: 12px 12px 6px; min-width: 0; }
