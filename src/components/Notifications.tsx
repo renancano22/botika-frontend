@@ -93,8 +93,10 @@ export function NotificationItem({ n, compact = false }: { n: SmsNotification; c
         <span className="notif-text">
           <span className="notif-title">{titleOf(n)}{unread && <span className="notif-dot" aria-label="Unread" />}</span>
           <span className="notif-message">{cleanMessage(n.message)}</span>
-          <span className="notif-meta">{timeAgo(n.sent_at)}</span>
-          {!compact && <span className="notif-view">View details →</span>}
+          <span className="notif-foot">
+            <span className="notif-meta">{timeAgo(n.sent_at)}</span>
+            {!compact && <span className="notif-view">View details →</span>}
+          </span>
         </span>
       </button>
     </li>

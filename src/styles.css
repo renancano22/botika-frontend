@@ -2381,3 +2381,25 @@ tr.row-hit > td:first-child { box-shadow: inset 4px 0 0 #eab308; }
 .snotif-text small { font-size: 0.74rem; color: var(--muted); }
 .snotif.is-read .snotif-text strong { font-weight: 600; color: #475569; }
 .snotif-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--k); flex-shrink: 0; margin-top: 6px; }
+
+/* ---------- Message text: readable sizes and spacing. Lists show a short preview of each message;
+   the full message is on Notification Details (tap the card). */
+.notif-title { font-size: 0.95rem; line-height: 1.3; }
+.notif-message { font-size: 0.875rem; line-height: 1.5; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden; }
+.notif-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 4px; }
+.notif-foot .notif-view { margin-top: 0; white-space: nowrap; }
+.notif-meta { font-size: 0.76rem; }
+.bell-panel .notif-title { font-size: 0.9rem; }
+.bell-panel .notif-message, .db-panel .notif-message { -webkit-line-clamp: 2; line-clamp: 2; font-size: 0.84rem; }
+.snotif-text strong { line-height: 1.3; }
+.snotif-text span { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; line-height: 1.45; }
+.notif-bubble { font-size: 0.95rem; line-height: 1.65; }
+.vstep-text { font-size: 0.88rem; line-height: 1.5; }
+.info-box p, .status-box p { line-height: 1.5; }
+.info-box p.pickup-rule { margin-top: 8px; padding: 10px 12px; border-radius: 10px; background: rgba(255, 255, 255, 0.7); font-size: 0.86rem; }
+.info-box small { line-height: 1.45; }
+@media (max-width: 600px) {
+  .notif-body { padding: 12px; gap: 12px; }
+  .notif-icon { width: 40px; height: 40px; border-radius: 12px; }
+  .notif-bubble { font-size: 0.92rem; padding: 12px 14px; }
+}
