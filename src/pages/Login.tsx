@@ -17,8 +17,8 @@ export default function Login() {
   // Animated splash screen before the Login page (once per browser session), then the login card comes in.
   const [splash, setSplash] = useState(() => !splashSeen());
 
-  // One short pop-up message (outside the card, it closes by itself): after logging out, after the session
-  // expired, or after a new password was set on the Forgot Password page. Shown once, not again on refresh.
+  // One short pop-up message (outside the card, it closes by itself): after the session expired, or after a new
+  // password was set on the Forgot Password page. Shown once, not again on refresh. (No message after logging out.)
   useEffect(() => {
     let session = '';
     try {
@@ -29,8 +29,6 @@ export default function Login() {
     if (notice) {
       toast.success('Password changed', { description: notice });
       navigate(location.pathname, { replace: true, state: null });
-    } else if (session === 'logged_out') {
-      toast.success('Logged out', { description: 'You have safely logged out of BulanBotikaCare.' });
     } else if (session === 'expired') {
       toast.warning('Session expired', { description: 'For your security, you were logged out. Please log in again to continue.' });
     }
