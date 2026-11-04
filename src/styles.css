@@ -2299,3 +2299,9 @@ tr.row-hit > td:first-child { box-shadow: inset 4px 0 0 #eab308; }
 
 /* User Accounts: a resident registered at the counter (has a Resident ID but no log-in account). */
 .no-account-badge { display: inline-block; margin-top: 3px; padding: 1px 8px; border-radius: 999px; font-size: 0.72rem; font-weight: 700; background: #eef2f1; color: #475569; border: 1px dashed #cbd5d1; white-space: nowrap; }
+
+/* Approved request whose set-aside medicine expires before pickup (or is no longer enough). */
+.pickup-warn { margin-top: 6px; padding: 6px 8px; border-radius: 8px; background: #fff7ed; border: 1px solid #fed7aa; color: #9a3412; font-size: 0.8rem; font-weight: 600; white-space: normal; max-width: 340px; }
+.pickup-warn p { display: flex; gap: 6px; align-items: flex-start; margin: 0; }
+.pickup-warn p + p { margin-top: 4px; }
+.pickup-warn svg { flex-shrink: 0; margin-top: 2px; }

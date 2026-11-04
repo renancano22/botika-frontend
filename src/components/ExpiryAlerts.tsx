@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { api, formatDate } from '../api';
-import type { Alerts, InventoryBatch } from '../types';
+import type { Alerts, InventoryBatch, PickupRisk } from '../types';
 import { ICONS, quantityText, Svg } from './RequestCards';
 
 /** Whole days from today until the expiration date (0 = expires today, negative = already expired). */
@@ -17,6 +17,26 @@ export function expiryText(b: InventoryBatch): string {
   if (days < 0) return `expired on ${formatDate(b.expiration_date)}`;
   if (days === 0) return 'expires today';
   return `expires in ${days} day${days === 1 ? '' : 's'} (${formatDate(b.expiration_date)})`;
+}
+
+/** What to tell the staff about a set-aside medicine that may not be there at pickup. */
+export function pickupRiskText(w: PickupRisk): string {
+  if (w.reason === 'not_enough') {
+    return `${w.medicine_name}: not enough unexpired stock for the approved requests (${w.unexpired_stock} left, ${w.set_aside} set aside). Record a stock-in before the resident comes.`;
+  }
+  return `${w.medicine_name}: the stock set aside expires on ${w.expires_on ? formatDate(w.expires_on) : 'soon'}, before the pickup deadline${w.claim_by ? ` (${formatDate(w.claim_by)})` : ''}. Ask the resident to claim it before then, or record a stock-in.`;
+}
+
+/** Warning lines under an approved request (Requests list, Dispense Medicine). */
+export function PickupWarnings({ warnings }: { warnings?: PickupRisk[] | null }) {
+  if (!warnings?.length) return null;
+  return (
+    <div className="pickup-warn" role="note">
+      {warnings.map((w) => (
+        <p key={w.medicine_id}><Svg d={ICONS.clock} size={14} width={2.4} /> <span>{pickupRiskText(w)}</span></p>
+      ))}
+    </div>
+  );
 }
 
 /** Near-expiry and expired batches for admin and staff, refreshed every minute. */
@@ -63,7 +83,8 @@ export function ExpiryBell() {
   const location = useLocation();
   const near = alerts?.near_expiry ?? [];
   const expired = alerts?.expired ?? [];
-  const count = near.length + expired.length;
+  const risks = alerts?.pickup_risks ?? [];
+  const count = near.length + expired.length + risks.length;
 
   useEffect(() => { setOpen(false); }, [location.pathname, location.search]);
   useEffect(() => {
@@ -83,7 +104,7 @@ export function ExpiryBell() {
   return (
     <div className="bell" ref={ref}>
       <button type="button" className={`topbar-icon alert-icon ${count > 0 ? 'has-alerts' : ''}`} onClick={() => setOpen(!open)} aria-expanded={open}
-        aria-label={count ? `Expiry alerts, ${count} batches` : 'Expiry alerts'} title="Expiry alerts">
+        aria-label={count ? `Expiry alerts, ${count}` : 'Expiry alerts'} title="Expiry alerts">
         {/* Warning triangle: these are alerts about stock (residents' notifications use the bell).
             Amber with a dark "!" while there are alerts; a plain outline when there are none. */}
         <svg viewBox="0 0 24 24" width={24} height={24} aria-hidden="true">
@@ -96,12 +117,27 @@ export function ExpiryBell() {
         <div className="bell-panel" role="dialog" aria-label="Expiry alerts">
           <div className="bell-head">
             <strong>Expiry alerts</strong>
-            {count > 0 && <span className="muted small">{count} batch{count === 1 ? '' : 'es'}</span>}
+            {count > 0 && <span className="muted small">{count} alert{count === 1 ? '' : 's'}</span>}
           </div>
           {!alerts ? <p className="empty">Loading…</p> : count === 0 ? (
-            <p className="empty">No medicine will expire within 1 month.</p>
+            <p className="empty">No medicine will expire within 1 month, and every approved request's medicine is in stock.</p>
           ) : (
             <ul className="expiry-list">
+              {/* Approved requests first: a resident is coming for medicine that may not be there. */}
+              {risks.map((w) => (
+                <li key={`${w.request_id}-${w.medicine_id}`}>
+                  <Link to={`/requests?type=medicine&status=approved&q=${encodeURIComponent(`#${w.request_id}`)}`} onClick={() => setOpen(false)}
+                    className={`expiry-item expiry-link ${w.reason === 'not_enough' ? 'k-rejected' : 'k-reminder'}`} title="Open this approved request">
+                    <span className="expiry-icon kicon"><Svg d={ICONS.clock} size={18} width={2.2} /></span>
+                    <span className="expiry-text">
+                      <strong>Request No. {w.request_id} · {w.resident}</strong>
+                      <span>{quantityText(w.quantity, w.unit)} of {w.medicine_name} set aside</span>
+                      <span className="expiry-when">{w.reason === 'not_enough' ? 'Not enough unexpired stock left' : `Expires ${w.expires_on ? formatDate(w.expires_on) : 'soon'}, before pickup`}</span>
+                    </span>
+                    <span className="expiry-go" aria-hidden="true"><Svg d={ICONS.chevron} size={18} width={2.4} /></span>
+                  </Link>
+                </li>
+              ))}
               {expired.map((b) => <BatchLine key={b.inventory_id} b={b} expired onOpen={() => setOpen(false)} />)}
               {near.map((b) => <BatchLine key={b.inventory_id} b={b} expired={false} onOpen={() => setOpen(false)} />)}
             </ul>

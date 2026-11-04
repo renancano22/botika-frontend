@@ -131,6 +131,25 @@ export interface Alerts {
   low_stock: LowStockAlert[];
   near_expiry: InventoryBatch[];
   expired: InventoryBatch[];
+  /** Approved requests whose set-aside medicine expires before pickup, or is no longer enough. */
+  pickup_risks?: PickupRisk[];
+}
+
+/** A medicine set aside for an approved request that may not be there when the resident comes. */
+export interface PickupRisk {
+  request_id: number;
+  resident: string | null;
+  qr_code: string | null;
+  claim_by: string | null;
+  medicine_id: number;
+  medicine_name: string;
+  unit: string;
+  quantity: number;
+  /** expires_before_pickup: a batch expires before the pickup deadline; not_enough: the unexpired stock is already less than what is set aside. */
+  reason: 'expires_before_pickup' | 'not_enough';
+  expires_on: string | null;
+  unexpired_stock: number;
+  set_aside: number;
 }
 
 export interface RequestItem {
@@ -157,6 +176,8 @@ export type RequestStatus = 'pending' | 'approved' | 'rejected' | 'dispensed' | 
 
 export interface MedicineRequest {
   request_id: number;
+  /** Staff/admin, approved requests: set-aside medicine that expires before pickup (or is no longer enough). */
+  stock_warnings?: PickupRisk[] | null;
   resident_id: number;
   request_type: 'medicine' | 'restock';
   request_date: string;

@@ -11,6 +11,7 @@ import { MAX_WALK_IN_QUANTITY, quantityWarning } from '../../validation';
 import QrScanner from './QrScanner';
 import { jumpWhenReady } from '../../scroll';
 import BackButton from '../../components/BackButton';
+import { PickupWarnings } from '../../components/ExpiryAlerts';
 import ResidentSearch, { type ResidentLookup as Lookup } from './ResidentSearch';
 import RegisterResident from './RegisterResident';
 import { useAuth } from '../../auth';
@@ -322,6 +323,7 @@ export default function Dispense() {
                         <td>
                           {r.items.map((i) => `${i.medicine.medicine_name} ×${i.quantity}`).join(', ')}
                           {requiresPrescription(r) && <div className="rx-cell"><RxBadge small /></div>}
+                          <PickupWarnings warnings={r.stock_warnings} />
                         </td>
                         <td>{formatDate(r.reviewed_at, true)}</td>
                         <td className="right">

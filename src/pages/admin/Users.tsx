@@ -14,11 +14,15 @@ const UF_ICON = {
   key: 'M15 7a4 4 0 1 1-3.9 4.9L3 20v-3h3v-3h3l2.1-2.1A4 4 0 0 1 15 7zM16 9h.01',
 };
 import BackButton from '../../components/BackButton';
+import { useApi } from '../../hooks';
 import { alertDialog, ChangeList, confirmAction, confirmSave, LoadError, toast, useFormErrors } from '../../components/feedback';
 
-type Form = { name: string; email: string; role: Role };
+type Form = { name: string; email: string; role: Role; barangay: string };
+/** The barangay in a stored address ("Purok 2, Gate, Bulan, Sorsogon" → "Gate"), or '' when not from the list. */
+const barangayOf = (address: string | null | undefined, list: string[] | null | undefined) =>
+  (address && list?.find((b) => address === `${b}, Bulan, Sorsogon` || address.endsWith(`, ${b}, Bulan, Sorsogon`))) || '';
 /** A row of User Accounts: an account, or a resident registered at the counter without an account (user_id null). */
-type AccountRow = Omit<User, 'user_id'> & { user_id: number | null; has_account?: boolean };
+type AccountRow = Omit<User, 'user_id'> & { user_id: number | null; has_account?: boolean; has_history?: boolean };
 interface TemporaryPasswordResponse { user: User; temporary_password: string }
 /** Reset Password: staff/admin get the temporary password shown once; residents get it by SMS and email instead. */
 type ResetResponse = TemporaryPasswordResponse | { user: User; sent_to: { sms: string | null; email: string | null } };
@@ -93,12 +97,53 @@ export default function Users() {
   const { data, errorInfo, loading, reload, rows, meta } = list;
   const [editing, setEditing] = useState<User | null>(null);
   const [form, setForm] = useState<Form | null>(null);
+  const { data: barangays } = useApi<string[]>('/barangays');
   const fe = useFormErrors(['name', 'email', 'role']);
   const [busy, setBusy] = useState(false);
   // "Create online account" for a resident registered at the counter (same record, Resident ID and history).
   const [accountFor, setAccountFor] = useState<AccountRow | null>(null);
   const [accountForm, setAccountForm] = useState({ contact_no: '', email: '' });
   const afe = useFormErrors(['contact_no', 'email']);
+  // Correct the name / barangay of a resident registered at the counter, or delete such a record made by mistake.
+  const [fixing, setFixing] = useState<AccountRow | null>(null);
+  const [fixForm, setFixForm] = useState({ name: '', barangay: '' });
+  const ffe = useFormErrors(['name', 'barangay']);
+  const openFix = (r: AccountRow) => { ffe.clear(); setFixForm({ name: r.name, barangay: barangayOf(r.resident?.address, barangays) }); setFixing(r); };
+  const fixChanges = fixing ? ([
+    ['Name', fixing.name, fixForm.name.trim().replace(/\s+/g, ' ')],
+    ['Barangay', barangayOf(fixing.resident?.address, barangays), fixForm.barangay],
+  ] as const).filter(([, a, b]) => a !== b).map(([label, from, to]) => ({ label, from, to })) : [];
+  const saveFix = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!fixing?.resident || busy || !fixChanges.length) return;
+    if (!(await confirmSave({
+      title: 'Save the corrections?',
+      message: <>Resident <strong>{fixing.resident.qr_code}</strong>. The Resident ID and history stay the same.</>,
+      details: <ChangeList rows={fixChanges} />,
+    }))) return;
+    setBusy(true);
+    ffe.clear();
+    try {
+      await api.put(`/residents/${fixing.resident.resident_id}`, fixForm);
+      toast.success('Resident record corrected', { description: `${fixForm.name.trim()} (${fixing.resident.qr_code}) was updated.` });
+      setFixing(null);
+      reload(true);
+    } catch (err) { ffe.fromError(err); }
+    finally { setBusy(false); }
+  };
+  const removeResident = (r: AccountRow) => r.resident && confirmAction({
+    tone: 'danger',
+    title: 'Delete this resident record?',
+    message: <>You are about to delete <strong>{r.name}</strong> ({r.resident.qr_code}, {r.resident.address}).</>,
+    details: 'Use this only for a record made by mistake, such as a duplicate. It has no online account and no requests or dispensing records. This cannot be undone.',
+    confirmLabel: 'Delete record',
+    busyLabel: 'Deleting…',
+    onConfirm: async () => {
+      await api.delete(`/residents/${r.resident!.resident_id}`);
+      toast.success('Resident record deleted', { description: `${r.name} (${r.resident!.qr_code}) was removed.` });
+      reload(true);
+    },
+  });
   const openAccount = (r: AccountRow) => { afe.clear(); setAccountForm({ contact_no: r.resident?.contact_no ?? '', email: '' }); setAccountFor(r); };
   const createAccount = async (e: FormEvent) => {
     e.preventDefault();
@@ -129,7 +174,7 @@ export default function Users() {
     setEditing(u ?? null);
     setResetOpen(false);
     fe.clear();
-    setForm(u ? { name: u.name, email: u.email ?? '', role: u.role } : { name: '', email: '', role: 'staff' });
+    setForm(u ? { name: u.name, email: u.email ?? '', role: u.role, barangay: barangayOf(u.resident?.address, barangays) } : { name: '', email: '', role: 'staff', barangay: '' });
   };
 
   // The administrator's own password is changed with "Change password" in the menu (asks for the current one).
@@ -140,6 +185,7 @@ export default function Users() {
     ['Name', editing.name, form.name.trim()],
     ['Email', editing.email ?? '', form.email.trim().toLowerCase()],
     ['Role', ROLE_LABEL[editing.role], ROLE_LABEL[form.role]],
+    ['Barangay', editing.role === 'resident' ? barangayOf(editing.resident?.address, barangays) : '', editing.role === 'resident' ? form.barangay : ''],
   ] as const).filter(([, a, b]) => a !== b).map(([label, from, to]) => ({ label, from, to })) : [];
   const unchanged = !!editing && changes.length === 0;
 
@@ -283,7 +329,11 @@ export default function Users() {
                   </td>
                   <td>{formatDate(u.created_at)}</td>
                   <td className="right nowrap">
-                    {noAccount ? <button className="btn btn-outline btn-sm" onClick={() => openAccount(u)}>Create account</button> : <>
+                    {noAccount ? <>
+                      <button className="btn btn-outline btn-sm" onClick={() => openAccount(u)}>Create account</button>{' '}
+                      <button className="btn btn-outline btn-sm" onClick={() => openFix(u)}>Edit</button>
+                      {!u.has_history && <>{' '}<button className="btn btn-danger btn-sm" onClick={() => removeResident(u)} title="Only for a record made by mistake (no requests or dispensing records)">Delete</button></>}
+                    </> : <>
                       <button className="btn btn-outline btn-sm" onClick={() => open(u as User)}>Edit</button>{' '}
                       {u.user_id !== me?.user_id && (
                         <button className={`btn btn-sm ${u.is_active ? 'btn-danger' : ''}`} onClick={() => toggle(u as User)}>{u.is_active ? 'Deactivate' : 'Activate'}</button>
@@ -321,6 +371,14 @@ export default function Users() {
                     {editing?.role === 'resident' && <option value="resident">Resident</option>}
                   </select>{fe.error('role')}
                 </label>
+                {editing?.role === 'resident' && (
+                  <label>Barangay <span className="pf-optional">(correct it if it is wrong)</span>
+                    <select value={form.barangay} onChange={(e) => setForm({ ...form, barangay: e.target.value })} required>
+                      <option value="">Select barangay…</option>
+                      {barangays?.map((b) => <option key={b} value={b}>{b}</option>)}
+                    </select>
+                  </label>
+                )}
               </div>
             </section>
 
@@ -373,6 +431,29 @@ export default function Users() {
               {unchanged && <span className="no-change-hint">No changes yet. Edit a detail to save.</span>}
               <button type="button" className="btn btn-outline" onClick={() => setForm(null)}>Cancel</button>
               <button className="btn" disabled={busy || unchanged} title={unchanged ? 'Nothing was changed' : undefined}>{busy ? 'Saving…' : 'Save'}</button>
+            </div>
+          </form>
+        </Modal>
+      )}
+
+      {fixing && (
+        <Modal title="Correct resident record" onClose={() => !busy && setFixing(null)}>
+          <form onSubmit={saveFix}>
+            <p className="muted small">Resident ID <strong>{fixing.resident?.qr_code}</strong> · registered at the counter. Correct the name or barangay if they were entered wrong; the Resident ID and history stay the same.</p>
+            <Message>{ffe.general}</Message>
+            <label>Full name
+              <input {...FIELD.name} value={fixForm.name} onChange={(e) => setFixForm({ ...fixForm, name: e.target.value })} maxLength={100} required {...ffe.invalid('name')} />{ffe.error('name')}
+            </label>
+            <label>Barangay
+              <select value={fixForm.barangay} onChange={(e) => setFixForm({ ...fixForm, barangay: e.target.value })} required {...ffe.invalid('barangay')}>
+                <option value="">Select barangay…</option>
+                {barangays?.map((b) => <option key={b} value={b}>{b}</option>)}
+              </select>{ffe.error('barangay')}
+            </label>
+            <div className="modal-actions">
+              {!fixChanges.length && <span className="no-change-hint">No changes yet.</span>}
+              <button type="button" className="btn btn-outline" onClick={() => setFixing(null)} disabled={busy}>Cancel</button>
+              <button className="btn" disabled={busy || !fixChanges.length}>{busy ? 'Saving…' : 'Save'}</button>
             </div>
           </form>
         </Modal>

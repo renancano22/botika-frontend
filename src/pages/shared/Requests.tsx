@@ -12,6 +12,7 @@ import { prescriptionStatus } from '../../components/RequestDetailParts';
 import { isMixed, PickupCountdown, SourceTag, Svg } from '../../components/RequestCards';
 import type { MedicineRequest } from '../../types';
 import BackButton from '../../components/BackButton';
+import { PickupWarnings } from '../../components/ExpiryAlerts';
 import { Hl, HlId, rowHit } from '../../components/SearchHighlight';
 
 /** Same short list as in the SMS: "Paracetamol 500mg x10, Amoxicillin x21 and 1 more" (restock requests: names only). */
@@ -79,7 +80,10 @@ export default function Requests() {
     setParams({ type: t || 'all', status: st || 'all' }, { replace: true });
   };
   // Search, dates and sort apply to all requests (on the server); the list shows one page at a time.
-  const [search, setSearch] = useState('');
+  // ?q=#278 (from an alert) opens the list already searched for that request.
+  const [search, setSearch] = useState(() => new URLSearchParams(window.location.search).get('q') ?? '');
+  const qParam = params.get('q');
+  useEffect(() => { if (qParam !== null) setSearch(qParam); }, [qParam]);
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
   const [sort, setSort] = useState<'newest' | 'oldest'>('newest');
@@ -226,6 +230,7 @@ export default function Requests() {
                     {r.status === 'approved' && r.claim_by && (
                       <div className="muted small">Ready for pickup · claim by {formatDate(r.claim_by)} <PickupCountdown claimBy={r.claim_by} /></div>
                     )}
+                    {r.status === 'approved' && <PickupWarnings warnings={r.stock_warnings} />}
                     {/* The reviewer is the staff who approved or rejected it; only the resident can cancel a request. */}
                     {r.status === 'cancelled' && <div className="muted small">Cancelled by the resident{r.cancelled_at ? ` · ${formatDate(r.cancelled_at, true)}` : ''}</div>}
                     {r.reviewer && (
