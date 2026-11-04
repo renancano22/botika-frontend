@@ -104,7 +104,7 @@ export default function OperationsDashboard() {
         </div>
         <div className="actions">
           {can('dispensing.dispense|residents.register') && <Link className="btn" to="/dispense">Dispense medicine</Link>}
-          {isAdmin && <Link className="btn btn-outline" to="/forecasting">Demand forecast</Link>}
+          {isAdmin && <Link className="btn btn-outline" to="/analytics">Analytics</Link>}
         </div>
       </header>
       {/* A failed refresh keeps the last numbers on screen and says so. */}
@@ -122,6 +122,30 @@ export default function OperationsDashboard() {
       )}
 
     </div>
+  );
+}
+
+/**
+ * Demand Analysis on its own (Analytics → Demand Analysis tab): the same panel as on the administrator
+ * dashboard, with its own period. The numbers come from the dashboard endpoint (administrator only).
+ */
+export function DemandAnalysisSection() {
+  const [preset, setPreset] = useState<Preset>('6m');
+  const [custom, setCustom] = useState({ from: '', to: '' });
+  const badRange = preset === 'custom' && !!custom.from && !!custom.to && custom.from > custom.to;
+  const range = preset === 'custom'
+    ? (badRange ? { from: custom.to, to: custom.from } : { from: custom.from || undefined, to: custom.to || undefined })
+    : PRESETS.find((p) => p.key === preset)!.range();
+  const { data, errorInfo, loading, reload } = useApi<OpsDashboard>('/dashboard', range, 30000);
+
+  if (loading && !data) return <Loading />;
+  if (!data?.analytics) return <LoadError error={errorInfo} onRetry={() => reload()} />;
+  return (
+    <>
+      <LoadError error={errorInfo} onRetry={() => reload()} />
+      <DemandAnalysis a={data.analytics} preset={preset} custom={custom} badRange={badRange} busy={loading} isAdmin={false}
+        onPreset={(p) => setPreset(p)} onCustom={(next) => { setCustom(next); setPreset('custom'); }} />
+    </>
   );
 }
 
@@ -149,7 +173,7 @@ function DemandAnalysis({ a, preset, custom, badRange, busy, isAdmin, onPreset, 
           <h2 id="da-title">Demand Analysis</h2>
           <p className="muted small da-sub">Medicine requests and dispensing · <b>{periodText}</b> · grouped by {period.group === 'day' ? 'day' : 'month'}</p>
         </div>
-        {isAdmin && <Link to="/forecasting" className="db-more">Demand Forecasting <Svg d={ICONS.chevron} size={16} /></Link>}
+        {isAdmin && <Link to="/analytics?tab=forecast" className="db-more">Demand Forecasting <Svg d={ICONS.chevron} size={16} /></Link>}
       </div>
 
       <div className="da-filters" role="group" aria-label="Period">

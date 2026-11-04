@@ -310,7 +310,8 @@ function SeasonalDemand() {
 }
 
 /** Demand forecasting from historical dispensing data (Objective 3.5). */
-export default function Forecasting() {
+/** embedded: shown as the Demand Forecasting tab of Analytics (no page title of its own). */
+export default function Forecasting({ embedded = false }: { embedded?: boolean }) {
   // null = let the server use its default (history: config, horizon: 3, method: the most accurate one)
   const [months, setMonths] = useState<number | null>(null);
   const [horizon, setHorizon] = useState<number | null>(null);
@@ -454,11 +455,11 @@ export default function Forecasting() {
   const narrow = typeof window !== 'undefined' && window.innerWidth < 640;
 
   return (
-    <div className="page fc-page">
-      <BackButton linkedOnly />
-      <header className="page-head hero-head db-hero fc-hero">
+    <div className={embedded ? 'fc-page an-tab-body' : 'page fc-page'}>
+      {!embedded && <BackButton linkedOnly />}
+      <header className={embedded ? 'card an-toolbar' : 'page-head hero-head db-hero fc-hero'}>
         <div>
-          <div className="page-title"><h1>Demand Forecasting</h1></div>
+          {!embedded && <div className="page-title"><h1>Demand Forecasting</h1></div>}
           <p className="muted">Predicted medicine needs from the dispensing records, with restocking recommendations.</p>
           {data && (
             <p className="fc-last-gen">

@@ -54,8 +54,8 @@ const NAV: Record<Role, Section[]> = {
       { to: '/dispense', label: 'Dispense', icon: 'hand' },
       { to: '/dispensing', label: 'Dispensing Records', icon: 'history' },
     ] },
-    { title: 'Analytics', items: [
-      { to: '/forecasting', label: 'Demand Forecasting', icon: 'chart' },
+    { title: 'Reports & Analytics', items: [
+      { to: '/analytics', label: 'Analytics', icon: 'chart' },
       { to: '/reports', label: 'Reports', icon: 'report' },
     ] },
     { title: 'Administration', items: [

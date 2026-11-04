@@ -14,7 +14,7 @@ import ForgotPassword from './pages/ForgotPassword';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import Users from './pages/admin/Users';
 import Reports from './pages/admin/Reports';
-import Forecasting from './pages/admin/Forecasting';
+import Analytics from './pages/admin/Analytics';
 import Announcements from './pages/admin/Announcements';
 import StaffDashboard from './pages/staff/StaffDashboard';
 import Dispense from './pages/staff/Dispense';
@@ -104,7 +104,8 @@ export default function App() {
         <Route path="/permissions" element={<Guard roles={['admin']}><Permissions /></Guard>} />
         <Route path="/users" element={<Guard roles={['admin']}><Users /></Guard>} />
         <Route path="/reports" element={<Guard roles={['admin']}><Reports /></Guard>} />
-        <Route path="/forecasting" element={<Guard roles={['admin']}><Forecasting /></Guard>} />
+        <Route path="/analytics" element={<Guard roles={['admin']}><Analytics /></Guard>} />
+        <Route path="/forecasting" element={<Navigate to="/analytics?tab=forecast" replace />} />
         <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>
