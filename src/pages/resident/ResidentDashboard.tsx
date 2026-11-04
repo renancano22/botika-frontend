@@ -72,9 +72,12 @@ export default function ResidentDashboard() {
         <div className={`db-req db-req-n${activity.length}`}>
           {activity.map((m) => (
             <Link key={m.label} to={m.to} className={`db-req-item t-${m.tone} ${m.alert ? 'is-alert' : ''}`}>
-              <span className="db-req-label"><span className="db-req-icon"><Svg d={m.icon} size={18} /></span>{m.label}</span>
-              <strong className="db-req-value">{m.value}</strong>
-              <span className="db-req-hint">{m.alert && <span className="db-dot" aria-hidden="true" />}{m.hint}</span>
+              <span className="db-req-icon"><Svg d={m.icon} size={20} /></span>
+              <span className="db-req-text">
+                <span className="db-req-label">{m.label}</span>
+                <strong className="db-req-value">{m.value}</strong>
+                <span className="db-req-hint">{m.alert && <span className="db-dot" aria-hidden="true" />}{m.hint}</span>
+              </span>
             </Link>
           ))}
         </div>

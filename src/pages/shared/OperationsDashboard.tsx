@@ -341,15 +341,18 @@ function RequestsPanel({ c, today, sections, isAdmin }: { c: Record<string, numb
   return (
     <section className="card db-panel" aria-labelledby="db-req-title">
       <div className="db-panel-head">
-        <h2 id="db-req-title">Requests &amp; Dispensing <span className="muted small db-asof">as of now</span></h2>
+        <h2 id="db-req-title">Requests &amp; Dispensing</h2>
         {sections.requests && <Link to="/requests" className="db-more">All requests <Svg d={ICONS.chevron} size={16} /></Link>}
       </div>
       <div className={`db-req db-req-n${items.length}`}>
         {items.map((m) => (
           <Link key={m.label} to={m.to} className={`db-req-item t-${m.tone} ${m.alert ? 'is-alert' : ''}`}>
-            <span className="db-req-label"><span className="db-req-icon"><Svg d={m.icon} size={18} /></span>{m.label}</span>
-            <strong className="db-req-value">{m.value}</strong>
-            <span className="db-req-hint">{m.alert && <span className="db-dot" aria-hidden="true" />}{m.hint}</span>
+            <span className="db-req-icon"><Svg d={m.icon} size={20} /></span>
+            <span className="db-req-text">
+              <span className="db-req-label">{m.label}</span>
+              <strong className="db-req-value">{m.value}</strong>
+              <span className="db-req-hint">{m.alert && <span className="db-dot" aria-hidden="true" />}{m.hint}</span>
+            </span>
           </Link>
         ))}
       </div>
@@ -376,7 +379,7 @@ function StockOverview({ c, canMedicines, canInventory }: { c: Record<string, nu
   return (
     <section className="card db-panel" aria-labelledby="db-stock-title">
       <div className="db-panel-head">
-        <h2 id="db-stock-title">Medicine Stock Overview <span className="muted small db-asof">as of now</span></h2>
+        <h2 id="db-stock-title">Medicine Stock Overview</h2>
         {canMedicines && <Link to="/medicines" className="db-more">Medicine List <Svg d={ICONS.chevron} size={16} /></Link>}
       </div>
       <div className="db-stock">

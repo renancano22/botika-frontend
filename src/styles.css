@@ -1738,19 +1738,36 @@ a.db-person:hover { background: rgba(255, 255, 255, 0.2); }
 .t-available { --t: #059669; }
 .db-panel-head h2 { display: flex; align-items: center; gap: 8px; }
 .db-panel-head h2::before { content: ''; width: 4px; height: 18px; border-radius: 4px; background: var(--primary); flex-shrink: 0; }
-.db-req:has(.db-req-item[class*=' t-']) { gap: 12px; border: none; border-radius: 0; overflow: visible; }
-.db-req-item[class*=' t-'] { background: color-mix(in srgb, var(--t) 4%, white); border: 2px solid color-mix(in srgb, var(--t) 70%, white); border-radius: 14px; box-shadow: var(--shadow-sm);
-  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease; }
-.db-req-item[class*=' t-'] .db-req-icon { background: color-mix(in srgb, var(--t) 12%, white); color: var(--t); }
-.db-req-item[class*=' t-'] .db-req-label { color: #33443f; }
-.db-req-item[class*=' t-'] .db-req-value { color: var(--text); }
-.db-req-item[class*=' t-'].is-alert .db-req-hint { color: #33443f; font-weight: 600; }
-.db-req-item[class*=' t-'] .db-dot { background: var(--t); }
-.db-req-item[class*=' t-']:hover, .db-req-item[class*=' t-']:focus-visible { background: color-mix(in srgb, var(--t) 7%, white); border-color: var(--t); box-shadow: var(--shadow-md); }
+.db-req:has(.db-req-item[class*=' t-']) { gap: 14px; border: none; border-radius: 0; overflow: visible; }
+/* Summary cards: soft tint of the card's colour, thin border, a solid coloured icon on the left, then the
+   label, the number and a coloured hint line. */
+.db-req-item[class*=' t-'] { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: start; align-content: start; column-gap: 14px;
+  padding: 18px; background: color-mix(in srgb, var(--t) 8%, white); border: 1px solid color-mix(in srgb, var(--t) 22%, white);
+  border-radius: 12px; box-shadow: none; transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease; }
+.db-req-item[class*=' t-']:first-child { border-left: 1px solid color-mix(in srgb, var(--t) 22%, white); }
+.db-req-item[class*=' t-'] .db-req-icon { width: 40px; height: 40px; border-radius: 9px; background: var(--t); color: #fff;
+  box-shadow: 0 3px 8px color-mix(in srgb, var(--t) 30%, transparent); }
+.db-req-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.db-req-item[class*=' t-'] .db-req-label { font-size: 0.9rem; font-weight: 500; color: #1f2d29; }
+.db-req-item[class*=' t-'] .db-req-value { font-size: 1.85rem; font-weight: 800; color: var(--text); margin: 2px 0; }
+.db-req-item[class*=' t-'] .db-req-hint { font-size: 0.8rem; font-weight: 500; color: color-mix(in srgb, var(--t) 85%, black); }
+.db-req-item[class*=' t-'].is-alert .db-req-hint { font-weight: 700; }
+.db-req-item[class*=' t-'] .db-dot { display: none; } /* the hint is already in the card's colour */
+.db-req-item[class*=' t-']:hover, .db-req-item[class*=' t-']:focus-visible { background: color-mix(in srgb, var(--t) 13%, white);
+  border-color: color-mix(in srgb, var(--t) 40%, white); box-shadow: var(--shadow-sm); }
 @media (hover: hover) { .db-req-item[class*=' t-']:hover { transform: translateY(-2px); } }
 .db-req-item[class*=' t-']:focus-visible { outline: 2px solid color-mix(in srgb, var(--t) 50%, white); outline-offset: 2px; }
 .db-req-item[class*=' t-']:active { transform: scale(0.98); }
-@media (max-width: 600px) { .db-req:has(.db-req-item[class*=' t-']) { gap: 8px; } }
+/* Phones (two cards per row): the icon above the text, a little smaller. */
+@media (max-width: 600px) {
+  .db-req:has(.db-req-item[class*=' t-']) { gap: 10px; }
+  .db-req-item[class*=' t-'] { grid-template-columns: minmax(0, 1fr); row-gap: 8px; padding: 12px; }
+  .db-req-item[class*=' t-'] .db-req-icon { display: grid; width: 32px; height: 32px; border-radius: 8px; }
+  .db-req-item[class*=' t-'] .db-req-icon svg { width: 17px; height: 17px; }
+  .db-req-item[class*=' t-'] .db-req-label { font-size: 0.8rem; }
+  .db-req-item[class*=' t-'] .db-req-value { font-size: 1.5rem; margin: 0; }
+  .db-req-item[class*=' t-'] .db-req-hint { font-size: 0.74rem; }
+}
 @media (prefers-reduced-motion: reduce) { .db-req-item[class*=' t-'] { transition: none; transform: none !important; } }
 
 /* ---------- Hover feedback for everything clickable (mouse only; phones get a small press effect). */
@@ -2113,7 +2130,6 @@ td.col-no { font-weight: 600; }
 @media (max-width: 640px) { .tbl-dates select, .req-filters select { width: 100%; } }
 
 /* ---------- Dashboard: Demand Analysis (requests and dispensing within a period) ---------- */
-.db-asof { font-weight: 500; font-size: 0.78rem; margin-left: 6px; }
 .db-req.db-req-n1 { grid-template-columns: minmax(0, 1fr); }
 .db-req.db-req-n3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .da-panel { margin-bottom: 18px; }
