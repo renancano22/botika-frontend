@@ -2437,3 +2437,24 @@ tr.row-hit > td:first-child { box-shadow: inset 4px 0 0 #eab308; }
   .an-toolbar .actions, .an-toolbar .actions .btn { width: 100%; }
 }
 
+/* ---------- Demand Forecasting: steps in the order of the work — 1 settings, 2 review the forecast,
+   3 plan restocking, then supporting demand patterns. */
+.fc-step { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.fc-step + .fc-step { margin-top: 10px; padding-top: 22px; border-top: 1px dashed #d5e0dc; }
+.fc-step > .card, .fc-step > div > .card { margin-bottom: 0; }
+.fc-step-head { display: flex; align-items: flex-start; gap: 12px; }
+.fc-step-head h2 { margin: 0; font-size: 1.15rem; line-height: 1.3; }
+.fc-step-head p { margin: 2px 0 0; }
+.fc-step-no { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; flex-shrink: 0; margin-top: 1px;
+  background: var(--primary); color: #fff; font-weight: 800; font-size: 0.95rem; box-shadow: 0 2px 6px color-mix(in srgb, var(--primary) 30%, transparent); }
+.fc-step-no.fc-step-more { background: #e7efec; color: var(--primary-dark); box-shadow: none; }
+.fc-generate { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
+.fc-generate p { margin: 0; }
+.fc-generate .btn { flex-shrink: 0; }
+@media (max-width: 600px) {
+  .fc-step-head h2 { font-size: 1.05rem; }
+  .fc-step-no { width: 26px; height: 26px; font-size: 0.85rem; }
+  .fc-generate { flex-direction: column; align-items: stretch; }
+  .fc-generate .btn { width: 100%; }
+}
+
