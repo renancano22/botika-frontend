@@ -2457,4 +2457,7 @@ tr.row-hit > td:first-child { box-shadow: inset 4px 0 0 #eab308; }
   .fc-generate { flex-direction: column; align-items: stretch; }
   .fc-generate .btn { width: 100%; }
 }
+/* Details window: what the monthly forecast means, the months given out and how it was worked out */
+.fc-detail-note { margin: -2px 0 8px; line-height: 1.5; }
+.modal .fc-calc { margin-bottom: 10px; }
 

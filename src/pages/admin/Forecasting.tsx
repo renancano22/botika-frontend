@@ -109,9 +109,9 @@ function ActualDot({ cx, cy, index, payload, currentMonth }: { cx?: number; cy?:
 }
 
 /** "How this forecast was calculated", with the selected method's own numbers. */
-function MethodExplanation({ method, result, unit, forecast, basisMonths, partial, currentMonth, today, provisional, allMedicines }: {
+function MethodExplanation({ method, result, unit, forecast, basisMonths, partial, currentMonth, today, provisional, allMedicines, showResult = true }: {
   method: ForecastMethod; result: ForecastMethodResult | null; unit: string; forecast: { key: string; value: number }[];
-  basisMonths: string[]; partial: boolean; currentMonth: string; today: string; provisional: boolean; allMedicines: boolean;
+  basisMonths: string[]; partial: boolean; currentMonth: string; today: string; provisional: boolean; allMedicines: boolean; showResult?: boolean;
 }) {
   if (!result) return null;
   const c = result.calculation;
@@ -173,11 +173,21 @@ function MethodExplanation({ method, result, unit, forecast, basisMonths, partia
         {allMedicines && ' All medicines added together; each medicine is also forecast on its own for the restocking table.'}
       </p>
       {body}
-      <p className="fc-calc-formula fc-calc-result">
-        {forecast.map((f) => <span key={f.key}>{monthText(f.key)}: <b>{num(f.value)}</b></span>)}
-      </p>
+      {showResult && (
+        <p className="fc-calc-formula fc-calc-result">
+          {forecast.map((f) => <span key={f.key}>{monthText(f.key)}: <b>{num(f.value)}</b></span>)}
+        </p>
+      )}
     </div>
   );
+}
+
+/** What the predicted demand is: "73 per month × 6 months", or the monthly forecasts added up. */
+function detailMonthly(r: ForecastResult): string {
+  const values = Object.values(r.forecast);
+  if (!values.length) return 'no records yet';
+  const same = values.every((v) => Math.abs(v - values[0]) < 0.01);
+  return same ? `${num(values[0])} per month × ${values.length} ${values.length === 1 ? 'month' : 'months'}` : 'the monthly forecasts below added up';
 }
 
 /** Restock priority with the same badges as the stock statuses (Medicine List, Dashboard). */
@@ -762,7 +772,7 @@ export default function Forecasting({ embedded = false }: { embedded?: boolean }
               <h3 className="fc-detail-title">How the suggested restock is calculated</h3>
               <table>
                 <tbody>
-                  <tr><td>Predicted demand, {horizonText.toLowerCase()} <small className="muted">(from dispensing records)</small></td><td className="right">{details.predicted_demand}</td></tr>
+                  <tr><td>Predicted demand, {horizonText.toLowerCase()} <small className="muted">(expected to be given out: {detailMonthly(details)})</small></td><td className="right">{details.predicted_demand}</td></tr>
                   <tr><td>+ Pending medicine requests <small className="muted">(not reviewed yet)</small></td><td className="right">{details.pending_requests}</td></tr>
                   <tr><td>+ Restock requests waiting <small className="muted">(residents who asked while it was out of stock)</small></td><td className="right">{details.restock_requests}</td></tr>
                   <tr><td>+ Reorder level <small className="muted">(stock to keep on hand)</small></td><td className="right">{details.reorder_level}</td></tr>
@@ -775,10 +785,28 @@ export default function Forecasting({ embedded = false }: { embedded?: boolean }
           <PriorityBadge priority={details.priority} recorded={details.stock_recorded !== false} />
 
           <h3 className="fc-detail-title">Monthly forecast ({METHOD_LABEL[data.method]}{provisional ? ', provisional' : ''})</h3>
+          <p className="muted small fc-detail-note">
+            How many {unitPlural(details.unit)} of {details.medicine_name} are expected to be <b>given out (dispensed)</b> each month,
+            worked out from how many were given out in past months.
+          </p>
+          <div className="fc-calc">
+            <strong className="fc-calc-title"><Svg d={ICONS.clock} size={16} /> Given out per month (dispensing records)</strong>
+            {data.data_start ? (
+              <p className="fc-calc-formula">
+                {data.history_keys.filter((k) => k >= (data.data_start ?? '')).map((k) => (
+                  <span key={k}>{monthText(k)}{k === data.current_month ? ' (so far)' : ''}: <b>{details.history[k] ?? 0}</b></span>
+                ))}
+              </p>
+            ) : <p>No dispensing records yet, so the expected demand is 0.</p>}
+          </div>
+          <MethodExplanation method={data.method} result={details.methods[data.method]} unit={unitPlural(details.unit)} forecast={[]}
+            basisMonths={basisMonths} partial={data.basis.partial} currentMonth={data.current_month} today={data.today} provisional={provisional}
+            allMedicines={false} showResult={false} />
           <table>
-            <thead><tr><th>Month</th><th className="right">Forecast</th></tr></thead>
+            <thead><tr><th>Month</th><th className="right">Expected to be given out</th></tr></thead>
             <tbody>
-              {data.forecast_keys.map((k) => <tr key={k}><td>{monthText(k)}</td><td className="right">{details.forecast[k]} {details.unit}</td></tr>)}
+              {data.forecast_keys.map((k) => <tr key={k}><td>{monthText(k)}</td><td className="right">{quantityText(details.forecast[k], details.unit)}</td></tr>)}
+              <tr className="fc-calc-total"><td>Total, {horizonText.toLowerCase()}</td><td className="right">{quantityText(details.predicted_demand, details.unit)}</td></tr>
             </tbody>
           </table>
 
