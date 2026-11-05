@@ -2,8 +2,9 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../../auth';
 import { useApi } from '../../hooks';
 import { Empty, Loading } from '../../components/ui';
-import { NotificationItem } from '../../components/Notifications';
-import { ICONS, RequestRow, Svg } from '../../components/RequestCards';
+import { ICONS, PickupCountdown, STATUS_COLOR_KEY, STATUS_LABEL, statusKey, Svg } from '../../components/RequestCards';
+import { pickupPeriod } from '../../components/RequestTracker';
+import { formatDate } from '../../api';
 import type { MedicineRequest, Resident, SmsNotification } from '../../types';
 import { LoadError } from '../../components/feedback';
 
@@ -18,6 +19,12 @@ interface ResidentDash {
 
 const REVIEW_ICON = 'M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2M9 14l2 2 4-4';
 const QR_ICON = 'M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2v2h-2zM18 18h2v2h-2zM18 14h2M14 18h2';
+
+/** "Paracetamol 500mg ×10, Amoxicillin 500mg ×21" (first two, then "+N more"). */
+function itemsText(r: MedicineRequest): string {
+  const parts = r.items.map((i) => (i.quantity === null ? i.medicine.medicine_name : `${i.medicine.medicine_name} ×${i.quantity}`));
+  return parts.slice(0, 2).join(', ') + (parts.length > 2 ? ` +${parts.length - 2} more` : '');
+}
 
 /** Resident dashboard: the same layout as the administrator / staff dashboard (green header + summary panels). */
 export default function ResidentDashboard() {
@@ -49,9 +56,15 @@ export default function ResidentDashboard() {
     ] : []),
   ];
 
+  // The request to claim first (approved, nearest deadline): shown at the top so it is not missed.
+  const toClaim = (data.recent_requests ?? []).filter((r) => statusKey(r) === 'claim')
+    .sort((a, b) => (a.claim_by ?? '').localeCompare(b.claim_by ?? ''))[0];
+  const claimPeriod = toClaim ? pickupPeriod(toClaim) : null;
+  const requests = (data.recent_requests ?? []).slice(0, 4);
+
   return (
-    <div className="page">
-      <header className="page-head hero-head db-hero">
+    <div className="page rd-page">
+      <header className="page-head hero-head db-hero rd-hero">
         <div>
           <h1>Hello, {resident.name.split(' ')[0]}!</h1>
           <p className="muted">Check medicines, send requests and follow their status here.</p>
@@ -63,6 +76,19 @@ export default function ResidentDashboard() {
           {can('medicines.view') && <Link className="btn" to="/medicines">Check medicines</Link>}
         </div>
       </header>
+
+      {sec.requests && toClaim && (
+        <Link to={`/requests/${toClaim.request_id}`} className="rd-claim k-ready">
+          <span className="rd-claim-icon"><Svg d={ICONS.check} size={22} width={2.6} /></span>
+          <span className="rd-claim-text">
+            <strong>Ready for pickup · Request No. {toClaim.request_id}</strong>
+            <span>{itemsText(toClaim)}{claimPeriod ? ` · Claim on or before ${claimPeriod.deadline}` : ''}</span>
+            <small>Bring your QR code / Resident ID and a valid ID or Barangay ID.</small>
+          </span>
+          <PickupCountdown claimBy={toClaim.claim_by} />
+          <span className="rd-go" aria-hidden="true"><Svg d={ICONS.chevron} size={20} /></span>
+        </Link>
+      )}
 
       {activity.length > 0 && <section className="card db-panel" aria-labelledby="rd-act-title">
         <div className="db-panel-head">
@@ -83,30 +109,31 @@ export default function ResidentDashboard() {
         </div>
       </section>}
 
-      <div className={sec.requests && sec.notifications ? 'grid-2' : ''}>
-        {sec.requests && <section className="card db-panel" aria-labelledby="rd-req-title">
-          <div className="db-panel-head">
-            <h2 id="rd-req-title">My recent requests</h2>
-            <Link to="/requests" className="db-more">See all <Svg d={ICONS.chevron} size={16} /></Link>
-          </div>
-          {!data.recent_requests?.length ? <Empty>No requests yet.</Empty> : (
-            <div className="req-rows">
-              {data.recent_requests.map((r) => <RequestRow key={r.request_id} request={r} />)}
-            </div>
-          )}
-        </section>}
-        {sec.notifications && <section className="card db-panel" aria-labelledby="rd-notif-title">
-          <div className="db-panel-head">
-            <h2 id="rd-notif-title">Latest notifications</h2>
-            <Link to="/notifications" className="db-more">See all <Svg d={ICONS.chevron} size={16} /></Link>
-          </div>
-          {!data.recent_notifications?.length ? <Empty>No notifications yet.</Empty> : (
-            <ul className="notif-list">
-              {data.recent_notifications.map((n) => <NotificationItem key={n.notification_id} n={n} compact />)}
-            </ul>
-          )}
-        </section>}
-      </div>
+      {sec.requests && <section className="card db-panel rd-panel rd-panel-wide" aria-labelledby="rd-req-title">
+        <div className="db-panel-head">
+          <h2 id="rd-req-title">My recent requests</h2>
+          <Link to="/requests" className="db-more">See all <Svg d={ICONS.chevron} size={16} /></Link>
+        </div>
+        {!requests.length ? <Empty>No requests yet.</Empty> : (
+          <ul className="rd-list">
+            {requests.map((r) => {
+              const key = statusKey(r);
+              return (
+                <li key={r.request_id}>
+                  <Link to={`/requests/${r.request_id}`} className={`rd-row k-${STATUS_COLOR_KEY[key]}`}>
+                    <span className="rd-row-icon kicon"><Svg d={r.request_type === 'restock' ? ICONS.box : ICONS.pill} size={18} /></span>
+                    <span className="rd-row-text">
+                      <span className="rd-row-top"><strong>Request No. {r.request_id}</strong><span className={`pill k-${STATUS_COLOR_KEY[key]}`}>{STATUS_LABEL[key]}</span></span>
+                      <span className="rd-row-sub">{itemsText(r)}</span>
+                      <small>{r.request_type === 'restock' ? 'Restock request' : 'Medicine request'} · {formatDate(r.request_date)}</small>
+                    </span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>}
     </div>
   );
 }
