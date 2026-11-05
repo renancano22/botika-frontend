@@ -41,12 +41,11 @@ const StockBadge = ({ m }: { m: Medicine }) => (m.status === 'unrecorded'
 export default function ResidentMedicines() {
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('');
-  const [rxFilter, setRxFilter] = useState<'' | 'required' | 'not_required'>(''); // needs a doctor's prescription or not
   const [availability, setAvailability] = useState<'all' | 'in_stock' | 'out_of_stock'>(() => {
     const a = new URLSearchParams(window.location.search).get('availability'); // e.g. from the dashboard tiles
     return a === 'in_stock' || a === 'out_of_stock' ? a : 'all';
   });
-  const { data, errorInfo, loading, reload } = useApi<Medicine[]>('/medicines', { search, category, prescription: rxFilter }, 30000);
+  const { data, errorInfo, loading, reload } = useApi<Medicine[]>('/medicines', { search, category }, 30000);
   const { data: categories } = useApi<string[]>('/medicines/categories');
   // The resident's open requests (pending, or approved and not finished yet): one per medicine at a time.
   //  - restock: they wait for the SMS;  - medicine: they edit that request instead of making a new one.
@@ -61,8 +60,7 @@ export default function ResidentMedicines() {
   const [inRequest, setInRequest] = useState<{ medicine: Medicine; requestId: number; status: string } | null>(null);
   const shown = (data ?? []).filter((m) => availability === 'all'
     || (availability === 'out_of_stock' ? noStock(m) : !noStock(m)));
-  const listTitle = `${availability === 'in_stock' ? 'Available' : availability === 'out_of_stock' ? 'Out of Stock' : 'All'} ${category || 'Medicines'}`
-    + (rxFilter === 'required' ? ' · Prescription' : rxFilter === 'not_required' ? ' · No Prescription' : '');
+  const listTitle = `${availability === 'in_stock' ? 'Available' : availability === 'out_of_stock' ? 'Out of Stock' : 'All'} ${category || 'Medicines'}`;
   const [cart, setCart] = useState<CartItem[]>([]);
   const [cartOpen, setCartOpen] = useState(false);                   // request sheet on phones
   const [restockFor, setRestockFor] = useState<Medicine | null>(null);
@@ -329,12 +327,6 @@ export default function ResidentMedicines() {
             <div className="chips" role="tablist" aria-label="Availability">
               {([['all', 'All'], ['in_stock', 'Available'], ['out_of_stock', 'Out of Stock']] as const).map(([key, label]) => (
                 <button key={key} role="tab" aria-selected={availability === key} className={`chip ${availability === key ? 'active' : ''}`} onClick={() => setAvailability(key)}>{label}</button>
-              ))}
-            </div>
-            <span className="filter-label">Prescription</span>
-            <div className="chips" role="tablist" aria-label="Prescription">
-              {([['', 'All'], ['required', 'Needed'], ['not_required', 'Not Needed']] as const).map(([key, label]) => (
-                <button key={key} role="tab" aria-selected={rxFilter === key} className={`chip ${rxFilter === key ? 'active' : ''}`} onClick={() => setRxFilter(key)}>{label}</button>
               ))}
             </div>
             <select className="select-pill" value={category} onChange={(e) => setCategory(e.target.value)} aria-label="Category">
