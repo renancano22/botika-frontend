@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api, errorMessage } from '../../api';
 import { useApi } from '../../hooks';
-import { Badge, Empty, Loading, Message, Modal } from '../../components/ui';
+import { Empty, Loading, Message, Modal } from '../../components/ui';
 import { ICONS, quantityText, Svg, unitPlural } from '../../components/RequestCards';
 import type { Medicine, MedicineRequest } from '../../types';
 import { MAX_REQUEST_QUANTITY, quantityWarning } from '../../validation';
@@ -33,10 +33,18 @@ function QtyStepper({ value, onChange, min = 1, max }: { value: number; onChange
  */
 /** Out of stock, or stock not recorded yet by the staff (availability not confirmed): it cannot be requested. */
 const noStock = (m: Medicine) => m.status === 'out_of_stock' || m.status === 'unrecorded';
-/** Residents see "Not yet available" for a medicine whose stock the staff have not recorded yet. */
-const StockBadge = ({ m }: { m: Medicine }) => (m.status === 'unrecorded'
-  ? <span className="badge badge-unrecorded">Not yet available</span>
-  : <Badge value={m.status} />);
+/** Residents see "Not yet available" for a medicine whose stock the staff have not recorded yet.
+ * Stock line on a medicine card: coloured dot, status and how many are left ("Available · 240 tablets"). */
+const STOCK_LABEL: Record<string, string> = { available: 'Available', low_stock: 'Low stock', out_of_stock: 'Out of stock', unrecorded: 'Not yet available' };
+function StockLine({ m }: { m: Medicine }) {
+  return (
+    <span className="med-stock">
+      <i className="med-dot" aria-hidden="true" />
+      <span className="med-status">{STOCK_LABEL[m.status] ?? m.status}</span>
+      {m.status !== 'unrecorded' && <span className="med-qty">· <b>{m.available_stock}</b> {m.available_stock === 1 ? m.unit : unitPlural(m.unit)}</span>}
+    </span>
+  );
+}
 
 export default function ResidentMedicines() {
   const [search, setSearch] = useState('');
@@ -309,10 +317,10 @@ export default function ResidentMedicines() {
   return (
     <div className="page page-with-bar">
       <BackButton linkedOnly />
-      <header className="page-head">
+      <header className="page-head hero-head">
         <div>
-          <div className="page-title"><h1>Check Medicine Availability</h1></div>
-          <p className="muted">Tap “Request” on an available medicine to fill in the request form. If a medicine is out of stock, send a restock request.</p>
+          <h1>Check Medicines</h1>
+          <p className="muted">Find a medicine and tap <b>Request</b>. If it is out of stock, you can ask for a restock.</p>
         </div>
       </header>
 
@@ -353,16 +361,11 @@ export default function ResidentMedicines() {
                           {m.generic_name && <Hl q={search}>{[m.strength, m.dosage_form].filter(Boolean).join(' ')}</Hl>}
                           {m.generic_name && (m.strength || m.dosage_form) ? ' · ' : ''}<Hl q={search}>{m.category}</Hl>
                         </span>
-                        <span className="med-tags">
-                          <StockBadge m={m} />
-                          {m.requires_prescription && <RxBadge small />}
-                        </span>
+                        {m.requires_prescription && <span className="med-tags"><RxBadge small /></span>}
                       </span>
                     </button>
                     <div className="med-bottom">
-                      {m.status === 'unrecorded'
-                        ? <span className="med-stock muted">Availability not yet confirmed</span>
-                        : <span className="med-stock"><b>{m.available_stock}</b> {m.available_stock === 1 ? m.unit : unitPlural(m.unit)} available</span>}
+                      <StockLine m={m} />
                       <div className="med-actions">
                         {/* Restock requests are only for medicines that are out of stock (or not recorded yet). */}
                         {noStock(m) && canRestock && (openRestock.has(m.medicine_id) ? (

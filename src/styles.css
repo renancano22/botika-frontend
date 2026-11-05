@@ -2508,3 +2508,58 @@ tr.row-hit > td:first-child { box-shadow: inset 4px 0 0 #eab308; }
   .rd-panel-wide .rd-list li:nth-child(2) { border-top: none; }
 }
 
+/* ==========================================================================================
+   Cleaner cards (resident pages, all screen sizes): one style for medicines, requests and
+   notifications — white card, thin border in the status colour, a coloured line on the left.
+   ========================================================================================== */
+
+/* Side menu: hidden completely while closed (no shadow strip at the left edge of the screen). */
+.drawer { visibility: hidden; transition: transform 0.25s ease, visibility 0.25s; }
+.drawer.is-open { visibility: visible; }
+
+/* Check Medicines: medicine cards */
+.med-grid { gap: 10px; }
+.med-card, .med-card.med-rx { background: #fff; padding: 12px 14px; gap: 8px; border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--st, #cfdcd8) 35%, white); border-left: 4px solid var(--st, #cfdcd8); box-shadow: var(--shadow-sm); }
+.med-card.med-added { border-color: color-mix(in srgb, var(--primary) 55%, white); border-left-color: var(--st, var(--primary)); box-shadow: 0 0 0 3px var(--primary-soft); }
+@media (hover: hover) { .med-card:hover { border-color: color-mix(in srgb, var(--st, var(--primary)) 60%, white); border-left-color: var(--st, var(--primary)); } }
+.med-icon { width: 38px; height: 38px; border-radius: 10px; }
+.med-name strong { font-size: 1rem; }
+.med-tags { margin-top: 6px; }
+.med-bottom { flex-direction: row; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 10px; padding-top: 8px; border-top: 1px solid var(--border); }
+.med-stock { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 0.86rem; color: var(--muted); min-width: 0; }
+.med-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--st, #94a3b8); flex-shrink: 0; }
+.med-status { font-weight: 700; color: color-mix(in srgb, var(--st, #64748b) 80%, black); }
+.med-qty b { color: var(--text); font-size: 0.95rem; }
+.med-actions { flex: 0 0 auto; margin-left: auto; justify-content: flex-end; }
+.med-actions .btn { flex: 0 0 auto; min-height: 36px; padding: 0 14px; font-size: 0.86rem; }
+@media (max-width: 600px) { .med-actions .btn { min-height: 38px; } }
+
+/* My Requests (and the request lists): no box inside the card */
+.req-rows { gap: 10px; }
+.req-row { gap: 8px; padding: 12px 14px; border-radius: 14px; background: #fff;
+  border: 1px solid color-mix(in srgb, var(--k) 35%, white); border-left: 4px solid var(--k); }
+.req-row:hover { background: color-mix(in srgb, var(--k) 4%, white); border-color: color-mix(in srgb, var(--k) 60%, white); border-left-color: var(--k); }
+.req-row .req-icon { width: 38px; height: 38px; border-radius: 10px; }
+.req-row-body { padding: 0 0 0 50px; border: none; background: none; border-radius: 0; gap: 2px; }
+.req-row-foot { padding-top: 8px; }
+
+/* Notifications: unread = coloured line on the left and a light tint; read = plain */
+.notif-body { border: 1px solid var(--border); border-radius: 14px; }
+.notif-unread .notif-body { background: color-mix(in srgb, var(--k) 3%, white); border: 1px solid color-mix(in srgb, var(--k) 35%, white); border-left: 4px solid var(--k); box-shadow: var(--shadow-sm); }
+.notif-icon { width: 40px; height: 40px; border-radius: 11px; }
+
+/* Page banners on phones: smaller so the content starts higher */
+@media (max-width: 600px) {
+  .hero-head:not(.db-hero) { padding: 16px; border-radius: 16px; }
+  .hero-head:not(.db-hero) h1 { font-size: 1.3rem; line-height: 1.2; margin-bottom: 2px; }
+  .hero-head:not(.db-hero) .muted { font-size: 0.86rem; line-height: 1.45; }
+  .page > .page-head:not(.hero-head) h1 { font-size: 1.35rem; line-height: 1.2; }
+  .filter-panel { padding: 12px; gap: 8px; border-radius: 16px; }
+  .filter-label { margin-top: 2px; }
+  .select-pill { padding: 9px 14px; }
+  .filter-foot { padding-top: 10px; }
+  .filter-foot h2 { font-size: 1rem; }
+  .req-row-body { padding-left: 0; }
+}
+
