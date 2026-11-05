@@ -2406,7 +2406,7 @@ tr.row-hit > td:first-child { box-shadow: inset 4px 0 0 #eab308; }
 
 /* ---------- Analytics (administrator): Demand Analysis and Demand Forecasting as two tabs of one page */
 .an-tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; padding: 6px; border-radius: 16px;
-  background: var(--card); border: 1px solid var(--border); box-shadow: var(--shadow-sm); position: sticky; top: 72px; z-index: 5; }
+  background: var(--card); border: 1px solid var(--border); box-shadow: var(--shadow-sm); }
 .an-tab { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border: 1px solid transparent; border-radius: 12px;
   background: transparent; color: var(--text); font: inherit; text-align: left; cursor: pointer; transition: background 0.15s, border-color 0.15s; }
 .an-tab:hover { background: var(--primary-50); }
@@ -2427,7 +2427,7 @@ tr.row-hit > td:first-child { box-shadow: inset 4px 0 0 #eab308; }
 .an-toolbar .muted { margin: 0; font-size: 0.9rem; }
 .an-toolbar .actions { display: flex; gap: 8px; }
 @media (max-width: 600px) {
-  .an-tabs { gap: 6px; padding: 4px; top: 64px; }
+  .an-tabs { gap: 6px; padding: 4px; }
   .an-tab { gap: 8px; padding: 8px; }
   .an-tab-icon { width: 30px; height: 30px; border-radius: 8px; }
   .an-tab-icon svg { width: 17px; height: 17px; }
