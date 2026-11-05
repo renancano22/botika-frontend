@@ -2577,4 +2577,6 @@ tr.row-hit > td:first-child { box-shadow: inset 4px 0 0 #eab308; }
 .nf-head .muted { margin: 2px 0 0; font-size: 0.9rem; }
 .nf-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
 .nf-bar .link-button { font-weight: 600; white-space: nowrap; }
+/* Phones: no "<" back button on any page — the phone's own Back (button or gesture) goes to the previous page. */
+@media (max-width: 700px) { .page-back { display: none !important; } }
 
