@@ -35,25 +35,25 @@ export default function MyNotifications() {
   return (
     <div className="page page-narrow">
       <BackButton linkedOnly />
-      <header className="page-head hero-head">
+      {/* A plain title: the list itself is the page (no green banner, no second "Recent Notifications" heading). */}
+      <header className="page-head nf-head">
         <div>
           <div className="page-title"><h1>Notifications</h1></div>
-          <p className="muted">Stay updated on your medicine requests. SMS messages sent to you are also kept here.</p>
+          <p className="muted">Updates on your requests. SMS messages sent to you are kept here too.</p>
         </div>
       </header>
       <LoadError error={errorInfo} onRetry={() => reload()} />
 
-      <div className="section-head">
-        <h2 className="section-title">Recent Notifications</h2>
+      <div className="nf-bar">
+        <div className="chips" role="tablist">
+          <button role="tab" aria-selected={tab === 'all'} className={`chip ${tab === 'all' ? 'active' : ''}`} onClick={() => setTab('all')}>
+            All <span className="chip-count">{data?.length ?? 0}</span>
+          </button>
+          <button role="tab" aria-selected={tab === 'unread'} className={`chip ${tab === 'unread' ? 'active' : ''}`} onClick={() => setTab('unread')}>
+            Unread <span className="chip-count">{unread}</span>
+          </button>
+        </div>
         {unread > 0 && <button className="link-button" onClick={readAll}>Mark all as read</button>}
-      </div>
-      <div className="chips" role="tablist">
-        <button role="tab" aria-selected={tab === 'all'} className={`chip ${tab === 'all' ? 'active' : ''}`} onClick={() => setTab('all')}>
-          All <span className="chip-count">{data?.length ?? 0}</span>
-        </button>
-        <button role="tab" aria-selected={tab === 'unread'} className={`chip ${tab === 'unread' ? 'active' : ''}`} onClick={() => setTab('unread')}>
-          Unread <span className="chip-count">{unread}</span>
-        </button>
       </div>
 
       {loading && !data ? <Loading /> : !data ? null : !shown?.length ? (

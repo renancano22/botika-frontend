@@ -2572,4 +2572,9 @@ tr.row-hit > td:first-child { box-shadow: inset 4px 0 0 #eab308; }
   .filter-foot h2 { font-size: 1rem; }
   .req-row-body { padding-left: 0; }
 }
+/* Notifications page: plain title, then the All / Unread chips with "Mark all as read" on the same line */
+.nf-head h1 { margin: 0; }
+.nf-head .muted { margin: 2px 0 0; font-size: 0.9rem; }
+.nf-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.nf-bar .link-button { font-weight: 600; white-space: nowrap; }
 
