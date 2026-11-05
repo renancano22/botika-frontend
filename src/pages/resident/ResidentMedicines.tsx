@@ -41,7 +41,7 @@ function StockLine({ m }: { m: Medicine }) {
     <span className="med-stock">
       <i className="med-dot" aria-hidden="true" />
       <span className="med-status">{STOCK_LABEL[m.status] ?? m.status}</span>
-      {m.status !== 'unrecorded' && <span className="med-qty">· <b>{m.available_stock}</b> {m.available_stock === 1 ? m.unit : unitPlural(m.unit)}</span>}
+      {m.status !== 'unrecorded' && <span className="med-qty"><span className="med-sep">· </span><b>{m.available_stock}</b> {m.available_stock === 1 ? m.unit : unitPlural(m.unit)}</span>}
     </span>
   );
 }
