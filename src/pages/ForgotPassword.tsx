@@ -64,7 +64,7 @@ export default function ForgotPassword() {
 
   return (
     <div className="auth-page">
-      <div className="auth-shell">
+      <div className="auth-shell auth-shell--animated" key={step}>
         <header className="auth-header">
           <h1 id="auth-title">{step === 1 ? 'Forgot password' : 'Reset password'}</h1>
           {step === 1
