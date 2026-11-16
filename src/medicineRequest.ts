@@ -2,7 +2,7 @@ import type { Medicine } from './types';
 import type { PrescriptionFile } from './components/Prescription';
 import { quantityWarning } from './validation';
 
-export const MAX_REQUEST_ITEMS = 20;
+export const MAX_REQUEST_ITEMS = 5;
 export const MAX_REQUEST_NOTE = 500;
 export const MAX_PRESCRIPTION_BYTES = 4 * 1024 * 1024;
 export type RequestCartItem = { medicine: Medicine; quantity: number };

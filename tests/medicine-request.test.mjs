@@ -16,9 +16,14 @@ test('non-prescription medicine accepts a valid quantity and optional reason', (
 });
 test('empty, oversized, duplicate or invalid medicine lists are refused', () => {
   assert.ok(validate([], '', null).items);
-  assert.ok(validate(Array.from({ length: 21 }, (_, i) => item({ medicine: { ...medicine, medicine_id: i + 1 } })), '', null).items);
+  assert.ok(validate(Array.from({ length: 6 }, (_, i) => item({ medicine: { ...medicine, medicine_id: i + 1 } })), '', null).items);
   assert.ok(validate([item(), item()], '', null)['items.1.quantity']);
   assert.ok(validate([item({ medicine: { ...medicine, medicine_id: -1 } })], '', null)['items.0.quantity']);
+});
+test('five distinct medicines are allowed and a sixth is refused', () => {
+  const items = Array.from({ length: 6 }, (_, i) => item({ medicine: { ...medicine, medicine_id: i + 1 }, quantity: 10 }));
+  assert.deepEqual(validate(items.slice(0, 5), '', null), {});
+  assert.equal(validate(items, '', null).items, 'One request can have at most 5 medicines.');
 });
 test('quantities must be whole, positive, within stock and within the request limit', () => {
   for (const quantity of [0, -1, NaN, Infinity, 1.5, 11]) assert.ok(validate([item({ quantity })], '', null)['items.0.quantity']);
