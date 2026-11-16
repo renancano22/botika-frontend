@@ -392,11 +392,15 @@ input[type='password']::-ms-reveal, input[type='password']::-ms-clear { display:
 .auth-card--focused .auth-footer--stacked { flex-direction: column; gap: 6px; }
 .auth-shell--register { max-width: 640px; }
 .register-card { max-width: none; }
-.register-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; margin-bottom: 22px; }
+.register-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; margin: 0 0 22px; padding: 0; border: 0; min-width: 0; }
 .register-grid label { min-width: 0; margin: 0; }
 .register-grid input, .register-grid select { width: 100%; min-height: 44px; font-size: 1rem; }
 .register-grid .field-hint { margin: 0; font-weight: 400; }
 .register-full { grid-column: 1 / -1; }
+.register-checks { list-style: none; padding: 12px 14px; margin: 0; border-radius: 10px; background: var(--primary-50); color: var(--muted); font-size: 0.8rem; line-height: 1.6; }
+.register-checks li { display: flex; align-items: baseline; gap: 8px; }
+.register-checks li > span { flex-shrink: 0; }
+.register-checks .is-met { color: var(--primary-dark); }
 @media (min-width: 600px) {
   .register-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 20px; }
 }

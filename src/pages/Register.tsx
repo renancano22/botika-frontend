@@ -1,40 +1,58 @@
-import { useState, type ChangeEvent, type FormEvent } from 'react';
+import { useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../auth';
 import { useApi } from '../hooks';
 import { Message, PasswordInput } from '../components/ui';
-import { toast, useFormErrors } from '../components/feedback';
+import { FieldError, LoadError, toast, useFormErrors } from '../components/feedback';
 import { FIELD } from '../validation';
+import { normalizeRegistration, registrationPasswordChecks, validateRegistration, type RegistrationForm } from '../registration';
 
 export default function Register() {
   const { register } = useAuth();
-  const { data: barangays } = useApi<string[]>('/barangays');
-  const [form, setForm] = useState({
+  const { data: barangays, errorInfo: barangayError, reload: reloadBarangays } = useApi<string[]>('/barangays');
+  const [form, setForm] = useState<RegistrationForm>({
     name: '', barangay: '', address_line: '', contact_no: '', email: '', password: '', password_confirmation: '',
   });
   const fe = useFormErrors(['name', 'barangay', 'address_line', 'contact_no', 'email', 'password', 'password_confirmation']);
   const [busy, setBusy] = useState(false);
+  const submitting = useRef(false);
+  const [touched, setTouched] = useState<Partial<Record<keyof RegistrationForm, boolean>>>({});
+  const validation = validateRegistration(form, barangays);
+  const checks = registrationPasswordChecks(form);
+  const problem = (key: keyof RegistrationForm) => fe.fields[key] || (touched[key] ? validation[key] : undefined);
+  const fieldProps = (key: keyof RegistrationForm) => ({
+    onBlur: () => setTouched((old) => ({ ...old, [key]: true })),
+    'aria-invalid': problem(key) ? true as const : undefined,
+    'aria-describedby': problem(key) ? `err-${key}` : undefined,
+  });
+  const fieldError = (key: keyof RegistrationForm) => <FieldError message={problem(key)} id={`err-${key}`} />;
   const set = (k: keyof typeof form) => (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setForm({ ...form, [k]: e.target.value });
     fe.clear(k);
+    fe.setGeneral('');
+    if (k === 'password') fe.clear('password_confirmation');
+    if (k === 'name' || k === 'email' || k === 'contact_no') fe.clear('password');
   };
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
-    if (busy) return;
+    if (submitting.current) return;
     fe.clear();
-    if (form.password !== form.password_confirmation) {
-      fe.setFieldErrors({ password_confirmation: 'The two passwords do not match.' });
+    setTouched(Object.fromEntries(Object.keys(form).map((key) => [key, true])));
+    if (Object.keys(validation).length) {
+      fe.setFieldErrors(validation as Record<string, string>);
       return;
     }
+    submitting.current = true;
     setBusy(true);
     try {
-      await register(form);
+      await register({ ...normalizeRegistration(form) });
       toast.success('Account created', { description: 'Welcome to BulanBotikaCare! You are now logged in.' });
     } catch (err) {
       fe.fromError(err);
     } finally {
       setBusy(false);
+      submitting.current = false;
     }
   };
 
@@ -45,51 +63,56 @@ export default function Register() {
           <h1 id="register-title">Resident Registration</h1>
           <p className="muted">Create an account to check medicine availability, submit requests and receive SMS updates.</p>
         </header>
-      <form className="auth-card auth-card--focused register-card" onSubmit={submit} aria-labelledby="register-title">
+      <form className="auth-card auth-card--focused register-card" onSubmit={submit} aria-labelledby="register-title" noValidate>
         <Message>{fe.general}</Message>
+        <LoadError error={barangayError} onRetry={() => reloadBarangays()} />
 
-        <div className="register-grid">
+        <fieldset className="register-grid" disabled={busy}>
         <label className="register-full">Full name
-          <input value={form.name} onChange={set('name')} autoComplete="name" required maxLength={100} {...FIELD.name} {...fe.invalid('name')} />
-          {fe.error('name')}
-          {!fe.fields.name && <span className="field-hint">Your full name and barangay cannot be changed after you register, so check them carefully.</span>}
+          <input value={form.name} onChange={set('name')} autoComplete="name" required maxLength={100} {...FIELD.name} {...fieldProps('name')} />
+          {fieldError('name')}
+          {!problem('name') && <span className="field-hint">Your full name and barangay cannot be changed after you register, so check them carefully.</span>}
         </label>
 
         <label>Barangay (Bulan, Sorsogon)
-          <select value={form.barangay} onChange={set('barangay')} required {...fe.invalid('barangay')}>
+          <select value={form.barangay} onChange={set('barangay')} required disabled={!barangays?.length} {...fieldProps('barangay')}>
             <option value="">{barangays ? 'Select your barangay…' : 'Loading barangays…'}</option>
             {barangays?.map((b) => <option key={b} value={b}>{b}</option>)}
           </select>
-          {fe.error('barangay')}
+          {fieldError('barangay')}
         </label>
         <label>House / Street / Purok (optional)
-          <input value={form.address_line} onChange={set('address_line')} maxLength={120} placeholder="e.g. Purok 3, Rizal St." autoComplete="address-line1" {...fe.invalid('address_line')} />
-          {fe.error('address_line')}
+          <input value={form.address_line} onChange={set('address_line')} maxLength={120} placeholder="e.g. Purok 3, Rizal St." autoComplete="address-line1" {...fieldProps('address_line')} />
+          {fieldError('address_line')}
         </label>
 
         <label>Mobile number
-          <input type="tel" inputMode="tel" value={form.contact_no} onChange={set('contact_no')} placeholder="09XXXXXXXXX" autoComplete="tel" required maxLength={16} {...FIELD.mobile} {...fe.invalid('contact_no')} />
+          <input type="tel" inputMode="tel" value={form.contact_no} onChange={set('contact_no')} placeholder="09XXXXXXXXX" autoComplete="tel" required maxLength={24} {...fieldProps('contact_no')} />
           <span className="field-hint">Used for log in and SMS updates.</span>
-          {fe.error('contact_no')}
+          {fieldError('contact_no')}
         </label>
         <label>Gmail address (optional)
-          <input type="email" value={form.email} onChange={set('email')} placeholder="name@gmail.com" autoComplete="email" maxLength={255} {...FIELD.gmail} {...fe.invalid('email')} />
-          {fe.error('email')}
+          <input type="email" value={form.email} onChange={set('email')} placeholder="name@gmail.com" autoComplete="email" maxLength={255} {...FIELD.gmail} {...fieldProps('email')} />
+          {fieldError('email')}
           <span className="field-hint">You can also use this to log in.</span>
         </label>
 
           <label>Password
-            <PasswordInput value={form.password} onChange={set('password')} autoComplete="new-password" required {...FIELD.password} {...fe.invalid('password')} />
-            {fe.error('password')}
+            <PasswordInput value={form.password} onChange={set('password')} autoComplete="new-password" required maxLength={100} {...FIELD.password} {...fieldProps('password')} />
+            {fieldError('password')}
           </label>
           <label>Confirm password
-            <PasswordInput value={form.password_confirmation} onChange={set('password_confirmation')} autoComplete="new-password" required {...fe.invalid('password_confirmation')} />
-            {fe.error('password_confirmation')}
+            <PasswordInput value={form.password_confirmation} onChange={set('password_confirmation')} autoComplete="new-password" required maxLength={100} {...fieldProps('password_confirmation')} />
+            {fieldError('password_confirmation')}
           </label>
-        <p className="field-hint register-full">Password: at least 8 characters with letters and numbers. Avoid common passwords and your name, email or mobile number.</p>
-        </div>
+        <ul className="register-checks register-full" aria-label="Password requirements">
+          {checks.map((check) => <li key={check.text} className={check.ok ? 'is-met' : ''} aria-label={`${check.ok ? 'Met' : 'Needed'}: ${check.text}`}>
+            <span aria-hidden="true">{check.ok ? '✓' : '○'}</span>{check.text}
+          </li>)}
+        </ul>
+        </fieldset>
 
-        <button className="btn" disabled={busy}>{busy ? 'Creating account…' : 'Register'}</button>
+        <button className="btn" disabled={busy || !barangays?.length} aria-busy={busy}>{busy ? 'Creating account…' : 'Register'}</button>
         <p className="muted auth-footer"><span>Already registered?</span> <Link to="/login">Log in</Link></p>
       </form>
       </div>
