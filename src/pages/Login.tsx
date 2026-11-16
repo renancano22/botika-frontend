@@ -52,12 +52,15 @@ export default function Login() {
   return (
     <div className="auth-page">
       {splash && <SplashScreen onDone={() => setSplash(false)} />}
-      <form className={`auth-card auth-card--focused ${splash ? 'auth-card-wait' : 'auth-card-in'}`} onSubmit={submit} aria-hidden={splash || undefined}>
+      <div className={`auth-shell ${splash ? 'auth-card-wait' : 'auth-card-in'}`} aria-hidden={splash || undefined}>
+        <header className="auth-header">
         <div className="brand brand-center">
           <span className="brand-mark">✚</span>
           <div><strong>BulanBotikaCare</strong><small>Botika ng Bayan · Bulan, Sorsogon</small></div>
         </div>
-        <h1>Log in</h1>
+          <h1 id="auth-title">Log in</h1>
+        </header>
+      <form className="auth-card auth-card--focused" onSubmit={submit} aria-labelledby="auth-title">
         <Message>{fe.general}</Message>
         <label>Email or mobile number
           <input value={login} onChange={(e) => { setLogin(e.target.value); fe.clear('login'); }} placeholder="name@gmail.com or 09XXXXXXXXX" autoComplete="username" required autoFocus {...fe.invalid('login')} />
@@ -71,6 +74,7 @@ export default function Login() {
         <button className="btn" disabled={busy}>{busy ? 'Logging in…' : 'Log in'}</button>
         <p className="muted auth-footer"><span>Resident without an account?</span> <Link to="/register">Register here</Link></p>
       </form>
+      </div>
     </div>
   );
 }

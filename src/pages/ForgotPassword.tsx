@@ -64,12 +64,15 @@ export default function ForgotPassword() {
 
   return (
     <div className="auth-page">
+      <div className="auth-shell">
+        <header className="auth-header">
+          <h1 id="auth-title">{step === 1 ? 'Forgot password' : 'Reset password'}</h1>
+          {step === 1
+            ? <p className="muted">Enter your account's email or mobile number. We'll send a 6-digit code to reset your password.</p>
+            : <Message type="info">{info}</Message>}
+        </header>
       {step === 1 ? (
-        <form className="auth-card auth-card--focused" onSubmit={sendCode}>
-          <header className="auth-header">
-            <h1>Forgot password</h1>
-            <p className="muted">Enter your account's email or mobile number. We'll send a 6-digit code to reset your password.</p>
-          </header>
+        <form className="auth-card auth-card--focused" onSubmit={sendCode} aria-labelledby="auth-title">
           <Message>{fe.general}</Message>
           <label>Email or mobile number
             <input value={login} onChange={(e) => { setLogin(e.target.value); fe.clear('login'); }} placeholder="name@gmail.com or 09XXXXXXXXX" autoComplete="username" required autoFocus {...fe.invalid('login')} />
@@ -79,11 +82,7 @@ export default function ForgotPassword() {
           <p className="muted auth-footer"><Link to="/login">Back to log in</Link></p>
         </form>
       ) : (
-        <form className="auth-card auth-card--focused" onSubmit={reset}>
-          <header className="auth-header">
-            <h1>Reset password</h1>
-            <Message type="info">{info}</Message>
-          </header>
+        <form className="auth-card auth-card--focused" onSubmit={reset} aria-labelledby="auth-title">
           <Message>{fe.general}</Message>
           <label>6-digit code
             <input value={code} onChange={(e) => { setCode(e.target.value.replace(/\D/g, '').slice(0, 6)); fe.clear('code'); }}
@@ -106,6 +105,7 @@ export default function ForgotPassword() {
           </p>
         </form>
       )}
+      </div>
     </div>
   );
 }

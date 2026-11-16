@@ -359,23 +359,23 @@ input[type='password']::-ms-reveal, input[type='password']::-ms-clear { display:
 .auth-card .muted { margin-bottom: 12px; }
 
 /* Centered, compact headers for login and password recovery. */
+.auth-shell { width: 100%; max-width: 440px; display: flex; flex-direction: column; gap: 22px; padding: 12px 0; }
 .auth-card--focused { padding: clamp(24px, 5vw, 32px); }
-.auth-card--focused h1 {
+.auth-header h1 {
   text-align: center; font-size: clamp(1.4rem, 5vw, 1.65rem); line-height: 1.25;
-  margin: 0 0 22px; text-wrap: balance;
+  margin: 0; text-wrap: balance;
 }
-.auth-card--focused .brand-center {
-  flex-direction: column; gap: 12px; padding: 0; margin: 0 0 24px; text-align: center;
+.auth-header .brand-center {
+  flex-direction: column; gap: 12px; padding: 0; margin: 0 0 18px; text-align: center;
 }
-.auth-card--focused .brand-mark { width: 44px; height: 44px; font-size: 1.5rem; border-radius: 13px; }
-.auth-card--focused .brand strong { font-size: clamp(1.1rem, 4.5vw, 1.25rem); line-height: 1.35; }
-.auth-card--focused .brand small { max-width: 250px; margin: 5px auto 0; font-size: 0.75rem; line-height: 1.5; }
-.auth-header { margin-bottom: 22px; text-align: center; }
-.auth-card--focused .auth-header h1 { margin-bottom: 12px; }
-.auth-card--focused .auth-header > .muted { max-width: 35ch; margin: 0 auto; font-size: 0.875rem; line-height: 1.65; }
-.auth-card--focused .auth-header .msg {
-  flex-direction: column; align-items: center; gap: 8px; margin: 0; padding: 14px 16px;
-  text-align: center; font-size: 0.875rem; line-height: 1.6;
+.auth-header .brand-mark { width: 44px; height: 44px; font-size: 1.5rem; border-radius: 13px; }
+.auth-header .brand strong { font-size: clamp(1.1rem, 4.5vw, 1.25rem); line-height: 1.35; }
+.auth-header .brand small { max-width: 250px; margin: 5px auto 0; font-size: 0.75rem; line-height: 1.5; opacity: 0.85; }
+.auth-header { color: #fff; text-align: center; padding: 0 8px; }
+.auth-header > .muted { color: #e2f1e6; max-width: 35ch; margin: 12px auto 0; font-size: 0.875rem; line-height: 1.65; }
+.auth-header .msg {
+  flex-direction: column; align-items: center; gap: 8px; max-width: 38ch; margin: 12px auto 0; padding: 0;
+  border: 0; background: transparent; color: #e2f1e6; text-align: center; font-size: 0.875rem; line-height: 1.6;
 }
 .auth-card--focused label { font-size: 0.875rem; line-height: 1.5; }
 .auth-card--focused input { font-size: 1rem; }
