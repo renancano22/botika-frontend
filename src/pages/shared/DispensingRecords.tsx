@@ -26,7 +26,6 @@ const PRESETS: { key: Preset; label: string; range: () => [string, string] }[] =
   { key: 'all', label: 'All dates', range: () => ['', ''] },
 ];
 
-const CALENDAR = 'M4 6h16v14H4zM4 10h16M8 3v4M16 3v4';
 const SEARCH = 'M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14M21 21l-5-5';
 
 /** Monitoring of medicine distribution and patient dispensing records (Objective 3.2). */
@@ -78,23 +77,23 @@ export default function DispensingRecords() {
       <section className="card dr-filters" aria-label="Filters">
         <div className="dr-presets" role="group" aria-label="Quick date range">
           {PRESETS.map((p) => (
-            <button key={p.key} type="button" className={`chip ${activePreset === p.key ? 'active' : ''}`} onClick={() => setRange(...p.range())}>
+            <button key={p.key} type="button" className={`chip ${activePreset === p.key ? 'active' : ''}`} aria-pressed={activePreset === p.key} onClick={() => setRange(...p.range())}>
               {p.label}
             </button>
           ))}
         </div>
         <div className="dr-fields">
-          <label className="dr-field">
+          <label className="dr-field dr-field-from">
             <span>From</span>
-            <span className="dr-input">
-              <Svg d={CALENDAR} size={18} />
+            <span className={`dr-input dr-input--date ${from ? '' : 'is-empty'}`}>
+              {!from && <span className="dr-date-empty" aria-hidden="true">Choose date</span>}
               <input type="date" value={from} max={to || undefined} onChange={(e) => setRange(e.target.value, to)} aria-label="From date" />
             </span>
           </label>
-          <label className="dr-field">
+          <label className="dr-field dr-field-to">
             <span>To</span>
-            <span className="dr-input">
-              <Svg d={CALENDAR} size={18} />
+            <span className={`dr-input dr-input--date ${to ? '' : 'is-empty'}`}>
+              {!to && <span className="dr-date-empty" aria-hidden="true">Choose date</span>}
               <input type="date" value={to} min={from || undefined} onChange={(e) => setRange(from, e.target.value)} aria-label="To date" />
             </span>
           </label>
@@ -103,7 +102,7 @@ export default function DispensingRecords() {
             <span className="dr-input">
               <Svg d={SEARCH} size={18} />
               <input type="search" value={search} onChange={(e) => setSearch(e.target.value)}
-                placeholder={isResident ? 'Medicine or request no.' : 'Name, Resident ID, medicine or request no.'} />
+                placeholder={isResident ? 'Medicine or request no.' : 'Name, Resident ID, medicine or request no.'} aria-label={isResident ? 'Search medicine or request number' : 'Search dispensing records'} />
             </span>
           </label>
           <label className="dr-field dr-field-sort">
