@@ -66,10 +66,10 @@ export default function Register() {
             <div><strong>Bulan<span>BotikaCare</span></strong><small>Botika ng Bayan · Bulan, Sorsogon</small></div>
           </div>
           <h1 id="register-title">Resident Registration</h1>
+          <p className="muted" id="register-intro">Create your resident account to request medicines and keep track of your requests.</p>
         </header>
-      <form className="auth-card auth-card--focused register-card" onSubmit={submit} aria-labelledby="register-title" noValidate>
+      <form className="auth-card auth-card--focused register-card" onSubmit={submit} aria-labelledby="register-title" aria-describedby="register-intro" noValidate>
         <div className="register-card-heading">
-          <h2>Create your account</h2>
           <p>Fields marked <span className="register-required">*</span> are required.</p>
         </div>
         <Message>{fe.general}</Message>
@@ -77,7 +77,7 @@ export default function Register() {
 
         <fieldset className="register-fields" disabled={busy}>
         <section className="register-section" aria-labelledby="register-personal">
-          <h3 id="register-personal"><span>01</span> Personal details</h3>
+          <h2 id="register-personal"><span>01</span> Personal details</h2>
           <p className="register-section-hint">Check your name and barangay carefully. They are fixed after registration.</p>
           <div className="register-grid">
         <label className="register-full"><span>Full name <span className="register-required" aria-hidden="true">*</span></span>
@@ -100,7 +100,7 @@ export default function Register() {
         </section>
 
         <section className="register-section" aria-labelledby="register-contact">
-          <h3 id="register-contact"><span>02</span> Contact information</h3>
+          <h2 id="register-contact"><span>02</span> Contact information</h2>
           <div className="register-grid">
         <label><span>Mobile number <span className="register-required" aria-hidden="true">*</span></span>
           <input type="tel" inputMode="tel" value={form.contact_no} onChange={set('contact_no')} placeholder="09XXXXXXXXX" autoComplete="tel" required maxLength={24} {...fieldProps('contact_no')} />
@@ -116,7 +116,7 @@ export default function Register() {
         </section>
 
         <section className="register-section" aria-labelledby="register-security">
-          <h3 id="register-security"><span>03</span> Account security</h3>
+          <h2 id="register-security"><span>03</span> Account security</h2>
           <div className="register-grid">
           <label><span>Password <span className="register-required" aria-hidden="true">*</span></span>
             <PasswordInput value={form.password} onChange={set('password')} autoComplete="new-password" required maxLength={100} {...FIELD.password} {...fieldProps('password')} />
