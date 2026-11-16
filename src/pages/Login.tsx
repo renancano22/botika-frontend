@@ -58,9 +58,9 @@ export default function Login() {
           <span className="brand-mark">✚</span>
           <div><strong>BulanBotikaCare</strong><small>Botika ng Bayan · Bulan, Sorsogon</small></div>
         </div>
-          <h1 id="auth-title">Log in</h1>
         </header>
       <form className="auth-card auth-card--focused" onSubmit={submit} aria-labelledby="auth-title">
+        <h1 id="auth-title" className="auth-card-title">Log in</h1>
         <Message>{fe.general}</Message>
         <label>Email or mobile number
           <input value={login} onChange={(e) => { setLogin(e.target.value); fe.clear('login'); }} placeholder="name@gmail.com or 09XXXXXXXXX" autoComplete="username" required autoFocus {...fe.invalid('login')} />

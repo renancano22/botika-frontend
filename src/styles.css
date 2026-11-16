@@ -361,6 +361,9 @@ input[type='password']::-ms-reveal, input[type='password']::-ms-clear { display:
 /* Centered, compact headers for login and password recovery. */
 .auth-shell { width: 100%; max-width: 440px; display: flex; flex-direction: column; gap: 22px; padding: 12px 0; }
 .auth-card--focused { padding: clamp(24px, 5vw, 32px); }
+.auth-card--focused .auth-card-title {
+  margin: 0 0 22px; text-align: center; font-size: clamp(1.4rem, 5vw, 1.65rem); line-height: 1.25;
+}
 .auth-header h1 {
   text-align: center; font-size: clamp(1.4rem, 5vw, 1.65rem); line-height: 1.25;
   margin: 0; text-wrap: balance;
