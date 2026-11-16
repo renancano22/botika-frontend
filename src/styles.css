@@ -426,11 +426,9 @@ input[type='password']::-ms-reveal, input[type='password']::-ms-clear { display:
 }
 @media (min-width: 1024px) {
   .auth-page--register { padding: 40px 32px; }
-  .auth-shell--register { max-width: 1040px; display: grid; grid-template-columns: 280px minmax(0, 1fr); align-items: center; gap: 56px; }
-  .auth-shell--register > .auth-header { text-align: left; padding: 0; }
-  .auth-shell--register .register-brand { justify-content: flex-start; }
-  .auth-shell--register .auth-header h1 { text-align: left; font-size: 2rem; line-height: 1.25; }
-  .auth-shell--register .auth-header > .muted { margin: 18px 0 0; font-size: 0.9rem; line-height: 1.8; }
+  .auth-shell--register { max-width: 720px; gap: 28px; }
+  .auth-shell--register .auth-header h1 { font-size: 1.8rem; line-height: 1.25; }
+  .auth-shell--register .auth-header > .muted { max-width: 52ch; margin: 12px auto 0; font-size: 0.9rem; line-height: 1.7; }
   .register-card { padding: 36px; }
 }
 
