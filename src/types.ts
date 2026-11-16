@@ -170,6 +170,7 @@ export interface PrescriptionInfo {
   mime_type: string;
   size: number;
   uploaded_at: string;
+  medicine_ids?: number[];
 }
 
 export type RequestStatus = 'pending' | 'approved' | 'rejected' | 'dispensed' | 'fulfilled' | 'cancelled' | 'expired';
@@ -203,6 +204,7 @@ export interface MedicineRequest {
   reviewer?: { user_id: number; name: string } | null;
   canceller?: { user_id: number; name: string } | null;
   prescription?: PrescriptionInfo | null;
+  prescriptions?: PrescriptionInfo[];
   prescription_verified_at?: string | null;
   prescription_verifier?: { user_id: number; name: string } | null;
   dispensing?: { dispensing_id: number; dispensed_at: string; dispenser?: { user_id: number; name: string } | null } | null;

@@ -6,13 +6,14 @@ import { Empty, Loading, Message, Modal } from '../../components/ui';
 import { ICONS, quantityText, Svg, unitPlural } from '../../components/RequestCards';
 import type { Medicine, MedicineRequest } from '../../types';
 import { MAX_REQUEST_QUANTITY, quantityWarning } from '../../validation';
-import { PrescriptionUpload, PrescriptionViewer, RX_ICON, RxBadge, type PrescriptionFile } from '../../components/Prescription';
+import { RX_ICON, RxBadge } from '../../components/Prescription';
+import PrescriptionsEditor from '../../components/PrescriptionsEditor';
 import { jumpToTop } from '../../scroll';
 import BackButton from '../../components/BackButton';
 import { confirmSave, FieldError, LoadError, toast } from '../../components/feedback';
 import { useAuth } from '../../auth';
 import { Hl } from '../../components/SearchHighlight';
-import { MAX_REQUEST_ITEMS, MAX_REQUEST_NOTE, medicineRequestErrors, validateMedicineRequest } from '../../medicineRequest';
+import { MAX_REQUEST_ITEMS, MAX_REQUEST_NOTE, medicineRequestErrors, prescriptionPayload, retainPrescriptionCoverage, validateMedicineRequest, type PrescriptionDraft } from '../../medicineRequest';
 
 type CartItem = { medicine: Medicine; quantity: number };
 
@@ -78,8 +79,7 @@ export default function ResidentMedicines() {
   const [note, setNote] = useState('');
   const [restockNote, setRestockNote] = useState('');
   const [details, setDetails] = useState<Medicine | null>(null);    // medicine details sheet
-  const [prescription, setPrescription] = useState<PrescriptionFile | null>(null);
-  const [viewRx, setViewRx] = useState(false);
+  const [prescriptions, setPrescriptions] = useState<PrescriptionDraft[]>([]);
   const [uploading, setUploading] = useState(false);
   const [requestErrors, setRequestErrors] = useState<Record<string, string>>({});
   const submitting = useRef(false);
@@ -87,8 +87,7 @@ export default function ResidentMedicines() {
   const setCart = (items: CartItem[]) => {
     setRequestErrors({});
     if (medicineKey(items) !== medicineKey(cart)) {
-      setPrescription(null);
-      setViewRx(false);
+      setPrescriptions((files) => retainPrescriptionCoverage(files, items.filter((item) => item.medicine.requires_prescription).map((item) => item.medicine.medicine_id)));
     }
     if (items.length === 0) setNote('');
     setCartState(items);
@@ -112,8 +111,7 @@ export default function ResidentMedicines() {
   const cancelRequest = () => {
     if (submitting.current) return;
     setCart([]);
-    setPrescription(null);
-    setViewRx(false);
+    setPrescriptions([]);
     goStep(null);
   };
   useEffect(() => {
@@ -124,7 +122,7 @@ export default function ResidentMedicines() {
   const currentCart = cart.map((c) => ({ ...c, medicine: data?.find((m) => m.medicine_id === c.medicine.medicine_id) ?? c.medicine }));
   const cartWarnings = currentCart.map((c) => quantityWarning(c.quantity, unitPlural(c.medicine.unit), { available: c.medicine.available_stock }));
   const cartValid = cart.length > 0 && cartWarnings.every((w) => !w);
-  const requestIssues = validateMedicineRequest(currentCart, note, prescription, new Set(openMedicineReq.keys()));
+  const requestIssues = validateMedicineRequest(currentCart, note, prescriptions, new Set(openMedicineReq.keys()));
   const requestValid = Object.keys(requestIssues).length === 0 && !uploading;
   const reviewRequest = () => {
     if (submitting.current || uploading) return;
@@ -138,6 +136,10 @@ export default function ResidentMedicines() {
   // Medicines that need a doctor's prescription: the request must include a photo/PDF of it.
   const rxItems = currentCart.filter((c) => c.medicine.requires_prescription);
   const needsRx = rxItems.length > 0;
+  const rxSignature = rxItems.map((item) => item.medicine.medicine_id).sort((a, b) => a - b).join(',');
+  useEffect(() => {
+    setPrescriptions((files) => retainPrescriptionCoverage(files, rxSignature ? rxSignature.split(',').map(Number) : []));
+  }, [rxSignature]);
 
   /** "Request": goes straight to the Medicine Request Form with this medicine (the quantity is chosen there). */
   const startRequest = (m: Medicine) => {
@@ -171,11 +173,11 @@ export default function ResidentMedicines() {
         request_type: 'medicine',
         note: note.trim() || null,
         items: cart.map((c) => ({ medicine_id: c.medicine.medicine_id, quantity: c.quantity })),
-        ...(needsRx && prescription ? { prescription: { name: prescription.name, data: prescription.data } } : {}),
+        ...(needsRx ? { prescriptions: prescriptionPayload(prescriptions) } : {}),
       });
       setCart([]);
       setNote('');
-      setPrescription(null);
+      setPrescriptions([]);
       reloadMine(true);
       setCartOpen(false);
       navigate(`/requests/${res.data.request_id}`, { replace: true, state: { submitted: true } });
@@ -324,20 +326,21 @@ export default function ResidentMedicines() {
 
               {needsRx && (
                 <div className="rx-section" role="group" aria-label="Prescription" aria-describedby="mr-prescription-error">
-                  <span className="rx-section-title"><Svg d={RX_ICON} size={18} width={2.4} /> Upload Prescription <span className="req-star">*</span></span>
+                  <span className="rx-section-title"><Svg d={RX_ICON} size={18} width={2.4} /> Prescriptions <span className="req-star">*</span></span>
                   <p className="muted small">
-                    Required for {rxItems.map((c) => c.medicine.medicine_name).join(', ')}. Upload a clear photo of your doctor's prescription.
+                    Required for {rxItems.map((c) => c.medicine.medicine_name).join(', ')}. Link each file to the medicines written on it, including prescriptions from different doctors.
                   </p>
-                  <PrescriptionUpload key={medicineKey(cart)} value={prescription} onBusyChange={setUploading} onChange={(file) => { setPrescription(file); setRequestErrors((old) => ({ ...old, prescription: '' })); }} />
+                  <PrescriptionsEditor key={medicineKey(cart)} medicines={rxItems.map((item) => item.medicine)} drafts={prescriptions} onBusyChange={setUploading}
+                    onChange={(files) => { setPrescriptions(files); setRequestErrors((old) => Object.fromEntries(Object.entries(old).filter(([key]) => !key.startsWith('prescription')))); }} />
                   <FieldError message={requestErrors.prescription || requestIssues.prescription} id="mr-prescription-error" />
-                  <p className="rx-note"><Svg d={ICONS.info} size={16} /> The prescription will be reviewed by the pharmacy staff before your request can be approved.</p>
+                  <p className="rx-note"><Svg d={ICONS.info} size={16} /> Pharmacy staff will check every prescription and its medicines before approving your request.</p>
                 </div>
               )}
 
               <div className="info-box info-warn">
                 <strong><Svg d={ICONS.info} size={18} /> Important reminder</strong>
                 <p>Medicines are not suitable for everyone. Follow a doctor's or health worker's advice on whether to use them and how to take them.</p>
-                {needsRx && <p><b>Bring the original prescription when you claim the medicine.</b></p>}
+                {needsRx && <p><b>Bring all original prescriptions when you claim your medicines.</b></p>}
                 <p>You can request up to {MAX_REQUEST_QUANTITY} of each medicine per request.</p>
               </div>
 
@@ -348,19 +351,10 @@ export default function ResidentMedicines() {
                 <span className="muted small">Reason for request</span>
                 <p>{note.trim() || 'No reason given.'}</p>
               </div>
-              {needsRx && prescription && (
-                <div className="rx-review-row">
-                  <span className="rx-file-icon"><Svg d={RX_ICON} size={22} width={2.2} /></span>
-                  <div className="rx-file-info">
-                    <span className="muted small">Prescription</span>
-                    <strong>{prescription.name}</strong>
-                  </div>
-                  <button type="button" className="btn btn-outline btn-sm" onClick={() => setViewRx(true)}>View</button>
-                </div>
-              )}
+              {needsRx && <PrescriptionsEditor readOnly medicines={rxItems.map((item) => item.medicine)} drafts={prescriptions} />}
               <div className="info-box info-ok">
                 <strong><Svg d={ICONS.calendar} size={18} /> What happens next</strong>
-                <p>The pharmacy staff will review your request{needsRx ? ' and check your prescription' : ''}. You will get an SMS once it is approved.</p>
+                <p>The pharmacy staff will review your request{needsRx ? ' and check all prescriptions' : ''}. You will get an SMS once it is approved.</p>
                 <p>Then claim your medicines at Botika ng Bayan, Bulan within 7 days. Bring your QR code / Resident ID and a valid ID or Barangay ID.</p>
               </div>
             </>
@@ -379,7 +373,6 @@ export default function ResidentMedicines() {
             </button>
           </div>
         </section>
-        {viewRx && prescription && <PrescriptionViewer local={prescription} onClose={() => setViewRx(false)} />}
       </div>
     );
   }

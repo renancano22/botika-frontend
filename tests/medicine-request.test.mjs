@@ -49,6 +49,6 @@ test('prescription medicines require a valid supported nonempty upload', () => {
 });
 test('server errors retain row indexes and map nested prescription errors', () => {
   assert.deepEqual(medicineRequestErrors({ response: { data: { errors: { 'items.1.quantity': ['Only 2 available.'],
-    'prescription.data': ['Invalid file.'], open_request_id: '5' } } } }), { 'items.1.quantity': 'Only 2 available.', prescription: 'Invalid file.' });
+    'prescription.data': ['Invalid file.'], open_request_id: '5' } } } }), { 'items.1.quantity': 'Only 2 available.', 'prescription.data': 'Invalid file.', prescription: 'Invalid file.' });
   assert.deepEqual(medicineRequestErrors(new Error('offline')), {});
 });

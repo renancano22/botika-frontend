@@ -8,7 +8,8 @@ import { Loading, Message, Modal } from '../../components/ui';
 import RequestTracker from '../../components/RequestTracker';
 import { ICONS, Svg } from '../../components/RequestCards';
 import { PickupDeadlineBox, RequestSummaryCard, StatusBox } from '../../components/RequestDetailParts';
-import { PrescriptionUpload, type PrescriptionFile } from '../../components/Prescription';
+import PrescriptionsEditor from '../../components/PrescriptionsEditor';
+import { prescriptionDraftsFromRequest, prescriptionPayload, validatePrescriptionDrafts, type PrescriptionDraft } from '../../medicineRequest';
 import type { MedicineRequest } from '../../types';
 import { MAX_REQUEST_QUANTITY, quantityWarning } from '../../validation';
 import { unitPlural } from '../../components/RequestCards';
@@ -23,7 +24,10 @@ export default function RequestDetail() {
   const [msg, setMsg] = useState<{ type: 'error'; text: string } | null>(null);
   const [editing, setEditing] = useState<MedicineRequest | null>(null);
   const [busy, setBusy] = useState(false);
-  const [newRx, setNewRx] = useState<PrescriptionFile | null>(null);
+  const [newRx, setNewRx] = useState<PrescriptionDraft[]>([]);
+  const [rxUploading, setRxUploading] = useState(false);
+  const savingRx = useRef(false);
+  const rxMedicines = r?.items.filter((i) => i.medicine.requires_prescription).map((i) => i.medicine) ?? [];
   const [replacingRx, setReplacingRx] = useState(false);
   // Opened right after submitting from the request form.
   const navState = useLocation().state as { submitted?: boolean; edit?: boolean } | null;
@@ -46,22 +50,25 @@ export default function RequestDetail() {
   }) : [];
 
   const replacePrescription = async () => {
-    if (!r || !newRx || busy) return;
-    if (!(await confirmSave({
-      title: 'Save this prescription?',
-      message: <><strong>{newRx.name}</strong> will be {r.prescription ? 'used instead of the prescription uploaded before' : 'added to'} Request No. {r.request_id}.</>,
-      details: 'The pharmacy staff will check it when they review your request.',
-    }))) return;
-    setBusy(true);
+    if (!r || busy || rxUploading || savingRx.current) return;
+    const errors = validatePrescriptionDrafts(rxMedicines, newRx);
+    if (Object.keys(errors).length) { setMsg({ type: 'error', text: errors.prescription }); return; }
+    savingRx.current = true;
     setMsg(null);
     try {
-      setData((await api.post<MedicineRequest>(`/requests/${r.request_id}/prescription`, { prescription: { name: newRx.name, data: newRx.data } })).data);
+      if (!(await confirmSave({
+        title: 'Save these prescriptions?',
+        message: <>Save {newRx.length} prescription file{newRx.length === 1 ? '' : 's'} and their medicine assignments for Request No. {r.request_id}?</>,
+        details: 'Only the files listed here will be kept. Pharmacy staff will check every prescription before approval.',
+      }))) return;
+      setBusy(true);
+      setData((await api.post<MedicineRequest>(`/requests/${r.request_id}/prescription`, { prescriptions: prescriptionPayload(newRx) })).data);
       setReplacingRx(false);
-      setNewRx(null);
-      toast.success('Prescription saved', { description: 'The pharmacy staff will check it when they review your request.' });
+      setNewRx([]);
+      toast.success('Prescriptions saved', { description: 'The pharmacy staff will check all files and their medicines.' });
     } catch (err) {
       setMsg({ type: 'error', text: errorMessage(err) });
-    } finally { setBusy(false); }
+    } finally { savingRx.current = false; setBusy(false); }
   };
 
   const cancel = () => {
@@ -118,13 +125,13 @@ export default function RequestDetail() {
             <span className="submitted-icon"><Svg d={ICONS.check} size={30} width={2.8} /></span>
             <div>
               <strong>Request Submitted!</strong>
-              <p>Your request No. {r.request_id} has been sent to Botika ng Bayan. {r.request_type === 'restock' ? 'The administrator will review it.' : r.prescription ? 'The pharmacy staff will check your prescription and review your request.' : 'The pharmacy staff will review it.'} You will be notified once it is approved or not approved. No action is needed for now.</p>
+              <p>Your request No. {r.request_id} has been sent to Botika ng Bayan. {r.request_type === 'restock' ? 'The administrator will review it.' : r.prescription ? 'The pharmacy staff will check all uploaded prescriptions and review your request.' : 'The pharmacy staff will review it.'} You will be notified once it is approved or not approved. No action is needed for now.</p>
             </div>
           </div>
         )}
         <RequestSummaryCard r={r} prescriptionAction={r.status === 'pending' && r.request_type === 'medicine' && can('requests.create') && (r.prescription || r.items.some((i) => i.medicine.requires_prescription)) ? (
-          <button type="button" className="btn btn-outline btn-sm" disabled={busy} onClick={() => { setNewRx(null); setMsg(null); setReplacingRx(true); }}>
-            {r.prescription ? 'Replace' : 'Upload'}
+          <button type="button" className="btn btn-outline btn-sm" disabled={busy} onClick={() => { setNewRx(prescriptionDraftsFromRequest(r)); setMsg(null); setReplacingRx(true); }}>
+            Manage prescriptions
           </button>
         ) : undefined} />
         <PickupDeadlineBox r={r} />
@@ -149,13 +156,15 @@ export default function RequestDetail() {
       </>}
 
       {replacingRx && r && (
-        <Modal title={r.prescription ? 'Replace prescription' : 'Upload prescription'} onClose={() => !busy && setReplacingRx(false)}>
-          <p className="muted small">Upload a clear photo of your doctor's prescription. The pharmacy staff will check it before approving your request.</p>
-          <PrescriptionUpload value={newRx} onChange={setNewRx} />
+        <Modal title="Manage prescriptions" onClose={() => !busy && !savingRx.current && setReplacingRx(false)}>
+          <p className="muted small">Keep or replace existing files, add prescriptions from other doctors, and select the medicines each file covers.</p>
+          <fieldset className="mr-fields" disabled={busy}>
+            <PrescriptionsEditor medicines={rxMedicines} drafts={newRx} onChange={setNewRx} onBusyChange={setRxUploading} requestId={r.request_id} />
+          </fieldset>
           {msg && <Message>{msg.text}</Message>}
           <div className="modal-actions">
             <button className="btn btn-outline" onClick={() => setReplacingRx(false)} disabled={busy}>Cancel</button>
-            <button className="btn" disabled={busy || !newRx} onClick={replacePrescription}>{busy ? 'Uploading…' : 'Save prescription'}</button>
+            <button className="btn" disabled={busy || rxUploading || Object.keys(validatePrescriptionDrafts(rxMedicines, newRx)).length > 0} onClick={replacePrescription}>{busy ? 'Saving…' : 'Save prescriptions'}</button>
           </div>
         </Modal>
       )}

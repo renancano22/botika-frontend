@@ -932,6 +932,21 @@ input[type='password']::-ms-reveal, input[type='password']::-ms-clear { display:
 .mr-actions .btn { min-height: 44px; }
 .mr-actions .mr-primary { margin-left: auto; }
 .rx-file-actions { display: flex; flex-wrap: wrap; gap: 8px 16px; margin-top: 6px; font-size: 0.8rem; }
+.prescriptions-editor { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.prescriptions-editor > .field-hint { margin: 0; line-height: 1.6; }
+.prescription-entry { padding: 16px; border: 1px solid var(--border); border-radius: 12px; background: #fff; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.prescription-entry-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 0.875rem; }
+.prescription-entry-head .link-button { font-size: 0.8rem; }
+.prescription-coverage { margin: 0; padding: 0; border: 0; min-width: 0; }
+.prescription-coverage legend { padding: 0; margin-bottom: 8px; font-size: 0.8rem; font-weight: 600; }
+.prescription-coverage .checkbox-row { margin: 8px 0 0; align-items: flex-start; font-size: 0.85rem; overflow-wrap: anywhere; }
+.prescription-coverage input[type='checkbox'] { flex: 0 0 18px; width: 18px; height: 18px; min-height: 0; margin-top: 2px; }
+.prescription-covered { display: block; margin-top: 4px; font-size: 0.85rem; overflow-wrap: anywhere; }
+.prescription-file-name { flex: 1; min-width: 0; overflow-wrap: anywhere; font-size: 0.85rem; }
+.prescription-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 16px; }
+.prescription-tabs .chip { max-width: 100%; white-space: normal; overflow-wrap: anywhere; text-align: left; }
+.prescription-staff-file { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
+.prescription-verifications { width: 100%; }
 @media (max-width: 600px) {
   .mr-card { padding: 18px; }
   .mr-card .form-med { padding: 14px; }

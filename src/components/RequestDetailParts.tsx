@@ -4,6 +4,7 @@ import type { MedicineRequest } from '../types';
 import { pickupPeriod, statusSummary } from './RequestTracker';
 import { dateTime, ICONS, isMixed, PickupCountdown, quantityText, RequestNo, SourceTag, STATUS_COLOR_KEY, statusKey, StatusPill, Svg } from './RequestCards';
 import { PrescriptionViewer, requiresPrescription, RX_ICON, RxBadge } from './Prescription';
+import { storedPrescriptions } from '../medicineRequest';
 
 /** "Pickup schedule" row: approval means the medicines are ready at Botika ng Bayan until the claim deadline. */
 export function pickupText(r: MedicineRequest): string {
@@ -51,7 +52,7 @@ export function notesText(r: MedicineRequest): string {
 export function prescriptionStatus(r: MedicineRequest): string {
   if (!r.prescription) return 'Not uploaded';
   if (r.prescription_verified_at) return `Checked by ${r.prescription_verifier?.name ?? 'the pharmacy staff'} · ${formatDate(r.prescription_verified_at)}`;
-  if (r.status === 'pending') return 'Waiting for the pharmacy staff to check it';
+  if (r.status === 'pending') return 'Waiting for pharmacy staff to check the uploaded files';
   return 'Uploaded';
 }
 
@@ -92,11 +93,11 @@ export function RequestSummaryCard({ r, prescriptionAction }: { r: MedicineReque
             <dt><Svg d={RX_ICON} size={18} width={2.2} /> Prescription</dt>
             <dd className="rx-dd">
               <span>
-                {r.prescription && <strong className="rx-name">{r.prescription.file_name}</strong>}
+                {storedPrescriptions(r).map((file) => <strong className="rx-name" key={file.prescription_id}>{file.file_name}</strong>)}
                 <span className={r.prescription_verified_at ? 'rx-ok' : 'muted small'}>{prescriptionStatus(r)}</span>
               </span>
               <span className="rx-dd-actions">
-                {r.prescription && <button type="button" className="btn btn-outline btn-sm" onClick={() => setViewRx(true)}>View</button>}
+                {r.prescription && <button type="button" className="btn btn-outline btn-sm" onClick={() => setViewRx(true)}>View {storedPrescriptions(r).length > 1 ? `all (${storedPrescriptions(r).length})` : 'file'}</button>}
                 {prescriptionAction}
               </span>
             </dd>

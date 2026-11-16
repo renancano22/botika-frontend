@@ -9,6 +9,7 @@ import { Badge, Card, Empty, Loading, Message, Modal } from '../../components/ui
 import RequestTracker from '../../components/RequestTracker';
 import { PrescriptionViewer, requiresPrescription, RxBadge, RX_ICON } from '../../components/Prescription';
 import { prescriptionStatus } from '../../components/RequestDetailParts';
+import { storedPrescriptions } from '../../medicineRequest';
 import { isMixed, PickupCountdown, SourceTag, Svg } from '../../components/RequestCards';
 import type { MedicineRequest } from '../../types';
 import BackButton from '../../components/BackButton';
@@ -106,9 +107,9 @@ export default function Requests() {
   const [rejectBusy, setRejectBusy] = useState(false);
   const [viewingId, setViewingId] = useState<number | null>(null);
   const viewing = rows.find((r) => r.request_id === viewingId) ?? null;
-  const [rxChecked, setRxChecked] = useState(false);
+  const [checkedRxIds, setCheckedRxIds] = useState<number[]>([]);
   const [viewRxId, setViewRxId] = useState<number | null>(null);
-  const openDetails = (r: MedicineRequest) => { setRxChecked(false); setViewingId(r.request_id); };
+  const openDetails = (r: MedicineRequest) => { setCheckedRxIds([]); setViewingId(r.request_id); };
 
   const canReview = (r: MedicineRequest) =>
     r.status === 'pending' && can('requests.review') && (r.request_type === 'medicine' || user?.role === 'admin');
@@ -116,6 +117,7 @@ export default function Requests() {
   const approve = async (r: MedicineRequest) => {
     if (actingId) return;
     const rx = requiresPrescription(r);
+    if (rx && (!storedPrescriptions(r).length || !storedPrescriptions(r).every((file) => checkedRxIds.includes(file.prescription_id)))) return;
     if (!(await confirmSave({
       title: `Approve Request No. ${r.request_id}?`,
       message: <><strong>{r.resident?.name ?? 'The resident'}</strong> · {itemsText(r)}</>,
@@ -126,7 +128,7 @@ export default function Requests() {
     }))) return;
     setActingId(r.request_id);
     try {
-      await api.post(`/requests/${r.request_id}/approve`, rx ? { prescription_verified: true } : {});
+      await api.post(`/requests/${r.request_id}/approve`, rx ? { prescription_verified: true, verified_prescription_ids: checkedRxIds } : {});
       toast.success(`Request No. ${r.request_id} approved`, {
         description: r.request_type === 'restock'
           ? `${r.resident?.name ?? 'The resident'} will be notified when the medicine is available.`
@@ -143,7 +145,7 @@ export default function Requests() {
   const reviewButtons = (r: MedicineRequest, inDetails = false) => canReview(r) && <>
     {requiresPrescription(r) && !inDetails
       ? <button className="btn btn-sm" onClick={() => openDetails(r)}>Check & approve</button>
-      : <button className="btn btn-sm" disabled={actingId !== null || (requiresPrescription(r) && (!rxChecked || !r.prescription))} onClick={() => approve(r)}>
+      : <button className="btn btn-sm" disabled={actingId !== null || (requiresPrescription(r) && (!storedPrescriptions(r).length || !storedPrescriptions(r).every((file) => checkedRxIds.includes(file.prescription_id))))} onClick={() => approve(r)}>
         {actingId === r.request_id ? 'Approving…' : 'Approve'}
       </button>}{' '}
     <button className="btn btn-danger btn-sm" disabled={actingId !== null} onClick={() => openReject(r)}>Reject</button>
@@ -270,23 +272,29 @@ export default function Requests() {
           )}
           {(requiresPrescription(viewing) || viewing.prescription) && (
             <div className="rx-box">
-              <strong><Svg d={RX_ICON} size={18} width={2.4} /> Prescription</strong>
+              <strong><Svg d={RX_ICON} size={18} width={2.4} /> Prescriptions ({storedPrescriptions(viewing).length})</strong>
               {viewing.prescription ? (
                 <div className="rx-review-row">
                   <div className="rx-file-info">
-                    <strong>{viewing.prescription.file_name}</strong>
+                    {storedPrescriptions(viewing).map((file) => <div className="prescription-staff-file" key={file.prescription_id}>
+                      <strong>{file.file_name}</strong>
+                      <span className="small">Covers: {viewing.items.filter((item) => (file.medicine_ids ?? viewing.items.filter((i) => i.medicine.requires_prescription).map((i) => i.medicine_id)).includes(item.medicine_id)).map((item) => item.medicine.medicine_name).join(', ')}</span>
+                    </div>)}
                     <span className="small">{prescriptionStatus(viewing)}</span>
                   </div>
-                  <button type="button" className="btn btn-outline btn-sm" onClick={() => setViewRxId(viewing.request_id)}>View</button>
+                  <button type="button" className="btn btn-outline btn-sm" onClick={() => setViewRxId(viewing.request_id)}>View files</button>
                 </div>
               ) : (
                 <p>No prescription was uploaded. Ask the resident to upload it in their request, or reject the request.</p>
               )}
               {canReview(viewing) && viewing.prescription && (
-                <label className="checkbox-row rx-check">
-                  <input type="checkbox" checked={rxChecked} onChange={(e) => setRxChecked(e.target.checked)} />
-                  <span>I checked the prescription: it is valid, signed by a licensed doctor, written for this resident, and matches the requested medicine and quantity.</span>
-                </label>
+                <div className="prescription-verifications">
+                  <p className="small">Confirm each file is valid, signed by a licensed doctor, written for this resident, and matches its medicines and quantities.</p>
+                  {storedPrescriptions(viewing).map((file) => <label className="checkbox-row rx-check" key={file.prescription_id}>
+                    <input type="checkbox" checked={checkedRxIds.includes(file.prescription_id)} onChange={(e) => setCheckedRxIds((ids) => e.target.checked ? [...ids, file.prescription_id] : ids.filter((id) => id !== file.prescription_id))} />
+                    <span>I checked {file.file_name}</span>
+                  </label>)}
+                </div>
               )}
             </div>
           )}

@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { api, errorMessage } from '../api';
-import type { MedicineRequest } from '../types';
+import type { MedicineRequest, PrescriptionInfo } from '../types';
 import { Message, Modal } from './ui';
 import { ICONS, Svg } from './RequestCards';
-import { MAX_PRESCRIPTION_BYTES } from '../medicineRequest';
+import { MAX_PRESCRIPTION_BYTES, storedPrescriptions } from '../medicineRequest';
 
 /** A prescription file ready to send: { name, data: "data:<type>;base64,..." }. */
 export interface PrescriptionFile { name: string; data: string; type: string; size: number }
@@ -76,21 +76,23 @@ export function PrescriptionUpload({ value, onChange, onBusyChange }: { value: P
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const generation = useRef(0);
-  useEffect(() => () => { generation.current += 1; onBusyChange?.(false); }, [onBusyChange]);
+  const callbacks = useRef({ onChange, onBusyChange });
+  callbacks.current = { onChange, onBusyChange };
+  useEffect(() => () => { generation.current += 1; callbacks.current.onBusyChange?.(false); }, []);
 
   const choose = async (file?: File) => {
     if (!file) return;
     const current = ++generation.current;
     setBusy(true);
-    onBusyChange?.(true);
+    callbacks.current.onBusyChange?.(true);
     setError('');
     try {
       const prepared = await prepareFile(file);
-      if (current === generation.current) onChange(prepared);
+      if (current === generation.current) callbacks.current.onChange(prepared);
     } catch (e) {
       if (current === generation.current) setError((e as Error).message);
     } finally {
-      if (current === generation.current) { setBusy(false); onBusyChange?.(false); }
+      if (current === generation.current) { setBusy(false); callbacks.current.onBusyChange?.(false); }
     }
   };
 
@@ -125,16 +127,39 @@ export function PrescriptionUpload({ value, onChange, onBusyChange }: { value: P
 }
 
 /** Opens the uploaded prescription of a request (image shown inside, PDF opened in a new tab). */
-export function PrescriptionViewer({ requestId, local, onClose }: { requestId?: number; local?: PrescriptionFile; onClose: () => void }) {
+export function PrescriptionViewer({ requestId, local, initialPrescriptionId, onClose }: { requestId?: number; local?: PrescriptionFile; initialPrescriptionId?: number; onClose: () => void }) {
   const [file, setFile] = useState<{ file_name: string; mime_type: string; data: string } | null>(
     local ? { file_name: local.name, mime_type: local.type, data: local.data } : null,
   );
   const [error, setError] = useState('');
+  const [files, setFiles] = useState<PrescriptionInfo[]>([]);
+  const [selectedId, setSelectedId] = useState<number | undefined>(initialPrescriptionId);
+  const [medicineNames, setMedicineNames] = useState<Record<number, string>>({});
+  const [legacy, setLegacy] = useState(false);
 
   useEffect(() => {
     if (local || !requestId) return;
-    api.get(`/requests/${requestId}/prescription`).then((res) => setFile(res.data)).catch((e) => setError(errorMessage(e)));
-  }, [requestId, local]);
+    let active = true;
+    api.get<MedicineRequest>(`/requests/${requestId}`).then(({ data }) => {
+      if (!active) return;
+      const rxIds = data.items.filter((i) => i.medicine.requires_prescription).map((i) => i.medicine_id);
+      const uploaded = storedPrescriptions(data).map((p) => ({ ...p, medicine_ids: p.medicine_ids ?? rxIds }));
+      setFiles(uploaded); setLegacy(data.prescriptions === undefined);
+      setMedicineNames(Object.fromEntries(data.items.map((i) => [i.medicine_id, i.medicine.medicine_name])));
+      setSelectedId(uploaded.some((p) => p.prescription_id === initialPrescriptionId) ? initialPrescriptionId : uploaded[0]?.prescription_id);
+      if (!uploaded.length) setError('No prescriptions were uploaded for this request.');
+    }).catch((e) => { if (active) setError(errorMessage(e)); });
+    return () => { active = false; };
+  }, [requestId, local, initialPrescriptionId]);
+
+  useEffect(() => {
+    if (local || !requestId || !selectedId || !files.length) return;
+    let active = true;
+    setFile(null); setError('');
+    const url = legacy ? `/requests/${requestId}/prescription` : `/requests/${requestId}/prescriptions/${selectedId}`;
+    api.get(url).then((res) => { if (active) setFile(res.data); }).catch((e) => { if (active) setError(errorMessage(e)); });
+    return () => { active = false; };
+  }, [requestId, selectedId, local, legacy, files.length]);
 
   const openPdf = async () => {
     if (!file) return;
@@ -143,7 +168,11 @@ export function PrescriptionViewer({ requestId, local, onClose }: { requestId?: 
   };
 
   return (
-    <Modal title="Prescription" onClose={onClose}>
+    <Modal title={files.length > 1 ? 'Prescriptions' : 'Prescription'} onClose={onClose}>
+      {files.length > 1 && <div className="prescription-tabs" role="group" aria-label="Choose prescription">
+        {files.map((p, i) => <button type="button" key={p.prescription_id} className={`chip ${selectedId === p.prescription_id ? 'active' : ''}`} aria-pressed={selectedId === p.prescription_id} onClick={() => setSelectedId(p.prescription_id)}>{i + 1}. {p.file_name}</button>)}
+      </div>}
+      {files.length > 0 && <p className="field-hint">Medicines covered: {(files.find((p) => p.prescription_id === selectedId)?.medicine_ids ?? []).map((id) => medicineNames[id] ?? 'Previously requested medicine').join(', ')}</p>}
       {error ? <Message>{error}</Message> : !file ? <p className="empty">Loading…</p> : file.mime_type.startsWith('image/') ? (
         <div className="rx-view">
           <img src={file.data} alt={file.file_name} />
