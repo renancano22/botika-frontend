@@ -269,7 +269,7 @@ export default function Users() {
   });
 
   return (
-    <div className="page">
+    <div className="page users-page">
       <BackButton linkedOnly />
       <header className="page-head">
         <div className="page-title"><h1>User Accounts</h1></div>
@@ -328,17 +328,19 @@ export default function Users() {
                     )}
                   </td>
                   <td>{formatDate(u.created_at)}</td>
-                  <td className="right nowrap">
+                  <td className="right">
+                    <div className="ua-row-actions" role="group" aria-label={`Actions for ${u.name}`}>
                     {noAccount ? <>
-                      <button className="btn btn-outline btn-sm" onClick={() => openAccount(u)}>Create account</button>{' '}
+                      <button className="btn btn-outline btn-sm" onClick={() => openAccount(u)}>Create account</button>
                       <button className="btn btn-outline btn-sm" onClick={() => openFix(u)}>Edit</button>
-                      {!u.has_history && <>{' '}<button className="btn btn-danger btn-sm" onClick={() => removeResident(u)} title="Only for a record made by mistake (no requests or dispensing records)">Delete</button></>}
+                      {!u.has_history && <button className="btn btn-danger btn-sm" onClick={() => removeResident(u)} title="Only for a record made by mistake (no requests or dispensing records)">Delete</button>}
                     </> : <>
-                      <button className="btn btn-outline btn-sm" onClick={() => open(u as User)}>Edit</button>{' '}
+                      <button className="btn btn-outline btn-sm" onClick={() => open(u as User)}>Edit</button>
                       {u.user_id !== me?.user_id && (
                         <button className={`btn btn-sm ${u.is_active ? 'btn-danger' : ''}`} onClick={() => toggle(u as User)}>{u.is_active ? 'Deactivate' : 'Activate'}</button>
                       )}
                     </>}
+                    </div>
                   </td>
                 </tr>
                 );
