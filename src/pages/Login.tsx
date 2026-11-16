@@ -56,7 +56,7 @@ export default function Login() {
         <header className="auth-header">
         <div className="brand brand-center">
           <span className="brand-mark">✚</span>
-          <div><strong>BulanBotikaCare</strong><small>Botika ng Bayan · Bulan, Sorsogon</small></div>
+          <div><strong>Bulan<span>BotikaCare</span></strong><small>Botika ng Bayan · Bulan, Sorsogon</small></div>
         </div>
         </header>
       <form className="auth-card auth-card--focused" onSubmit={submit} aria-labelledby="auth-title">
