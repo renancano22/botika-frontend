@@ -40,12 +40,16 @@ export default function Register() {
 
   return (
     <div className="auth-page">
-      <form className="auth-card" onSubmit={submit}>
-        <h1>Resident Registration</h1>
-        <p className="muted">Create an account to check medicine availability, submit requests and receive SMS updates.</p>
+      <div className="auth-shell auth-shell--register auth-shell--animated">
+        <header className="auth-header">
+          <h1 id="register-title">Resident Registration</h1>
+          <p className="muted">Create an account to check medicine availability, submit requests and receive SMS updates.</p>
+        </header>
+      <form className="auth-card auth-card--focused register-card" onSubmit={submit} aria-labelledby="register-title">
         <Message>{fe.general}</Message>
 
-        <label>Full name
+        <div className="register-grid">
+        <label className="register-full">Full name
           <input value={form.name} onChange={set('name')} autoComplete="name" required maxLength={100} {...FIELD.name} {...fe.invalid('name')} />
           {fe.error('name')}
           {!fe.fields.name && <span className="field-hint">Your full name and barangay cannot be changed after you register, so check them carefully.</span>}
@@ -58,21 +62,22 @@ export default function Register() {
           </select>
           {fe.error('barangay')}
         </label>
-        <label>House no. / Street / Purok (optional)
-          <input value={form.address_line} onChange={set('address_line')} maxLength={120} placeholder="e.g. Purok 3, Rizal St." {...fe.invalid('address_line')} />
+        <label>House / Street / Purok (optional)
+          <input value={form.address_line} onChange={set('address_line')} maxLength={120} placeholder="e.g. Purok 3, Rizal St." autoComplete="address-line1" {...fe.invalid('address_line')} />
           {fe.error('address_line')}
         </label>
 
-        <label>Mobile number (for log in and SMS updates)
-          <input type="tel" inputMode="tel" value={form.contact_no} onChange={set('contact_no')} placeholder="09XXXXXXXXX" required maxLength={16} {...FIELD.mobile} {...fe.invalid('contact_no')} />
+        <label>Mobile number
+          <input type="tel" inputMode="tel" value={form.contact_no} onChange={set('contact_no')} placeholder="09XXXXXXXXX" autoComplete="tel" required maxLength={16} {...FIELD.mobile} {...fe.invalid('contact_no')} />
+          <span className="field-hint">Used for log in and SMS updates.</span>
           {fe.error('contact_no')}
         </label>
-        <label>Gmail address (optional — you can also log in with it)
+        <label>Gmail address (optional)
           <input type="email" value={form.email} onChange={set('email')} placeholder="name@gmail.com" autoComplete="email" maxLength={255} {...FIELD.gmail} {...fe.invalid('email')} />
           {fe.error('email')}
+          <span className="field-hint">You can also use this to log in.</span>
         </label>
 
-        <div className="row">
           <label>Password
             <PasswordInput value={form.password} onChange={set('password')} autoComplete="new-password" required {...FIELD.password} {...fe.invalid('password')} />
             {fe.error('password')}
@@ -81,12 +86,13 @@ export default function Register() {
             <PasswordInput value={form.password_confirmation} onChange={set('password_confirmation')} autoComplete="new-password" required {...fe.invalid('password_confirmation')} />
             {fe.error('password_confirmation')}
           </label>
+        <p className="field-hint register-full">Password: at least 8 characters with letters and numbers. Avoid common passwords and your name, email or mobile number.</p>
         </div>
-        <p className="field-hint">Password: at least 8 characters with letters and numbers. Avoid common passwords and your name, email or mobile number.</p>
 
         <button className="btn" disabled={busy}>{busy ? 'Creating account…' : 'Register'}</button>
-        <p className="muted center">Already registered? <Link to="/login">Log in</Link></p>
+        <p className="muted auth-footer"><span>Already registered?</span> <Link to="/login">Log in</Link></p>
       </form>
+      </div>
     </div>
   );
 }
