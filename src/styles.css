@@ -390,6 +390,34 @@ input[type='password']::-ms-reveal, input[type='password']::-ms-clear { display:
   margin: 16px 0 0; text-align: center; font-size: 0.85rem; line-height: 1.65;
 }
 .auth-card--focused .auth-footer--stacked { flex-direction: column; gap: 6px; }
+/* Short account forms follow the visible phone viewport, including browser bars.
+   Natural overflow remains available for the keyboard, large text and validation errors. */
+@media (max-width: 700px) {
+  .auth-page--compact {
+    min-height: 100svh; min-height: 100dvh; display: flex; flex-direction: column;
+    justify-content: center; padding: max(12px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+    overflow-x: clip;
+  }
+  .auth-page--compact > .auth-shell { padding: 0; gap: 16px; margin: auto; flex-shrink: 0; }
+  .auth-page--compact .brand-center { margin-bottom: 0; gap: 8px; }
+  .auth-page--compact .auth-header .auth-logo { width: 52px; height: 52px; }
+  .auth-page--compact .brand strong { font-size: clamp(1.3rem, 5vw, 1.55rem); }
+  .auth-page--compact .brand small { margin-top: 4px; font-size: 0.75rem; line-height: 1.4; }
+  .auth-page--compact .auth-card { padding: 20px; border-radius: 18px; }
+  .auth-page--compact .auth-card-title { font-size: 1.4rem; margin-bottom: 16px; }
+  .auth-page--compact label { margin-bottom: 10px; }
+  .auth-page--compact input { font-size: 16px; min-height: 44px; }
+  .auth-page--compact .btn { min-height: 44px; }
+  .auth-page--compact .auth-footer { margin-top: 12px; gap: 2px 5px; font-size: 0.78rem; }
+  .auth-page--compact .forgot-link { margin-bottom: 12px; }
+}
+@media (max-width: 700px) and (max-height: 600px) {
+  .auth-page--compact > .auth-shell { gap: 12px; }
+  .auth-page--compact .auth-header .auth-logo { width: 44px; height: 44px; }
+  .auth-page--compact .brand-center { gap: 6px; }
+  .auth-page--compact .auth-card { padding: 16px 20px; }
+  .auth-page--compact .auth-card-title { margin-bottom: 12px; }
+}
 .auth-page--register { padding: 32px 20px; }
 .auth-shell--register { max-width: 680px; gap: 26px; }
 .auth-shell--register .auth-header h1 { font-size: 1.25rem; font-weight: 600; line-height: 1.4; }

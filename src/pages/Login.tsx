@@ -50,7 +50,7 @@ export default function Login() {
   };
 
   return (
-    <div className="auth-page">
+    <div className="auth-page auth-page--compact">
       {splash && <SplashScreen onDone={() => setSplash(false)} />}
       <div className={`auth-shell ${splash ? 'auth-card-wait' : 'auth-card-in'}`} aria-hidden={splash || undefined}>
         <header className="auth-header">
@@ -63,7 +63,7 @@ export default function Login() {
         <h1 id="auth-title" className="auth-card-title">Log in</h1>
         <Message>{fe.general}</Message>
         <label>Email or mobile number
-          <input value={login} onChange={(e) => { setLogin(e.target.value); fe.clear('login'); }} placeholder="name@gmail.com or 09XXXXXXXXX" autoComplete="username" required autoFocus {...fe.invalid('login')} />
+          <input value={login} onChange={(e) => { setLogin(e.target.value); fe.clear('login'); }} placeholder="Email or mobile number" autoComplete="username" required {...fe.invalid('login')} />
           {fe.error('login')}
         </label>
         <label>Password

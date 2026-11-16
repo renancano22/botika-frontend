@@ -63,7 +63,7 @@ export default function ForgotPassword() {
   };
 
   return (
-    <div className="auth-page">
+    <div className={`auth-page ${step === 1 ? 'auth-page--compact' : ''}`}>
       <div className="auth-shell auth-shell--animated" key={step}>
         <header className="auth-header">
           <h1 id="auth-title">{step === 1 ? 'Forgot password' : 'Reset password'}</h1>
@@ -75,7 +75,7 @@ export default function ForgotPassword() {
         <form className="auth-card auth-card--focused" onSubmit={sendCode} aria-labelledby="auth-title">
           <Message>{fe.general}</Message>
           <label>Email or mobile number
-            <input value={login} onChange={(e) => { setLogin(e.target.value); fe.clear('login'); }} placeholder="name@gmail.com or 09XXXXXXXXX" autoComplete="username" required autoFocus {...fe.invalid('login')} />
+            <input value={login} onChange={(e) => { setLogin(e.target.value); fe.clear('login'); }} placeholder="Email or mobile number" autoComplete="username" required {...fe.invalid('login')} />
             {fe.error('login')}
           </label>
           <button className="btn" disabled={busy}>{busy ? 'Sending code…' : 'Send code'}</button>
