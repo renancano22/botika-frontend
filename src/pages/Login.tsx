@@ -52,7 +52,7 @@ export default function Login() {
   return (
     <div className="auth-page">
       {splash && <SplashScreen onDone={() => setSplash(false)} />}
-      <form className={`auth-card ${splash ? 'auth-card-wait' : 'auth-card-in'}`} onSubmit={submit} aria-hidden={splash || undefined}>
+      <form className={`auth-card auth-card--focused ${splash ? 'auth-card-wait' : 'auth-card-in'}`} onSubmit={submit} aria-hidden={splash || undefined}>
         <div className="brand brand-center">
           <span className="brand-mark">✚</span>
           <div><strong>BulanBotikaCare</strong><small>Botika ng Bayan · Bulan, Sorsogon</small></div>
@@ -69,7 +69,7 @@ export default function Login() {
         </label>
         <Link to="/forgot-password" className="forgot-link">Forgot password?</Link>
         <button className="btn" disabled={busy}>{busy ? 'Logging in…' : 'Log in'}</button>
-        <p className="muted center">Resident without an account? <Link to="/register">Register here</Link></p>
+        <p className="muted auth-footer"><span>Resident without an account?</span> <Link to="/register">Register here</Link></p>
       </form>
     </div>
   );

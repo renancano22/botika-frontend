@@ -65,21 +65,25 @@ export default function ForgotPassword() {
   return (
     <div className="auth-page">
       {step === 1 ? (
-        <form className="auth-card" onSubmit={sendCode}>
-          <h1>Forgot password</h1>
-          <p className="muted">Enter the email or mobile number of your account. We'll send you a 6-digit code to reset your password.</p>
+        <form className="auth-card auth-card--focused" onSubmit={sendCode}>
+          <header className="auth-header">
+            <h1>Forgot password</h1>
+            <p className="muted">Enter your account's email or mobile number. We'll send a 6-digit code to reset your password.</p>
+          </header>
           <Message>{fe.general}</Message>
           <label>Email or mobile number
             <input value={login} onChange={(e) => { setLogin(e.target.value); fe.clear('login'); }} placeholder="name@gmail.com or 09XXXXXXXXX" autoComplete="username" required autoFocus {...fe.invalid('login')} />
             {fe.error('login')}
           </label>
           <button className="btn" disabled={busy}>{busy ? 'Sending code…' : 'Send code'}</button>
-          <p className="muted center"><Link to="/login">Back to log in</Link></p>
+          <p className="muted auth-footer"><Link to="/login">Back to log in</Link></p>
         </form>
       ) : (
-        <form className="auth-card" onSubmit={reset}>
-          <h1>Reset password</h1>
-          <Message type="info">{info}</Message>
+        <form className="auth-card auth-card--focused" onSubmit={reset}>
+          <header className="auth-header">
+            <h1>Reset password</h1>
+            <Message type="info">{info}</Message>
+          </header>
           <Message>{fe.general}</Message>
           <label>6-digit code
             <input value={code} onChange={(e) => { setCode(e.target.value.replace(/\D/g, '').slice(0, 6)); fe.clear('code'); }}
@@ -96,9 +100,9 @@ export default function ForgotPassword() {
           </label>
           <p className="field-hint">At least 8 characters with letters and numbers. Avoid common passwords and your name, email or mobile number.</p>
           <button className="btn" disabled={busy}>{busy ? 'Saving…' : 'Change password'}</button>
-          <p className="muted center">
-            Didn't get a code? <button type="button" className="link-button" onClick={() => sendCode()} disabled={busy}>Send again</button>
-            {' · '}<Link to="/login">Back to log in</Link>
+          <p className="muted auth-footer auth-footer--stacked">
+            <span>Didn't get a code? <button type="button" className="link-button" onClick={() => sendCode()} disabled={busy}>Send again</button></span>
+            <Link to="/login">Back to log in</Link>
           </p>
         </form>
       )}
