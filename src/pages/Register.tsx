@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../auth';
 import { useApi } from '../hooks';
 import { Message, PasswordInput } from '../components/ui';
+import { SplashLogo } from '../components/SplashScreen';
 import { FieldError, LoadError, toast, useFormErrors } from '../components/feedback';
 import { FIELD } from '../validation';
 import { normalizeRegistration, registrationPasswordChecks, validateRegistration, type RegistrationForm } from '../registration';
@@ -60,10 +61,11 @@ export default function Register() {
     <div className="auth-page auth-page--register">
       <div className="auth-shell auth-shell--register auth-shell--animated">
         <header className="auth-header">
-          <div className="register-brand"><span aria-hidden="true">✚</span> BulanBotikaCare</div>
-          <h1 id="register-title">Resident registration</h1>
-          <p className="muted">Create an account to check medicine availability, submit requests and receive SMS updates.</p>
-          <p className="register-location">For residents of Bulan, Sorsogon.</p>
+          <div className="brand brand-center">
+            <SplashLogo className="auth-logo" />
+            <div><strong>Bulan<span>BotikaCare</span></strong><small>Botika ng Bayan · Bulan, Sorsogon</small></div>
+          </div>
+          <h1 id="register-title">Resident Registration</h1>
         </header>
       <form className="auth-card auth-card--focused register-card" onSubmit={submit} aria-labelledby="register-title" noValidate>
         <div className="register-card-heading">

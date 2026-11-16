@@ -392,9 +392,7 @@ input[type='password']::-ms-reveal, input[type='password']::-ms-clear { display:
 .auth-card--focused .auth-footer--stacked { flex-direction: column; gap: 6px; }
 .auth-page--register { padding: 32px 20px; }
 .auth-shell--register { max-width: 680px; gap: 26px; }
-.register-brand { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 20px; font-size: 0.95rem; font-weight: 700; }
-.register-brand > span { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 11px; color: var(--primary-dark); background: #fff; font-size: 1.25rem; }
-.register-location { margin: 18px 0 0; color: #c6dfcd; font-size: 0.8rem; line-height: 1.6; }
+.auth-shell--register .auth-header h1 { font-size: 1.25rem; font-weight: 600; line-height: 1.4; }
 .register-card { max-width: none; border-radius: 18px; }
 .register-card-heading { margin-bottom: 24px; }
 .register-card-heading h2 { font-size: 1.2rem; letter-spacing: -0.02em; }
@@ -427,8 +425,7 @@ input[type='password']::-ms-reveal, input[type='password']::-ms-clear { display:
 @media (min-width: 1024px) {
   .auth-page--register { padding: 40px 32px; }
   .auth-shell--register { max-width: 720px; gap: 28px; }
-  .auth-shell--register .auth-header h1 { font-size: 1.8rem; line-height: 1.25; }
-  .auth-shell--register .auth-header > .muted { max-width: 52ch; margin: 12px auto 0; font-size: 0.9rem; line-height: 1.7; }
+  .auth-shell--register .auth-header h1 { font-size: 1.4rem; }
   .register-card { padding: 36px; }
 }
 
