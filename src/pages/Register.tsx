@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../auth';
 import { useApi } from '../hooks';
 import { Message, PasswordInput } from '../components/ui';
-import { SplashLogo } from '../components/SplashScreen';
 import { FieldError, LoadError, toast, useFormErrors } from '../components/feedback';
 import { FIELD } from '../validation';
 import { normalizeRegistration, registrationPasswordChecks, validateRegistration, type RegistrationForm } from '../registration';
@@ -61,10 +60,6 @@ export default function Register() {
     <div className="auth-page auth-page--register">
       <div className="auth-shell auth-shell--register auth-shell--animated">
         <header className="auth-header">
-          <div className="brand brand-center">
-            <SplashLogo className="auth-logo" />
-            <div><strong>Bulan<span>BotikaCare</span></strong><small>Botika ng Bayan · Bulan, Sorsogon</small></div>
-          </div>
           <h1 id="register-title">Resident Registration</h1>
           <p className="muted" id="register-intro">Create your resident account to request medicines and keep track of your requests.</p>
         </header>
