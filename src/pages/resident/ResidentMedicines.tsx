@@ -9,9 +9,10 @@ import { MAX_REQUEST_QUANTITY, quantityWarning } from '../../validation';
 import { PrescriptionUpload, PrescriptionViewer, RX_ICON, RxBadge, type PrescriptionFile } from '../../components/Prescription';
 import { jumpToTop } from '../../scroll';
 import BackButton from '../../components/BackButton';
-import { confirmSave, LoadError, toast } from '../../components/feedback';
+import { confirmSave, FieldError, LoadError, toast } from '../../components/feedback';
 import { useAuth } from '../../auth';
 import { Hl } from '../../components/SearchHighlight';
+import { MAX_REQUEST_ITEMS, MAX_REQUEST_NOTE, medicineRequestErrors, validateMedicineRequest } from '../../medicineRequest';
 
 type CartItem = { medicine: Medicine; quantity: number };
 
@@ -79,9 +80,12 @@ export default function ResidentMedicines() {
   const [details, setDetails] = useState<Medicine | null>(null);    // medicine details sheet
   const [prescription, setPrescription] = useState<PrescriptionFile | null>(null);
   const [viewRx, setViewRx] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [requestErrors, setRequestErrors] = useState<Record<string, string>>({});
   const submitting = useRef(false);
   const medicineKey = (items: CartItem[]) => items.map((c) => c.medicine.medicine_id).sort((a, b) => a - b).join(',');
   const setCart = (items: CartItem[]) => {
+    setRequestErrors({});
     if (medicineKey(items) !== medicineKey(cart)) {
       setPrescription(null);
       setViewRx(false);
@@ -117,25 +121,48 @@ export default function ResidentMedicines() {
   }, [step, cart.length, setParams]);
 
   const inCart = (m: Medicine) => cart.find((c) => c.medicine.medicine_id === m.medicine_id);
-  const cartWarnings = cart.map((c) => quantityWarning(c.quantity, unitPlural(c.medicine.unit), { available: c.medicine.available_stock }));
+  const currentCart = cart.map((c) => ({ ...c, medicine: data?.find((m) => m.medicine_id === c.medicine.medicine_id) ?? c.medicine }));
+  const cartWarnings = currentCart.map((c) => quantityWarning(c.quantity, unitPlural(c.medicine.unit), { available: c.medicine.available_stock }));
   const cartValid = cart.length > 0 && cartWarnings.every((w) => !w);
+  const requestIssues = validateMedicineRequest(currentCart, note, prescription, new Set(openMedicineReq.keys()));
+  const requestValid = Object.keys(requestIssues).length === 0 && !uploading;
+  const reviewRequest = () => {
+    if (submitting.current || uploading) return;
+    setRequestErrors(requestIssues);
+    if (Object.keys(requestIssues).length) {
+      setSheetError('Please correct the highlighted fields before continuing.');
+      return;
+    }
+    goStep('review');
+  };
   // Medicines that need a doctor's prescription: the request must include a photo/PDF of it.
-  const rxItems = cart.filter((c) => c.medicine.requires_prescription);
+  const rxItems = currentCart.filter((c) => c.medicine.requires_prescription);
   const needsRx = rxItems.length > 0;
 
   /** "Request": goes straight to the Medicine Request Form with this medicine (the quantity is chosen there). */
   const startRequest = (m: Medicine) => {
+    if (submitting.current) return;
     setSheetError('');
     setDetails(null);
     // Already in one of the resident's open requests: go to that request instead of making a new one.
     const open = openMedicineReq.get(m.medicine_id);
     if (open && !inCart(m)) { setInRequest({ medicine: m, ...open }); return; }
+    if (!inCart(m) && cart.length >= MAX_REQUEST_ITEMS) {
+      toast.warning(`One request can have at most ${MAX_REQUEST_ITEMS} medicines.`);
+      return;
+    }
     if (!inCart(m)) setCart([...cart, { medicine: m, quantity: 1 }]);
     goStep('form');
   };
 
   const submitRequest = async () => {
-    if (submitting.current || step !== 'review' || !canRequest || !cartValid || (needsRx && !prescription)) return;
+    if (submitting.current || step !== 'review' || !canRequest || uploading) return;
+    if (!requestValid) {
+      setRequestErrors(requestIssues);
+      setSheetError('Some request details changed. Please review the highlighted fields.');
+      setParams({ step: 'form' }, { replace: true });
+      return;
+    }
     submitting.current = true;
     setBusy(true);
     setSheetError('');
@@ -153,7 +180,15 @@ export default function ResidentMedicines() {
       setCartOpen(false);
       navigate(`/requests/${res.data.request_id}`, { replace: true, state: { submitted: true } });
     } catch (err) {
+      const fields = medicineRequestErrors(err);
+      setRequestErrors(fields);
       setSheetError(errorMessage(err));
+      if (Object.keys(fields).length) {
+        setParams({ step: 'form' }, { replace: true });
+        jumpToTop();
+        reload(true);
+        reloadMine(true);
+      }
     } finally { submitting.current = false; setBusy(false); }
   };
 
@@ -222,11 +257,10 @@ export default function ResidentMedicines() {
   );
 
   if ((step === 'form' || step === 'review') && cart.length > 0) {
-    const rxMissing = needsRx && !prescription;
     return (
-      <div className="page page-narrow">
+      <div className="page page-narrow medicine-request-page">
         <BackButton fallback="/medicines" onClick={() => goStep(step === 'review' ? 'form' : null)} label={step === 'review' ? 'Back to the request form' : 'Back to medicines'} />
-        <header className="page-head hero-head form-hero">
+        <header className="page-head">
           <div>
             <div className="page-title">
               <h1>{step === 'review' ? 'Review Your Request' : 'Medicine Request Form'}</h1>
@@ -234,10 +268,18 @@ export default function ResidentMedicines() {
             <p className="muted">{step === 'review' ? 'Please check the details before submitting.' : 'Enter the details of your medicine request.'}</p>
           </div>
         </header>
+        <ol className="mr-steps" aria-label="Request progress">
+          <li aria-current={step === 'form' ? 'step' : undefined} className={step === 'form' ? 'is-current' : 'is-complete'}><span>1</span> Request details</li>
+          <li aria-current={step === 'review' ? 'step' : undefined} className={step === 'review' ? 'is-current' : ''}><span>2</span> Review &amp; submit</li>
+        </ol>
 
-        <section className="card form-card">
-          {cart.map((c, idx) => {
+        <section className="card form-card mr-card" aria-label="Medicine request">
+          <fieldset className="mr-fields" disabled={busy}>
+          <div className="mr-section-heading"><h2>Requested medicines</h2><p>{cart.length} of {MAX_REQUEST_ITEMS} medicines · maximum {MAX_REQUEST_QUANTITY} of each</p></div>
+          <FieldError message={requestErrors.items || requestIssues.items} />
+          {currentCart.map((c, idx) => {
             const max = Math.min(c.medicine.available_stock, MAX_REQUEST_QUANTITY);
+            const quantityError = requestErrors[`items.${idx}.quantity`] || requestErrors[`items.${idx}.medicine_id`] || requestIssues[`items.${idx}.quantity`];
             return (
               <div className="form-med" key={c.medicine.medicine_id}>
                 <div className="form-med-head">
@@ -248,16 +290,17 @@ export default function ResidentMedicines() {
                     <span className={`badge badge-${c.medicine.status}`}>{quantityText(c.medicine.available_stock, c.medicine.unit)} available</span>
                     {c.medicine.requires_prescription && <RxBadge small />}
                   </div>
-                  {step === 'form' && cart.length > 1 && (
+                  {step === 'form' && (
                     <button className="icon-btn" onClick={() => setCart(cart.filter((_, i) => i !== idx))} aria-label={`Remove ${c.medicine.medicine_name}`}>
                       <Svg d={ICONS.trash} size={18} />
                     </button>
                   )}
                 </div>
                 {step === 'form' ? (
-                  <label>Requested Quantity
-                    <select className="select-pill" value={c.quantity} onChange={(e) => setCart(cart.map((x, i) => (i === idx ? { ...x, quantity: Number(e.target.value) } : x)))}>
-                      {Array.from({ length: Math.max(max, 1) }, (_, i) => i + 1).map((q) => (
+                  <label className="mr-quantity">Quantity requested <span className="field-hint">{max > 0 ? `Choose 1–${max} ${unitPlural(c.medicine.unit)}.` : 'No stock available. Remove this medicine.'}</span>
+                    <select className="select-pill" value={c.quantity} disabled={max < 1} aria-invalid={quantityError ? true : undefined} aria-describedby={quantityError ? `mr-quantity-${idx}` : undefined} onChange={(e) => setCart(cart.map((x, i) => (i === idx ? { ...x, quantity: Number(e.target.value) } : x)))}>
+                      {(!Number.isInteger(c.quantity) || c.quantity < 1 || c.quantity > max) && <option value={Number.isNaN(c.quantity) ? '' : c.quantity}>Choose quantity</option>}
+                      {Array.from({ length: Math.max(0, max) }, (_, i) => i + 1).map((q) => (
                         <option key={q} value={q}>{quantityText(q, c.medicine.unit)}</option>
                       ))}
                     </select>
@@ -265,26 +308,28 @@ export default function ResidentMedicines() {
                 ) : (
                   <div className="review-row"><span>Requested quantity</span><strong>{quantityText(c.quantity, c.medicine.unit)}</strong></div>
                 )}
-                {cartWarnings[idx] && <p className="field-warning">{cartWarnings[idx]}</p>}
+                <FieldError message={quantityError} id={`mr-quantity-${idx}`} />
               </div>
             );
           })}
 
           {step === 'form' ? (
             <>
-              <label><span>Reason for Request <span className="muted small">(optional)</span></span>
-                <textarea rows={3} maxLength={500} value={note} onChange={(e) => setNote(e.target.value)}
-                  placeholder="Enter reason for requesting this medicine… e.g. for my child's fever, maintenance for high blood pressure" />
+              <div className="mr-section-heading"><h2>Request details</h2><p>Add a short note for the pharmacy staff, if needed.</p></div>
+              <label><span>Reason for request <span className="muted small">(optional)</span></span>
+                <textarea rows={3} maxLength={MAX_REQUEST_NOTE} value={note} aria-invalid={(requestErrors.note || requestIssues.note) ? true : undefined} aria-describedby="mr-note-help" onChange={(e) => { setNote(e.target.value); setRequestErrors((old) => ({ ...old, note: '' })); }}
+                  placeholder="e.g. Ongoing maintenance, as advised by my doctor" />
               </label>
-              <p className="field-hint right">{note.length}/500</p>
+              <div className="mr-note-meta" id="mr-note-help"><FieldError message={requestErrors.note || requestIssues.note} /><span>{note.length}/{MAX_REQUEST_NOTE}</span></div>
 
               {needsRx && (
-                <div className="rx-section">
+                <div className="rx-section" role="group" aria-label="Prescription" aria-describedby="mr-prescription-error">
                   <span className="rx-section-title"><Svg d={RX_ICON} size={18} width={2.4} /> Upload Prescription <span className="req-star">*</span></span>
                   <p className="muted small">
                     Required for {rxItems.map((c) => c.medicine.medicine_name).join(', ')}. Upload a clear photo of your doctor's prescription.
                   </p>
-                  <PrescriptionUpload key={medicineKey(cart)} value={prescription} onChange={setPrescription} />
+                  <PrescriptionUpload key={medicineKey(cart)} value={prescription} onBusyChange={setUploading} onChange={(file) => { setPrescription(file); setRequestErrors((old) => ({ ...old, prescription: '' })); }} />
+                  <FieldError message={requestErrors.prescription || requestIssues.prescription} id="mr-prescription-error" />
                   <p className="rx-note"><Svg d={ICONS.info} size={16} /> The prescription will be reviewed by the pharmacy staff before your request can be approved.</p>
                 </div>
               )}
@@ -296,9 +341,6 @@ export default function ResidentMedicines() {
                 <p>You can request up to {MAX_REQUEST_QUANTITY} of each medicine per request.</p>
               </div>
 
-              {rxMissing && <p className="field-warning">Please upload your prescription to continue.</p>}
-              <button className="btn btn-block btn-lg" disabled={!cartValid || rxMissing} onClick={() => goStep('review')}>Review Request</button>
-              <button className="btn btn-outline btn-block" onClick={() => goStep(null)}>+ Add another medicine</button>
             </>
           ) : (
             <>
@@ -321,14 +363,21 @@ export default function ResidentMedicines() {
                 <p>The pharmacy staff will review your request{needsRx ? ' and check your prescription' : ''}. You will get an SMS once it is approved.</p>
                 <p>Then claim your medicines at Botika ng Bayan, Bulan within 7 days. Bring your QR code / Resident ID and a valid ID or Barangay ID.</p>
               </div>
-              {sheetError && <Message>{sheetError}</Message>}
-              <button className="btn btn-block btn-lg" disabled={busy || !cartValid || rxMissing} onClick={submitRequest}>
-                {busy ? 'Submitting…' : 'Confirm & Submit Request'}
-              </button>
-              <button className="btn btn-outline btn-block" disabled={busy} onClick={() => goStep('form')}>Edit request</button>
             </>
           )}
-          <button className="btn btn-outline btn-block" disabled={busy} onClick={cancelRequest}>Cancel request</button>
+          </fieldset>
+          {step === 'review' && <Message>{requestIssues.prescription || requestIssues.note || requestIssues.items}</Message>}
+          {sheetError && <Message>{sheetError}</Message>}
+          {uploading && <p className="field-hint" role="status">Preparing your prescription. Please wait before reviewing.</p>}
+          <div className="mr-actions">
+            <button className="btn btn-outline" disabled={busy} onClick={cancelRequest}>Cancel request</button>
+            {step === 'form'
+              ? <button className="btn btn-outline" disabled={busy || cart.length >= MAX_REQUEST_ITEMS} onClick={() => goStep(null)}>Add medicine</button>
+              : <button className="btn btn-outline" disabled={busy} onClick={() => goStep('form')}>Edit details</button>}
+            <button className="btn mr-primary" disabled={busy || uploading || (step === 'review' && !requestValid)} onClick={step === 'form' ? reviewRequest : submitRequest}>
+              {busy ? 'Submitting…' : step === 'form' ? 'Review request' : 'Confirm & submit'}
+            </button>
+          </div>
         </section>
         {viewRx && prescription && <PrescriptionViewer local={prescription} onClose={() => setViewRx(false)} />}
       </div>

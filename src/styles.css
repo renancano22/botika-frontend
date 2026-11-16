@@ -898,6 +898,50 @@ input[type='password']::-ms-reveal, input[type='password']::-ms-clear { display:
 .review-note p { margin: 4px 0 0; white-space: pre-wrap; }
 .note-text { white-space: pre-wrap; overflow-wrap: anywhere; }
 
+.medicine-request-page { max-width: 800px; }
+.medicine-request-page .page-head h1 { font-size: clamp(1.3rem, 4vw, 1.6rem); }
+.medicine-request-page .page-head .muted { font-size: 0.875rem; line-height: 1.6; }
+.mr-steps { display: flex; gap: 24px; list-style: none; padding: 0; margin: 0; color: var(--muted); font-size: 0.8rem; }
+.mr-steps li { display: flex; align-items: center; gap: 8px; }
+.mr-steps li > span { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: #e5ece8; font-weight: 700; }
+.mr-steps .is-current { color: var(--primary-dark); font-weight: 700; }
+.mr-steps .is-current > span { background: var(--primary); color: #fff; }
+.mr-steps .is-complete > span { background: var(--primary-soft); color: var(--primary-dark); }
+.mr-card { padding: 28px; gap: 18px; }
+.mr-fields { display: flex; flex-direction: column; gap: 18px; padding: 0; margin: 0; border: 0; min-width: 0; }
+.mr-section-heading h2 { font-size: 1rem; }
+.mr-section-heading p { margin: 5px 0 0; font-size: 0.8rem; line-height: 1.6; color: var(--muted); }
+.mr-card .form-med { padding: 18px; border: 1px solid var(--border); border-radius: 14px; background: #fafcfb; }
+.mr-card .form-med-head { gap: 12px; }
+.mr-card .form-med-tile { width: 44px; height: 44px; border-radius: 12px; }
+.mr-card .form-med-tile svg { width: 24px; height: 24px; }
+.mr-card .form-med-name strong { font-size: 1rem; line-height: 1.45; overflow-wrap: anywhere; }
+.mr-card .form-med-name > .muted { font-size: 0.8rem; }
+.mr-card .mr-quantity { max-width: 280px; margin: 0; font-size: 0.85rem; }
+.mr-card .mr-quantity .field-hint { margin: 0; }
+.mr-card select, .mr-card textarea { font-size: 1rem; }
+.mr-card select { min-height: 44px; }
+.mr-card textarea { min-height: 100px; border-radius: 10px; }
+.mr-card label { margin: 0; }
+.mr-note-meta { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-top: -12px; }
+.mr-note-meta > span:last-child { margin-left: auto; color: var(--muted); font-size: 0.75rem; white-space: nowrap; }
+.mr-card .info-box { font-size: 0.85rem; line-height: 1.6; }
+.mr-card .rx-section { gap: 12px; background: #fafcfb; border-color: var(--border); }
+.mr-card .review-note p { overflow-wrap: anywhere; }
+.mr-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 10px; padding-top: 18px; border-top: 1px solid var(--border); }
+.mr-actions .btn { min-height: 44px; }
+.mr-actions .mr-primary { margin-left: auto; }
+.rx-file-actions { display: flex; flex-wrap: wrap; gap: 8px 16px; margin-top: 6px; font-size: 0.8rem; }
+@media (max-width: 600px) {
+  .mr-card { padding: 18px; }
+  .mr-card .form-med { padding: 14px; }
+  .mr-card .mr-quantity { max-width: none; }
+  .mr-steps { gap: 16px; font-size: 0.75rem; }
+  .mr-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .mr-actions .btn { font-size: 0.8rem; padding: 10px 8px; }
+  .mr-actions .mr-primary { grid-column: 1 / -1; grid-row: 1; margin-left: 0; }
+}
+
 /* ---------- prescription medicines (Rx) */
 :root { --rx: #b91c1c; }
 .rx-badge { display: inline-flex; align-items: center; gap: 4px; width: fit-content; padding: 3px 9px; border-radius: 999px; font-size: 0.76rem; font-weight: 700; white-space: nowrap;

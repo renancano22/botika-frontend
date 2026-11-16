@@ -3,11 +3,11 @@ import { api, errorMessage } from '../api';
 import type { MedicineRequest } from '../types';
 import { Message, Modal } from './ui';
 import { ICONS, Svg } from './RequestCards';
+import { MAX_PRESCRIPTION_BYTES } from '../medicineRequest';
 
 /** A prescription file ready to send: { name, data: "data:<type>;base64,..." }. */
 export interface PrescriptionFile { name: string; data: string; type: string; size: number }
 
-const MAX_BYTES = 4 * 1024 * 1024;
 export const RX_ICON = 'M6 3h6a4 4 0 0 1 0 8H6zM6 11v10M10 11l9 10M19 13l-7 8';
 
 /** Does this request include a medicine that needs a doctor's prescription? */
@@ -34,11 +34,13 @@ function readAsDataUrl(file: Blob): Promise<string> {
 
 /** Photos are shrunk (longest side 1800 px, JPEG) so they upload fast but stay readable. */
 async function prepareFile(file: File): Promise<PrescriptionFile> {
+  if (!file.size || file.size > MAX_PRESCRIPTION_BYTES) throw new Error('Choose a nonempty file no larger than 4 MB.');
+  if (!file.name.trim() || file.name.length > 200) throw new Error('Rename the file using 1–200 characters.');
   if (file.type === 'application/pdf') {
-    if (file.size > MAX_BYTES) throw new Error('The PDF is too large (4 MB at most).');
+    if (!(await file.slice(0, 5).text()).startsWith('%PDF-')) throw new Error('This file is not a valid PDF. Choose another file.');
     return { name: file.name, type: file.type, size: file.size, data: await readAsDataUrl(file) };
   }
-  if (!/^image\/(jpeg|png|webp|heic|heif)$/i.test(file.type) && !/\.(jpe?g|png|webp)$/i.test(file.name)) {
+  if (!/^image\/(jpeg|png|webp)$/i.test(file.type) && !/\.(jpe?g|png|webp)$/i.test(file.name)) {
     throw new Error('Please choose a photo (JPG or PNG) or a PDF of the prescription.');
   }
   const url = URL.createObjectURL(file);
@@ -60,24 +62,27 @@ async function prepareFile(file: File): Promise<PrescriptionFile> {
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
     const data = canvas.toDataURL('image/jpeg', 0.85);
     const name = file.name.replace(/\.[^.]+$/, '') + '.jpg';
-    return { name, type: 'image/jpeg', data, size: Math.round((data.length - 23) * 0.75) };
+    const size = atob(data.split(',')[1]).length;
+    if (size > MAX_PRESCRIPTION_BYTES) throw new Error('The prepared photo is too large. Choose a smaller photo.');
+    return { name, type: 'image/jpeg', data, size };
   } finally {
     URL.revokeObjectURL(url);
   }
 }
 
 /** "Tap to upload" box for the prescription photo or PDF, with a preview once chosen. */
-export function PrescriptionUpload({ value, onChange }: { value: PrescriptionFile | null; onChange: (f: PrescriptionFile | null) => void }) {
+export function PrescriptionUpload({ value, onChange, onBusyChange }: { value: PrescriptionFile | null; onChange: (f: PrescriptionFile | null) => void; onBusyChange?: (busy: boolean) => void }) {
   const input = useRef<HTMLInputElement>(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const generation = useRef(0);
-  useEffect(() => () => { generation.current += 1; }, []);
+  useEffect(() => () => { generation.current += 1; onBusyChange?.(false); }, [onBusyChange]);
 
   const choose = async (file?: File) => {
     if (!file) return;
     const current = ++generation.current;
     setBusy(true);
+    onBusyChange?.(true);
     setError('');
     try {
       const prepared = await prepareFile(file);
@@ -85,13 +90,13 @@ export function PrescriptionUpload({ value, onChange }: { value: PrescriptionFil
     } catch (e) {
       if (current === generation.current) setError((e as Error).message);
     } finally {
-      if (current === generation.current) setBusy(false);
+      if (current === generation.current) { setBusy(false); onBusyChange?.(false); }
     }
   };
 
   return (
-    <div className="rx-upload">
-      <input ref={input} type="file" accept="image/*,application/pdf" hidden
+    <div className="rx-upload" aria-busy={busy}>
+      <input ref={input} type="file" accept="image/jpeg,image/png,image/webp,application/pdf" hidden
         onChange={(e) => { choose(e.target.files?.[0]); e.target.value = ''; }} />
       {value ? (
         <div className="rx-file">
@@ -101,14 +106,17 @@ export function PrescriptionUpload({ value, onChange }: { value: PrescriptionFil
           <div className="rx-file-info">
             <strong>{value.name}</strong>
             <span className="muted small">{(value.size / 1024).toFixed(0)} KB · ready to send</span>
-            <button type="button" className="link-button" onClick={() => input.current?.click()}>Change file</button>
+            <div className="rx-file-actions">
+              <button type="button" className="link-button" disabled={busy} onClick={() => input.current?.click()}>{busy ? 'Preparing…' : 'Change file'}</button>
+              <button type="button" className="link-button" disabled={busy} onClick={() => { setError(''); onChange(null); }}>Remove file</button>
+            </div>
           </div>
         </div>
       ) : (
         <button type="button" className="rx-drop" onClick={() => input.current?.click()} disabled={busy}>
           <Svg d="M12 16V4M7 9l5-5 5 5M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3" size={34} width={2} />
           <strong>{busy ? 'Preparing…' : 'Tap to upload'}</strong>
-          <span>Take a photo or choose a file (JPG, PNG, PDF)</span>
+          <span>JPG, PNG, WebP or PDF · up to 4 MB</span>
         </button>
       )}
       {error && <Message>{error}</Message>}
