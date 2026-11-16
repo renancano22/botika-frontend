@@ -71,12 +71,22 @@ export function PrescriptionUpload({ value, onChange }: { value: PrescriptionFil
   const input = useRef<HTMLInputElement>(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const generation = useRef(0);
+  useEffect(() => () => { generation.current += 1; }, []);
 
   const choose = async (file?: File) => {
     if (!file) return;
+    const current = ++generation.current;
     setBusy(true);
     setError('');
-    try { onChange(await prepareFile(file)); } catch (e) { setError((e as Error).message); } finally { setBusy(false); }
+    try {
+      const prepared = await prepareFile(file);
+      if (current === generation.current) onChange(prepared);
+    } catch (e) {
+      if (current === generation.current) setError((e as Error).message);
+    } finally {
+      if (current === generation.current) setBusy(false);
+    }
   };
 
   return (

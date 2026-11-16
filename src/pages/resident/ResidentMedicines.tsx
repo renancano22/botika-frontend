@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api, errorMessage } from '../../api';
 import { useApi } from '../../hooks';
@@ -69,7 +69,7 @@ export default function ResidentMedicines() {
   const shown = (data ?? []).filter((m) => availability === 'all'
     || (availability === 'out_of_stock' ? noStock(m) : !noStock(m)));
   const listTitle = `${availability === 'in_stock' ? 'Available' : availability === 'out_of_stock' ? 'Out of Stock' : 'All'} ${category || 'Medicines'}`;
-  const [cart, setCart] = useState<CartItem[]>([]);
+  const [cart, setCartState] = useState<CartItem[]>([]);
   const [cartOpen, setCartOpen] = useState(false);                   // request sheet on phones
   const [restockFor, setRestockFor] = useState<Medicine | null>(null);
   const [sheetError, setSheetError] = useState('');
@@ -79,20 +79,38 @@ export default function ResidentMedicines() {
   const [details, setDetails] = useState<Medicine | null>(null);    // medicine details sheet
   const [prescription, setPrescription] = useState<PrescriptionFile | null>(null);
   const [viewRx, setViewRx] = useState(false);
+  const submitting = useRef(false);
+  const medicineKey = (items: CartItem[]) => items.map((c) => c.medicine.medicine_id).sort((a, b) => a - b).join(',');
+  const setCart = (items: CartItem[]) => {
+    if (medicineKey(items) !== medicineKey(cart)) {
+      setPrescription(null);
+      setViewRx(false);
+    }
+    if (items.length === 0) setNote('');
+    setCartState(items);
+  };
   const navigate = useNavigate();
   const { can } = useAuth();
   const canRequest = can('requests.create');
   const canRestock = can('restock.create');
 
   // Steps: browse medicines → "Medicine Request Form" (quantities + reason) → review → submit.
-  // The step is kept in the address (?step=form / ?step=review) so the phone's back button works.
+  // Replace internal steps so Back cannot replay old review/add/cancel cycles.
   const [params, setParams] = useSearchParams();
   const step = params.get('step');
   const goStep = (s: 'form' | 'review' | null) => {
+    if (submitting.current || step === s) return;
     setSheetError('');
     setCartOpen(false);
-    setParams(s ? { step: s } : {});
+    setParams(s ? { step: s } : {}, { replace: true });
     jumpToTop();
+  };
+  const cancelRequest = () => {
+    if (submitting.current) return;
+    setCart([]);
+    setPrescription(null);
+    setViewRx(false);
+    goStep(null);
   };
   useEffect(() => {
     if (step && cart.length === 0) setParams({}, { replace: true }); // e.g. after refreshing the page
@@ -117,7 +135,8 @@ export default function ResidentMedicines() {
   };
 
   const submitRequest = async () => {
-    if (busy) return;
+    if (submitting.current || step !== 'review' || !canRequest || !cartValid || (needsRx && !prescription)) return;
+    submitting.current = true;
     setBusy(true);
     setSheetError('');
     try {
@@ -135,7 +154,7 @@ export default function ResidentMedicines() {
       navigate(`/requests/${res.data.request_id}`, { replace: true, state: { submitted: true } });
     } catch (err) {
       setSheetError(errorMessage(err));
-    } finally { setBusy(false); }
+    } finally { submitting.current = false; setBusy(false); }
   };
 
   /** Opens the restock form, or tells the resident they already asked for this medicine. */
@@ -149,23 +168,24 @@ export default function ResidentMedicines() {
   };
 
   const submitRestock = async () => {
-    if (!restockFor || busy) return;
-    if (!(await confirmSave({
-      title: 'Send this restock request?',
-      message: <>You are asking the Botika ng Bayan to restock <strong>{restockFor.generic_name || restockFor.medicine_name}</strong>.</>,
-      details: 'You will be notified by SMS once it is available. You can follow it in My Requests.',
-      confirmLabel: 'Confirm and Send',
-    }))) return;
+    if (!restockFor || submitting.current || !canRestock) return;
+    submitting.current = true;
     setBusy(true);
     setSheetError('');
     try {
+      if (!(await confirmSave({
+        title: 'Send this restock request?',
+        message: <>You are asking the Botika ng Bayan to restock <strong>{restockFor.generic_name || restockFor.medicine_name}</strong>.</>,
+        details: 'You will be notified by SMS once it is available. You can follow it in My Requests.',
+        confirmLabel: 'Confirm and Send',
+      }))) return;
       await api.post('/requests', { request_type: 'restock', note: restockNote.trim() || null, items: [{ medicine_id: restockFor.medicine_id }] }); // no quantity
       setRestockFor(null);
       reloadMine(true);
       toast.success('Restock request sent', { description: `You will be notified once ${restockFor.medicine_name} is available. You can follow it in My Requests.` });
     } catch (err) {
       setSheetError(errorMessage(err));
-    } finally { setBusy(false); }
+    } finally { submitting.current = false; setBusy(false); }
   };
 
 
@@ -205,7 +225,7 @@ export default function ResidentMedicines() {
     const rxMissing = needsRx && !prescription;
     return (
       <div className="page page-narrow">
-        <BackButton fallback="/medicines" label={step === 'review' ? 'Back to the request form' : 'Back to medicines'} />
+        <BackButton fallback="/medicines" onClick={() => goStep(step === 'review' ? 'form' : null)} label={step === 'review' ? 'Back to the request form' : 'Back to medicines'} />
         <header className="page-head hero-head form-hero">
           <div>
             <div className="page-title">
@@ -264,7 +284,7 @@ export default function ResidentMedicines() {
                   <p className="muted small">
                     Required for {rxItems.map((c) => c.medicine.medicine_name).join(', ')}. Upload a clear photo of your doctor's prescription.
                   </p>
-                  <PrescriptionUpload value={prescription} onChange={setPrescription} />
+                  <PrescriptionUpload key={medicineKey(cart)} value={prescription} onChange={setPrescription} />
                   <p className="rx-note"><Svg d={ICONS.info} size={16} /> The prescription will be reviewed by the pharmacy staff before your request can be approved.</p>
                 </div>
               )}
@@ -305,9 +325,10 @@ export default function ResidentMedicines() {
               <button className="btn btn-block btn-lg" disabled={busy || !cartValid || rxMissing} onClick={submitRequest}>
                 {busy ? 'Submitting…' : 'Confirm & Submit Request'}
               </button>
-              <button className="btn btn-outline btn-block" disabled={busy} onClick={() => navigate(-1)}>Edit request</button>
+              <button className="btn btn-outline btn-block" disabled={busy} onClick={() => goStep('form')}>Edit request</button>
             </>
           )}
+          <button className="btn btn-outline btn-block" disabled={busy} onClick={cancelRequest}>Cancel request</button>
         </section>
         {viewRx && prescription && <PrescriptionViewer local={prescription} onClose={() => setViewRx(false)} />}
       </div>
