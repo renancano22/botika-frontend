@@ -57,51 +57,70 @@ export default function Register() {
   };
 
   return (
-    <div className="auth-page">
+    <div className="auth-page auth-page--register">
       <div className="auth-shell auth-shell--register auth-shell--animated">
         <header className="auth-header">
-          <h1 id="register-title">Resident Registration</h1>
+          <div className="register-brand"><span aria-hidden="true">✚</span> BulanBotikaCare</div>
+          <h1 id="register-title">Resident registration</h1>
           <p className="muted">Create an account to check medicine availability, submit requests and receive SMS updates.</p>
+          <p className="register-location">For residents of Bulan, Sorsogon.</p>
         </header>
       <form className="auth-card auth-card--focused register-card" onSubmit={submit} aria-labelledby="register-title" noValidate>
+        <div className="register-card-heading">
+          <h2>Create your account</h2>
+          <p>Fields marked <span className="register-required">*</span> are required.</p>
+        </div>
         <Message>{fe.general}</Message>
         <LoadError error={barangayError} onRetry={() => reloadBarangays()} />
 
-        <fieldset className="register-grid" disabled={busy}>
-        <label className="register-full">Full name
+        <fieldset className="register-fields" disabled={busy}>
+        <section className="register-section" aria-labelledby="register-personal">
+          <h3 id="register-personal"><span>01</span> Personal details</h3>
+          <p className="register-section-hint">Check your name and barangay carefully. They are fixed after registration.</p>
+          <div className="register-grid">
+        <label className="register-full"><span>Full name <span className="register-required" aria-hidden="true">*</span></span>
           <input value={form.name} onChange={set('name')} autoComplete="name" required maxLength={100} {...FIELD.name} {...fieldProps('name')} />
           {fieldError('name')}
-          {!problem('name') && <span className="field-hint">Your full name and barangay cannot be changed after you register, so check them carefully.</span>}
         </label>
 
-        <label>Barangay (Bulan, Sorsogon)
+        <label><span>Barangay <span className="register-required" aria-hidden="true">*</span></span>
           <select value={form.barangay} onChange={set('barangay')} required disabled={!barangays?.length} {...fieldProps('barangay')}>
             <option value="">{barangays ? 'Select your barangay…' : 'Loading barangays…'}</option>
             {barangays?.map((b) => <option key={b} value={b}>{b}</option>)}
           </select>
           {fieldError('barangay')}
         </label>
-        <label>House / Street / Purok (optional)
+        <label><span>Street / Purok <span className="register-optional">(optional)</span></span>
           <input value={form.address_line} onChange={set('address_line')} maxLength={120} placeholder="e.g. Purok 3, Rizal St." autoComplete="address-line1" {...fieldProps('address_line')} />
           {fieldError('address_line')}
         </label>
+          </div>
+        </section>
 
-        <label>Mobile number
+        <section className="register-section" aria-labelledby="register-contact">
+          <h3 id="register-contact"><span>02</span> Contact information</h3>
+          <div className="register-grid">
+        <label><span>Mobile number <span className="register-required" aria-hidden="true">*</span></span>
           <input type="tel" inputMode="tel" value={form.contact_no} onChange={set('contact_no')} placeholder="09XXXXXXXXX" autoComplete="tel" required maxLength={24} {...fieldProps('contact_no')} />
           <span className="field-hint">Used for log in and SMS updates.</span>
           {fieldError('contact_no')}
         </label>
-        <label>Gmail address (optional)
+        <label><span>Gmail address <span className="register-optional">(optional)</span></span>
           <input type="email" value={form.email} onChange={set('email')} placeholder="name@gmail.com" autoComplete="email" maxLength={255} {...FIELD.gmail} {...fieldProps('email')} />
           {fieldError('email')}
           <span className="field-hint">You can also use this to log in.</span>
         </label>
+          </div>
+        </section>
 
-          <label>Password
+        <section className="register-section" aria-labelledby="register-security">
+          <h3 id="register-security"><span>03</span> Account security</h3>
+          <div className="register-grid">
+          <label><span>Password <span className="register-required" aria-hidden="true">*</span></span>
             <PasswordInput value={form.password} onChange={set('password')} autoComplete="new-password" required maxLength={100} {...FIELD.password} {...fieldProps('password')} />
             {fieldError('password')}
           </label>
-          <label>Confirm password
+          <label><span>Confirm password <span className="register-required" aria-hidden="true">*</span></span>
             <PasswordInput value={form.password_confirmation} onChange={set('password_confirmation')} autoComplete="new-password" required maxLength={100} {...fieldProps('password_confirmation')} />
             {fieldError('password_confirmation')}
           </label>
@@ -110,10 +129,14 @@ export default function Register() {
             <span aria-hidden="true">{check.ok ? '✓' : '○'}</span>{check.text}
           </li>)}
         </ul>
+          </div>
+        </section>
         </fieldset>
 
-        <button className="btn" disabled={busy || !barangays?.length} aria-busy={busy}>{busy ? 'Creating account…' : 'Register'}</button>
+        <div className="register-actions">
         <p className="muted auth-footer"><span>Already registered?</span> <Link to="/login">Log in</Link></p>
+        <button className="btn" disabled={busy || !barangays?.length} aria-busy={busy}>{busy ? 'Creating account…' : 'Create account'}</button>
+        </div>
       </form>
       </div>
     </div>

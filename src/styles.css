@@ -390,19 +390,48 @@ input[type='password']::-ms-reveal, input[type='password']::-ms-clear { display:
   margin: 16px 0 0; text-align: center; font-size: 0.85rem; line-height: 1.65;
 }
 .auth-card--focused .auth-footer--stacked { flex-direction: column; gap: 6px; }
-.auth-shell--register { max-width: 640px; }
-.register-card { max-width: none; }
-.register-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; margin: 0 0 22px; padding: 0; border: 0; min-width: 0; }
+.auth-page--register { padding: 32px 20px; }
+.auth-shell--register { max-width: 680px; gap: 26px; }
+.register-brand { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 20px; font-size: 0.95rem; font-weight: 700; }
+.register-brand > span { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 11px; color: var(--primary-dark); background: #fff; font-size: 1.25rem; }
+.register-location { margin: 18px 0 0; color: #c6dfcd; font-size: 0.8rem; line-height: 1.6; }
+.register-card { max-width: none; border-radius: 18px; }
+.register-card-heading { margin-bottom: 24px; }
+.register-card-heading h2 { font-size: 1.2rem; letter-spacing: -0.02em; }
+.register-card-heading p { margin: 6px 0 0; color: var(--muted); font-size: 0.8rem; line-height: 1.5; }
+.register-required { color: var(--primary-dark); font-weight: 700; }
+.register-optional { color: var(--muted); font-size: 0.78rem; font-weight: 400; }
+.register-fields { padding: 0; margin: 0; border: 0; min-width: 0; }
+.register-section + .register-section { margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--border); }
+.register-section h3 { display: flex; align-items: center; gap: 10px; margin: 0 0 16px; font-size: 0.875rem; font-weight: 700; }
+.register-section h3 > span { color: var(--primary-dark); font-size: 0.7rem; font-weight: 700; letter-spacing: 0.04em; }
+.register-section-hint { margin: -6px 0 16px; color: var(--muted); font-size: 0.78rem; line-height: 1.6; }
+.register-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; min-width: 0; }
 .register-grid label { min-width: 0; margin: 0; }
 .register-grid input, .register-grid select { width: 100%; min-height: 44px; font-size: 1rem; }
 .register-grid .field-hint { margin: 0; font-weight: 400; }
 .register-full { grid-column: 1 / -1; }
-.register-checks { list-style: none; padding: 12px 14px; margin: 0; border-radius: 10px; background: var(--primary-50); color: var(--muted); font-size: 0.8rem; line-height: 1.6; }
+.register-checks { list-style: none; padding: 12px 14px; margin: 0; border: 1px solid var(--border); border-radius: 10px; background: #f8faf9; color: var(--muted); font-size: 0.78rem; line-height: 1.6; }
 .register-checks li { display: flex; align-items: baseline; gap: 8px; }
 .register-checks li > span { flex-shrink: 0; }
 .register-checks .is-met { color: var(--primary-dark); }
+.register-actions { display: flex; flex-direction: column-reverse; gap: 16px; margin-top: 26px; padding-top: 22px; border-top: 1px solid var(--border); }
+.register-card .register-actions .auth-footer { margin: 0; font-size: 0.8rem; }
+.register-actions > .btn { min-height: 44px; }
 @media (min-width: 600px) {
   .register-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 20px; }
+  .register-checks { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 18px; }
+  .register-actions { flex-direction: row; align-items: center; justify-content: space-between; }
+  .register-actions > .btn { min-width: 176px; }
+}
+@media (min-width: 1024px) {
+  .auth-page--register { padding: 40px 32px; }
+  .auth-shell--register { max-width: 1040px; display: grid; grid-template-columns: 280px minmax(0, 1fr); align-items: center; gap: 56px; }
+  .auth-shell--register > .auth-header { text-align: left; padding: 0; }
+  .auth-shell--register .register-brand { justify-content: flex-start; }
+  .auth-shell--register .auth-header h1 { text-align: left; font-size: 2rem; line-height: 1.25; }
+  .auth-shell--register .auth-header > .muted { margin: 18px 0 0; font-size: 0.9rem; line-height: 1.8; }
+  .register-card { padding: 36px; }
 }
 
 /* ---------- misc */
