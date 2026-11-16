@@ -4,7 +4,7 @@ import { SESSION_NOTICE_KEY } from '../api';
 import { useAuth } from '../auth';
 import { Message, PasswordInput } from '../components/ui';
 import { toast, useFormErrors } from '../components/feedback';
-import SplashScreen, { splashSeen } from '../components/SplashScreen';
+import SplashScreen, { SplashLogo, splashSeen } from '../components/SplashScreen';
 
 export default function Login() {
   const { login: signIn } = useAuth();
@@ -55,7 +55,7 @@ export default function Login() {
       <div className={`auth-shell ${splash ? 'auth-card-wait' : 'auth-card-in'}`} aria-hidden={splash || undefined}>
         <header className="auth-header">
         <div className="brand brand-center">
-          <span className="brand-mark">✚</span>
+          <SplashLogo className="auth-logo" key={splash ? 'waiting' : 'ready'} />
           <div><strong>Bulan<span>BotikaCare</span></strong><small>Botika ng Bayan · Bulan, Sorsogon</small></div>
         </div>
         </header>

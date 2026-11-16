@@ -3,6 +3,20 @@ import { useEffect, useRef, useState } from 'react';
 /** Shown once per browser session (not again after logging out or on refresh in the same tab). */
 const SEEN_KEY = 'botika_splash_seen';
 
+/** Shared pharmacy mark with the splash zoom and expanding rings. */
+export function SplashLogo({ className = '' }: { className?: string }) {
+  return (
+    <div className={`splash-logo ${className}`} aria-hidden="true">
+      <span className="splash-ring" />
+      <span className="splash-ring splash-ring-2" />
+      <svg viewBox="0 0 96 96" className="splash-mark">
+        <rect x="6" y="6" width="84" height="84" rx="24" />
+        <path d="M40 24h16v16h16v16H56v16H40V56H24V40h16z" />
+      </svg>
+    </div>
+  );
+}
+
 export function splashSeen(): boolean {
   try { return sessionStorage.getItem(SEEN_KEY) === '1'; } catch { return true; } // storage blocked: skip it
 }
@@ -39,14 +53,7 @@ export default function SplashScreen({ onDone }: { onDone: () => void }) {
       role="status" aria-live="polite" aria-label="BulanBotikaCare is loading">
       <div className="splash-glow" aria-hidden="true" />
       <div className="splash-content">
-        <div className="splash-logo" aria-hidden="true">
-          <span className="splash-ring" />
-          <span className="splash-ring splash-ring-2" />
-          <svg viewBox="0 0 96 96" className="splash-mark">
-            <rect x="6" y="6" width="84" height="84" rx="24" />
-            <path d="M40 24h16v16h16v16H56v16H40V56H24V40h16z" />
-          </svg>
-        </div>
+        <SplashLogo />
         <h1 className="splash-name">Bulan<span>BotikaCare</span></h1>
         <p className="splash-place">Botika ng Bayan · Bulan, Sorsogon</p>
         <div className="splash-progress" aria-hidden="true"><span /></div>
