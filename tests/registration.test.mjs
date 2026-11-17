@@ -80,3 +80,11 @@ test('reset checklist shares the password policy and checks the known login with
   assert.equal(checks('Kalinga4821', 'Different4821')[4].ok, false);
   assert.equal(checks('Kalinga4821')[3].text, 'No login details or Botika name');
 });
+
+test('full Philippine mobile numbers cannot be embedded in a password even when different from the login', () => {
+  for (const password of ['Hi09170000000', 'Safe639170000000', 'Hi+639170000000', 'Hi9170000000', 'Hi0917-000-0000', 'Hi(0917) 000 0000']) {
+    assert.equal(passwordRequirementChecks(password, password, ['sample@gmail.com'])[3].ok, false);
+    assert.ok(validateRegistration({ ...valid, password, password_confirmation: password }, barangays).password);
+  }
+  assert.ok(passwordRequirementChecks('Mapalad4821', 'Mapalad4821', []).every((check) => check.ok));
+});

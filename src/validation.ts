@@ -89,6 +89,7 @@ const SYSTEM_WORDS = ['botika', 'bulan', 'sorsogon', 'bayan', 'pharmacy'];
  */
 export function passwordHasPersonalInfo(password: string, details: (string | null | undefined)[]): boolean {
   const pw = password.toLowerCase();
+  if (/(?:0?9\d{9}|\+?639\d{9})/.test(pw.replace(/[\s()\-]/g, ''))) return true;
   const words = details.flatMap((d) => {
     const v = (d ?? '').trim().toLowerCase();
     if (!v) return [];

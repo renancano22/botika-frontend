@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../api';
 import { Message, PasswordInput } from '../components/ui';
@@ -22,15 +22,78 @@ export default function ForgotPassword() {
   const [info, setInfo] = useState('');
   const fe = useFormErrors(['login', 'code', 'password', 'password_confirmation']);
   const [busy, setBusy] = useState(false);
+  const [verified, setVerified] = useState<{ key: string; expiresAt: number } | null>(null);
+  const [checking, setChecking] = useState(false);
+  const [policyFailed, setPolicyFailed] = useState(false);
+  const [blockedCode, setBlockedCode] = useState<string | null>(null);
+  const [checkError, setCheckError] = useState('');
+  const [retryCheck, setRetryCheck] = useState(0);
   const mobile = login.trim().replace(/[\s()-]/g, '').replace(/^\+?63(?=9\d{9}$)/, '0');
   const checks = passwordRequirementChecks(password, confirm, [login, mobile]);
+  const candidateKey = JSON.stringify([login, code, password, confirm]);
+  const codeIdentity = JSON.stringify([login, code]);
+  const latestKey = useRef(candidateKey);
+  latestKey.current = candidateKey;
+  const locallyValid = checks.every((check) => check.ok);
+  const serverVerified = verified?.key === candidateKey && verified.expiresAt > Date.now();
   const displayedChecks = checks.map((check, index) => index === 3 && check.ok
-    ? { ...check, ok: null, hint: 'Your registered name and other account details are checked securely when you submit.' }
+    ? { ...check, ok: serverVerified ? true : policyFailed ? false : null,
+      hint: 'Your reset code is required to verify that the password does not contain your registered details.' }
     : check);
+
+  useEffect(() => {
+    setVerified(null);
+    setPolicyFailed(false);
+    setCheckError('');
+    if (step !== 2 || !locallyValid || !/^\d{6}$/.test(code) || blockedCode === codeIdentity) {
+      setChecking(false);
+      return;
+    }
+    let active = true;
+    const controller = new AbortController();
+    setChecking(true);
+    const timer = window.setTimeout(async () => {
+      try {
+        const { data } = await api.post<{ valid: boolean; code_expires_at: string }>('/reset-password/check',
+          { login, code, password, password_confirmation: confirm }, { signal: controller.signal });
+        if (!active || latestKey.current !== candidateKey) return;
+        const expiresAt = Date.parse(data.code_expires_at);
+        if (data.valid !== true || !Number.isFinite(expiresAt)) throw new Error('Password check could not be completed.');
+        if (expiresAt <= Date.now()) {
+          setBlockedCode(codeIdentity);
+          fe.setFieldErrors({ code: 'This code has expired. Please request a new one.' });
+          return;
+        }
+        setVerified({ key: candidateKey, expiresAt });
+        fe.clear('password'); fe.clear('password_confirmation'); fe.clear('code'); fe.setGeneral('');
+      } catch (err) {
+        if (!active || controller.signal.aborted || latestKey.current !== candidateKey) return;
+        const fields = (err as { response?: { data?: { errors?: Record<string, string[]> } } }).response?.data?.errors;
+        if (fields) {
+          if (fields.code) setBlockedCode(codeIdentity);
+          setPolicyFailed(!!fields.password);
+          fe.fromError(err);
+        } else setCheckError('Unable to check your password right now. Please try again.');
+      } finally { if (active) setChecking(false); }
+    }, 650);
+    return () => { active = false; window.clearTimeout(timer); controller.abort(); };
+  }, [step, candidateKey, locallyValid, blockedCode, retryCheck]); // Each result applies only to the exact current inputs.
+
+  useEffect(() => {
+    if (!verified) return;
+    const timer = window.setTimeout(() => {
+      setVerified(null); setBlockedCode(codeIdentity);
+      fe.setFieldErrors({ code: 'This code has expired. Please request a new one.' });
+    }, Math.max(0, verified.expiresAt - Date.now()));
+    return () => window.clearTimeout(timer);
+  }, [verified]);
+
+  const canSave = locallyValid && serverVerified && !checking && !busy;
 
   const sendCode = async (e?: FormEvent) => {
     e?.preventDefault();
     if (busy) return;
+    if (step === 2) { setCode(''); setVerified(null); setBlockedCode(null); }
     setBusy(true);
     fe.clear();
     try {
@@ -61,16 +124,30 @@ export default function ForgotPassword() {
       fe.setFieldErrors({ password_confirmation: 'The two passwords do not match.' });
       return;
     }
+    if (!canSave) {
+      fe.setGeneral('Wait until all password requirements are checked before saving.');
+      return;
+    }
+    const payload = { login, code, password, password_confirmation: confirm };
     if (!(await confirmSave({
       title: 'Change your password?',
       message: 'Your old password will no longer work. Use the new password the next time you log in.',
       details: 'Phones or computers logged in to your account will be logged out.',
     }))) return;
+    if (latestKey.current !== candidateKey || !verified || verified.expiresAt <= Date.now()) {
+      fe.setGeneral('Your details changed or the code expired. Please wait for the checks to finish.');
+      return;
+    }
     setBusy(true);
     try {
-      await api.post('/reset-password', { login, code, password, password_confirmation: confirm });
+      await api.post('/reset-password', payload);
       navigate('/login', { replace: true, state: { notice: 'Your password has been changed. You can now log in with your new password.' } });
     } catch (err) {
+      setVerified(null);
+      const fields = (err as { response?: { data?: { errors?: Record<string, string[]> } } }).response?.data?.errors;
+      if (fields?.code) setBlockedCode(codeIdentity);
+      setPolicyFailed(!!fields?.password);
+      if (!fields) setCheckError('Please check your password again before retrying the change.');
       fe.fromError(err);
     } finally {
       setBusy(false);
@@ -103,7 +180,7 @@ export default function ForgotPassword() {
           <section className="register-section" aria-label="Verification code">
           <div className="register-grid">
           <label className="register-full"><span>6-digit code <span className="register-required" aria-hidden="true">*</span></span>
-            <input value={code} onChange={(e) => { setCode(e.target.value.replace(/\D/g, '').slice(0, 6)); fe.clear('code'); fe.setGeneral(''); }}
+            <input value={code} onChange={(e) => { setCode(e.target.value.replace(/\D/g, '').slice(0, 6)); setBlockedCode(null); fe.clear('code'); fe.setGeneral(''); }}
               inputMode="numeric" autoComplete="one-time-code" placeholder="123456" required maxLength={6} {...FIELD.code} {...fe.invalid('code')} />
             {fe.error('code')}
           </label>
@@ -120,6 +197,9 @@ export default function ForgotPassword() {
             {fe.error('password_confirmation')}
           </label>
           <PasswordRequirements checks={displayedChecks} id="reset-password-rules" />
+          {checking && <p className="field-hint register-full reset-check-status" role="status">Checking all password requirements…</p>}
+          {locallyValid && code.length !== 6 && <p className="field-hint register-full reset-check-status">Enter the 6-digit code to finish checking your password.</p>}
+          {checkError && <p className="field-hint register-full reset-check-status" role="status">{checkError} <button type="button" className="link-button" onClick={() => setRetryCheck((old) => old + 1)}>Check again</button></p>}
           </div>
           </section>
           </fieldset>
@@ -128,7 +208,7 @@ export default function ForgotPassword() {
             <span>Didn't get a code? <button type="button" className="link-button" onClick={() => sendCode()} disabled={busy}>Send again</button></span>
             <Link to="/login">Back to log in</Link>
           </p>
-          <button className="btn" disabled={busy}>{busy ? 'Saving…' : 'Change password'}</button>
+          <button className="btn" disabled={!canSave}>{busy ? 'Saving…' : checking ? 'Checking password…' : 'Change password'}</button>
           </div>
         </form>
       )}
