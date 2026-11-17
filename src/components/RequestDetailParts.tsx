@@ -37,6 +37,7 @@ export function PickupDeadlineBox({ r, reminder = false }: { r: MedicineRequest;
         the medicine will no longer be given to you and this request will no longer be valid for pickup.
       </p>
       <small>When claiming, bring your Resident ID / QR code{r.resident?.qr_code ? ` (${r.resident.qr_code})` : ''} and a <b>valid ID or Barangay ID</b> for verification.</small>
+      {(requiresPrescription(r) || storedPrescriptions(r).length > 0) && <small><b>Bring all original prescriptions when claiming your medicines.</b></small>}
     </div>
   );
 }
