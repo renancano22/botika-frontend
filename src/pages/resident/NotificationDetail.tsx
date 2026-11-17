@@ -175,11 +175,14 @@ export default function NotificationDetail() {
         <h1>Notification Details</h1>
       </header>
 
+      <article className={`notif-detail-card k-${kind}`}>
       <section className={`notif-hero k-${kind}`}>
         <div className="notif-hero-top">
-          <span className="hero-icon kicon"><Svg d={KIND[kind].icon} size={34} width={2} /></span>
-          <span className="pill">{hero.tag}</span>
-          <h2>{hero.title || titleOf(n)}</h2>
+          <span className="hero-icon kicon"><Svg d={KIND[kind].icon} size={22} width={2} /></span>
+          <div className="notif-hero-heading">
+            <span className="pill">{hero.tag}</span>
+            <h2>{hero.title || titleOf(n)}</h2>
+          </div>
           <p>{hero.text}</p>
         </div>
         <div className="notif-hero-meta">
@@ -188,16 +191,11 @@ export default function NotificationDetail() {
         </div>
       </section>
 
-      <section className={`notif-msg k-${kind}`}>
-        <div className="notif-msg-head">
-          <span className="notif-msg-icon kicon"><Svg d={n.channel === 'sms' ? PHONE : CHAT} size={18} /></span>
-          <div>
-            <strong>{n.channel === 'sms' ? 'SMS sent to your phone' : n.channel === 'none' ? 'Message (no mobile number on file)' : 'In-app message'}</strong>
-            <small>From Botika ng Bayan Bulan · BulanBotikaCare</small>
-          </div>
-        </div>
-        <p className="notif-bubble">{highlight(cleanMessage(n.message))}</p>
-      </section>
+      {r ? <details className="notif-message-disclosure">
+        <summary>View full notification message<Svg d={ICONS.chevron} size={16} /></summary>
+        <NotificationMessage n={n} />
+      </details> : <NotificationMessage n={n} />}
+      </article>
 
       {r && <>
         <section>
@@ -205,10 +203,10 @@ export default function NotificationDetail() {
           <RequestSummaryCard r={r} />
         </section>
         <InfoBox kind={kind} r={r} />
-        <section>
-          <h2 className="section-title">Request Progress</h2>
-          <div className="card"><RequestTracker request={r} forResident /></div>
-        </section>
+        <details className="notif-progress-disclosure">
+          <summary><span><Svg d={ICONS.clock} size={18} /> Request progress</span><Svg d={ICONS.chevron} size={16} /></summary>
+          <div className="notif-progress-body"><RequestTracker request={r} forResident /></div>
+        </details>
       </>}
 
       {advice && (
@@ -224,5 +222,21 @@ export default function NotificationDetail() {
         </div>
       )}
     </div>
+  );
+}
+
+function NotificationMessage({ n }: { n: SmsNotification }) {
+  const kind = kindOf(n);
+  return (
+      <section className={`notif-msg k-${kind}`}>
+        <div className="notif-msg-head">
+          <span className="notif-msg-icon kicon"><Svg d={n.channel === 'sms' ? PHONE : CHAT} size={18} /></span>
+          <div>
+            <strong>{n.channel === 'sms' ? 'SMS sent to your phone' : n.channel === 'none' ? 'Message (no mobile number on file)' : 'In-app message'}</strong>
+            <small>From Botika ng Bayan Bulan · BulanBotikaCare</small>
+          </div>
+        </div>
+        <p className="notif-bubble">{highlight(cleanMessage(n.message))}</p>
+      </section>
   );
 }
