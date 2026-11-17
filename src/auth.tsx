@@ -3,6 +3,7 @@ import { api, describeError, SESSION_NOTICE_KEY, TOKEN_KEY, type ErrorInfo } fro
 import { toast } from './components/feedback';
 import type { User } from './types';
 import { hasPermission, PERMISSION_DENIED } from './permissions';
+import { clearAuthDrafts } from './authDrafts';
 
 interface AuthState {
   user: User | null;
@@ -60,6 +61,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [user?.user_id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleAuth = (data: { token: string; user: User }) => {
+    clearAuthDrafts();
     localStorage.setItem(TOKEN_KEY, data.token);
     setUser(data.user);
   };
@@ -72,6 +74,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     login: async (login, password) => handleAuth((await api.post('/login', { login, password })).data),
     register: async (data) => handleAuth((await api.post('/register', data)).data),
     logout: async () => {
+      clearAuthDrafts();
       // Log out on this device immediately, then end the session on the server in the background
       // (with the token read before it is removed), so a slow connection does not delay anything.
       const token = localStorage.getItem(TOKEN_KEY);

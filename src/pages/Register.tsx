@@ -1,4 +1,4 @@
-import { useRef, useState, type ChangeEvent, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../auth';
 import { useApi } from '../hooks';
@@ -7,13 +7,15 @@ import { FieldError, LoadError, toast, useFormErrors } from '../components/feedb
 import { FIELD } from '../validation';
 import { normalizeRegistration, registrationPasswordChecks, validateRegistration, type RegistrationForm } from '../registration';
 import PasswordRequirements from '../components/PasswordRequirements';
+import { clearRegistrationDraft, readRegistrationDraft, saveRegistrationDraft } from '../authDrafts';
 
 export default function Register() {
   const { register } = useAuth();
   const { data: barangays, errorInfo: barangayError, reload: reloadBarangays } = useApi<string[]>('/barangays');
-  const [form, setForm] = useState<RegistrationForm>({
-    name: '', barangay: '', address_line: '', contact_no: '', email: '', password: '', password_confirmation: '',
-  });
+  const [draft] = useState(() => readRegistrationDraft());
+  const [restored, setRestored] = useState(draft.restored);
+  const [form, setForm] = useState<RegistrationForm>(() => ({ ...draft.details, password: '', password_confirmation: '' }));
+  useEffect(() => { saveRegistrationDraft(form); }, [form]);
   const fe = useFormErrors(['name', 'barangay', 'address_line', 'contact_no', 'email', 'password', 'password_confirmation']);
   const [busy, setBusy] = useState(false);
   const submitting = useRef(false);
@@ -48,6 +50,7 @@ export default function Register() {
     setBusy(true);
     try {
       await register({ ...normalizeRegistration(form) });
+      clearRegistrationDraft();
       toast.success('Account created', { description: 'Welcome to BulanBotikaCare! You are now logged in.' });
     } catch (err) {
       fe.fromError(err);
@@ -75,6 +78,10 @@ export default function Register() {
         <section className="register-section" aria-labelledby="register-personal">
           <h2 id="register-personal"><span>01</span> Personal details</h2>
           <p className="register-section-hint">Check your name and barangay carefully. They are fixed after registration.</p>
+          {restored && <p className="field-hint auth-draft-notice" role="status">Your details were restored. Please re-enter your password. <button type="button" className="link-button" onClick={() => {
+            clearRegistrationDraft(); setRestored(false); setTouched({}); fe.clear();
+            setForm({ name: '', barangay: '', address_line: '', contact_no: '', email: '', password: '', password_confirmation: '' });
+          }}>Clear saved details</button></p>}
           <div className="register-grid">
         <label className="register-full"><span>Full name <span className="register-required" aria-hidden="true">*</span></span>
           <input value={form.name} onChange={set('name')} autoComplete="name" placeholder="e.g. Juan Miguel Santos Cruz" required maxLength={100} {...FIELD.name} {...fieldProps('name')} />

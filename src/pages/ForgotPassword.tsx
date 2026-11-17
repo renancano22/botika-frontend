@@ -6,6 +6,7 @@ import { confirmSave, useFormErrors } from '../components/feedback';
 import { FIELD } from '../validation';
 import { passwordRequirementChecks } from '../registration';
 import PasswordRequirements from '../components/PasswordRequirements';
+import { clearResetDraft, readResetDraft, saveResetDraft } from '../authDrafts';
 
 /**
  * Forgot password (for admin, staff and residents):
@@ -14,12 +15,16 @@ import PasswordRequirements from '../components/PasswordRequirements';
  */
 export default function ForgotPassword() {
   const navigate = useNavigate();
-  const [step, setStep] = useState<1 | 2>(1);
-  const [login, setLogin] = useState('');
+  const [draft] = useState(() => readResetDraft());
+  const [step, setStep] = useState<1 | 2>(draft.requestedAt !== null ? 2 : 1);
+  const [login, setLogin] = useState(draft.login);
+  const [requestedAt, setRequestedAt] = useState<number | null>(draft.requestedAt);
+  useEffect(() => { saveResetDraft(login, requestedAt); }, [login, requestedAt]);
   const [code, setCode] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
-  const [info, setInfo] = useState('');
+  const [info, setInfo] = useState(draft.requestedAt !== null
+    ? 'Your reset progress was restored. Re-enter the code already sent and your new password. Codes expire 10 minutes after they are requested.' : '');
   const fe = useFormErrors(['login', 'code', 'password', 'password_confirmation']);
   const [busy, setBusy] = useState(false);
   const [verified, setVerified] = useState<{ key: string; expiresAt: number } | null>(null);
@@ -98,6 +103,7 @@ export default function ForgotPassword() {
     fe.clear();
     try {
       const res = await api.post<{ message: string }>('/forgot-password', { login });
+      setRequestedAt(Date.now());
       // Shown inside the card (a toast would cover the form on this page).
       setInfo(step === 2 ? `New code requested. ${res.data.message}` : res.data.message);
       setStep(2);
@@ -141,6 +147,7 @@ export default function ForgotPassword() {
     setBusy(true);
     try {
       await api.post('/reset-password', payload);
+      clearResetDraft();
       navigate('/login', { replace: true, state: { notice: 'Your password has been changed. You can now log in with your new password.' } });
     } catch (err) {
       setVerified(null);
@@ -166,6 +173,7 @@ export default function ForgotPassword() {
       {step === 1 ? (
         <form className="auth-card auth-card--focused" onSubmit={sendCode} aria-labelledby="auth-title">
           <Message>{fe.general}</Message>
+          {draft.expired && <p className="field-hint" role="status">Your previous code has expired. Request a new code to continue.</p>}
           <label>Email or mobile number
             <input value={login} onChange={(e) => { setLogin(e.target.value); fe.clear('login'); fe.setGeneral(''); }} placeholder="Email or mobile number" autoComplete="username" required {...fe.invalid('login')} />
             {fe.error('login')}
