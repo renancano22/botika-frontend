@@ -147,7 +147,7 @@ export default function Requests() {
       ? <button className="btn btn-sm" onClick={() => openDetails(r)}>Check & approve</button>
       : <button className="btn btn-sm" disabled={actingId !== null || (requiresPrescription(r) && (!storedPrescriptions(r).length || !storedPrescriptions(r).every((file) => checkedRxIds.includes(file.prescription_id))))} onClick={() => approve(r)}>
         {actingId === r.request_id ? 'Approving…' : 'Approve'}
-      </button>}{' '}
+      </button>}
     <button className="btn btn-danger btn-sm" disabled={actingId !== null} onClick={() => openReject(r)}>Reject</button>
   </>;
 
@@ -246,9 +246,11 @@ export default function Requests() {
                     {r.resident_note && <div className="note-text">“{r.resident_note}”</div>}
                     {r.remarks && <div className="muted small">Remarks: {r.remarks}</div>}
                   </td>
-                  <td className="right nowrap">
-                    <button className="btn btn-outline btn-sm" onClick={() => openDetails(r)}>Details</button>{' '}
+                  <td className="right">
+                    <div className="rq-row-actions" role="group" aria-label={`Actions for request ${r.request_id}`}>
+                    <button className="btn btn-outline btn-sm" onClick={() => openDetails(r)}>Details</button>
                     {reviewButtons(r)}
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -299,7 +301,7 @@ export default function Requests() {
             </div>
           )}
           <RequestTracker request={viewing} forResident={false} />
-          <div className="modal-actions">
+          <div className="modal-actions rq-dialog-actions">
             {reviewButtons(viewing, true)}
             <button className="btn btn-outline" onClick={() => setViewingId(null)}>Close</button>
           </div>
