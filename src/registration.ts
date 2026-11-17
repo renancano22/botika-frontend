@@ -31,12 +31,17 @@ export function normalizeRegistration(form: RegistrationForm): RegistrationForm 
 
 export function registrationPasswordChecks(form: RegistrationForm) {
   const f = normalizeRegistration(form);
+  return passwordRequirementChecks(f.password, f.password_confirmation, [f.name, f.email, f.contact_no]);
+}
+
+export function passwordRequirementChecks(password: string, confirmation: string, personalInfo: string[],
+  personalLabel = 'No name, email, mobile number or Botika name') {
   return [
-    { ok: f.password.length >= 8 && f.password.length <= 100, text: '8–100 characters' },
-    { ok: /[A-Za-z]/.test(f.password) && /[0-9]/.test(f.password), text: 'At least one letter and one number' },
-    { ok: !!f.password && !COMMON.has(f.password.toLowerCase()), text: 'Not a common password' },
-    { ok: !!f.password && !passwordHasPersonalInfo(f.password, [f.name, f.email, f.contact_no]), text: 'No name, email, mobile number or Botika name' },
-    { ok: !!f.password && f.password === f.password_confirmation, text: 'Passwords match' },
+    { ok: password.length >= 8 && password.length <= 100, text: '8–100 characters' },
+    { ok: /[A-Za-z]/.test(password) && /[0-9]/.test(password), text: 'At least one letter and one number' },
+    { ok: !!password && !COMMON.has(password.toLowerCase()), text: 'Not a common password' },
+    { ok: !!password && !passwordHasPersonalInfo(password, personalInfo), text: personalLabel },
+    { ok: !!password && password === confirmation, text: 'Passwords match' },
   ];
 }
 

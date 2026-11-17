@@ -4,6 +4,8 @@ import { api } from '../api';
 import { Message, PasswordInput } from '../components/ui';
 import { confirmSave, useFormErrors } from '../components/feedback';
 import { FIELD } from '../validation';
+import { passwordRequirementChecks } from '../registration';
+import PasswordRequirements from '../components/PasswordRequirements';
 
 /**
  * Forgot password (for admin, staff and residents):
@@ -20,6 +22,8 @@ export default function ForgotPassword() {
   const [info, setInfo] = useState('');
   const fe = useFormErrors(['login', 'code', 'password', 'password_confirmation']);
   const [busy, setBusy] = useState(false);
+  const mobile = login.trim().replace(/[\s()-]/g, '').replace(/^\+?63(?=9\d{9}$)/, '0');
+  const checks = passwordRequirementChecks(password, confirm, [login, mobile], 'No login details or Botika name');
 
   const sendCode = async (e?: FormEvent) => {
     e?.preventDefault();
@@ -42,6 +46,14 @@ export default function ForgotPassword() {
     e.preventDefault();
     if (busy) return;
     fe.clear();
+    if (!checks[0].ok || !checks[1].ok) {
+      fe.setFieldErrors({ password: 'Use 8–100 characters with at least one letter and one number.' });
+      return;
+    }
+    if (!checks[2].ok || !checks[3].ok) {
+      fe.setFieldErrors({ password: !checks[2].ok ? 'Choose a password that is not common.' : 'Do not include your login details or the name of the Botika.' });
+      return;
+    }
     if (password !== confirm) {
       fe.setFieldErrors({ password_confirmation: 'The two passwords do not match.' });
       return;
@@ -63,8 +75,8 @@ export default function ForgotPassword() {
   };
 
   return (
-    <div className={`auth-page ${step === 1 ? 'auth-page--compact' : ''}`}>
-      <div className="auth-shell auth-shell--animated" key={step}>
+    <div className={`auth-page ${step === 1 ? 'auth-page--compact' : 'auth-page--reset'}`}>
+      <div className={`auth-shell auth-shell--animated${step === 2 ? ' auth-shell--reset' : ''}`} key={step}>
         <header className="auth-header">
           <h1 id="auth-title">{step === 1 ? 'Forgot password' : 'Reset password'}</h1>
           {step === 1
@@ -75,29 +87,32 @@ export default function ForgotPassword() {
         <form className="auth-card auth-card--focused" onSubmit={sendCode} aria-labelledby="auth-title">
           <Message>{fe.general}</Message>
           <label>Email or mobile number
-            <input value={login} onChange={(e) => { setLogin(e.target.value); fe.clear('login'); }} placeholder="Email or mobile number" autoComplete="username" required {...fe.invalid('login')} />
+            <input value={login} onChange={(e) => { setLogin(e.target.value); fe.clear('login'); fe.setGeneral(''); }} placeholder="Email or mobile number" autoComplete="username" required {...fe.invalid('login')} />
             {fe.error('login')}
           </label>
           <button className="btn" disabled={busy}>{busy ? 'Sending code…' : 'Send code'}</button>
           <p className="muted auth-footer"><Link to="/login">Back to log in</Link></p>
         </form>
       ) : (
-        <form className="auth-card auth-card--focused" onSubmit={reset} aria-labelledby="auth-title">
+        <form className="auth-card auth-card--focused reset-card" onSubmit={reset} aria-labelledby="auth-title">
           <Message>{fe.general}</Message>
-          <label>6-digit code
-            <input value={code} onChange={(e) => { setCode(e.target.value.replace(/\D/g, '').slice(0, 6)); fe.clear('code'); }}
+          <div className="register-grid">
+          <label className="register-full">6-digit code
+            <input value={code} onChange={(e) => { setCode(e.target.value.replace(/\D/g, '').slice(0, 6)); fe.clear('code'); fe.setGeneral(''); }}
               inputMode="numeric" autoComplete="one-time-code" placeholder="123456" required maxLength={6} {...FIELD.code} autoFocus {...fe.invalid('code')} />
             {fe.error('code')}
           </label>
           <label>New password
-            <PasswordInput value={password} onChange={(e) => { setPassword(e.target.value); fe.clear('password'); }} autoComplete="new-password" required {...FIELD.password} {...fe.invalid('password')} />
+            <PasswordInput value={password} onChange={(e) => { setPassword(e.target.value); fe.clear('password'); fe.clear('password_confirmation'); fe.setGeneral(''); }} autoComplete="new-password" required maxLength={100} aria-describedby="reset-password-rules" {...FIELD.password} {...fe.invalid('password')} />
             {fe.error('password')}
           </label>
           <label>Confirm new password
-            <PasswordInput value={confirm} onChange={(e) => { setConfirm(e.target.value); fe.clear('password_confirmation'); }} autoComplete="new-password" required {...fe.invalid('password_confirmation')} />
+            <PasswordInput value={confirm} onChange={(e) => { setConfirm(e.target.value); fe.clear('password_confirmation'); fe.setGeneral(''); }} autoComplete="new-password" required maxLength={100} aria-describedby="reset-password-rules" {...fe.invalid('password_confirmation')} />
             {fe.error('password_confirmation')}
           </label>
-          <p className="field-hint">At least 8 characters with letters and numbers. Avoid common passwords and your name, email or mobile number.</p>
+          <PasswordRequirements checks={checks} id="reset-password-rules" />
+          <p className="field-hint register-full reset-personal-hint">Also avoid your registered name and other account details.</p>
+          </div>
           <button className="btn" disabled={busy}>{busy ? 'Saving…' : 'Change password'}</button>
           <p className="muted auth-footer auth-footer--stacked">
             <span>Didn't get a code? <button type="button" className="link-button" onClick={() => sendCode()} disabled={busy}>Send again</button></span>

@@ -441,6 +441,16 @@ input[type='password']::-ms-reveal, input[type='password']::-ms-clear { display:
 .register-checks li { display: flex; align-items: baseline; gap: 8px; }
 .register-checks li > span { flex-shrink: 0; }
 .register-checks .is-met { color: var(--primary-dark); }
+.auth-shell--reset { max-width: 620px; }
+.auth-shell--reset .auth-header .msg { max-width: 48ch; font-size: 0.85rem; line-height: 1.5; }
+.reset-card { max-width: none; gap: 18px; border-radius: 18px; }
+.reset-card .reset-personal-hint { margin: -8px 0 0; }
+.reset-card > .auth-footer { margin: 0; }
+@media (max-width: 599px) {
+  .auth-page--reset { min-height: 100svh; padding: 20px 16px; }
+  .auth-page--reset .auth-shell { padding: 0; gap: 16px; }
+  .reset-card { padding: 22px 20px; }
+}
 .register-actions { display: flex; flex-direction: column-reverse; gap: 16px; margin-top: 26px; padding-top: 22px; border-top: 1px solid var(--border); }
 .register-card .register-actions .auth-footer { margin: 0; font-size: 0.8rem; }
 .register-actions > .btn { min-height: 44px; }

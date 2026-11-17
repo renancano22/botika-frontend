@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import { build } from 'esbuild';
 
 const compiled = await build({ entryPoints: ['src/registration.ts'], bundle: true, write: false, format: 'esm', platform: 'node' });
-const { validateRegistration, normalizeRegistration, registrationPasswordChecks } = await import(`data:text/javascript;base64,${Buffer.from(compiled.outputFiles[0].text).toString('base64')}`);
+const { validateRegistration, normalizeRegistration, registrationPasswordChecks, passwordRequirementChecks } = await import(`data:text/javascript;base64,${Buffer.from(compiled.outputFiles[0].text).toString('base64')}`);
 const barangays = ['Gate', 'Zone I Poblacion'];
 const valid = { name: 'Ana Dela Peña', barangay: 'Gate', address_line: '', contact_no: '09171234567', email: '', password: 'Kalinga4821', password_confirmation: 'Kalinga4821' };
 
@@ -69,4 +69,14 @@ test('confirmation and checklist react when the password changes', () => {
   const changed = { ...valid, password: 'Another4821' };
   assert.ok(validateRegistration(changed, barangays).password_confirmation);
   assert.equal(registrationPasswordChecks(changed).at(-1).ok, false);
+});
+
+test('reset checklist shares the password policy and checks the known login without claiming to know the account name', () => {
+  const checks = (password, confirmation = password) => passwordRequirementChecks(password, confirmation, ['ana.crz@gmail.com'], 'No login details or Botika name');
+  assert.ok(checks('Kalinga4821').every((check) => check.ok));
+  assert.equal(checks('Password123')[2].ok, false);
+  assert.equal(checks('ana.crz1234')[3].ok, false);
+  assert.equal(checks('Botika1234')[3].ok, false);
+  assert.equal(checks('Kalinga4821', 'Different4821')[4].ok, false);
+  assert.equal(checks('Kalinga4821')[3].text, 'No login details or Botika name');
 });

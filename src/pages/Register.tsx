@@ -6,6 +6,7 @@ import { Message, PasswordInput } from '../components/ui';
 import { FieldError, LoadError, toast, useFormErrors } from '../components/feedback';
 import { FIELD } from '../validation';
 import { normalizeRegistration, registrationPasswordChecks, validateRegistration, type RegistrationForm } from '../registration';
+import PasswordRequirements from '../components/PasswordRequirements';
 
 export default function Register() {
   const { register } = useAuth();
@@ -122,11 +123,7 @@ export default function Register() {
             <PasswordInput value={form.password_confirmation} onChange={set('password_confirmation')} autoComplete="new-password" required maxLength={100} {...fieldProps('password_confirmation')} />
             {fieldError('password_confirmation')}
           </label>
-        <ul className="register-checks register-full" aria-label="Password requirements">
-          {checks.map((check) => <li key={check.text} className={check.ok ? 'is-met' : ''} aria-label={`${check.ok ? 'Met' : 'Needed'}: ${check.text}`}>
-            <span aria-hidden="true">{check.ok ? '✓' : '○'}</span>{check.text}
-          </li>)}
-        </ul>
+        <PasswordRequirements checks={checks} />
           </div>
         </section>
         </fieldset>
