@@ -749,7 +749,6 @@ input[type='password']::-ms-reveal, input[type='password']::-ms-clear { display:
 .notif-hero-meta svg { color: var(--notice-accent); flex-shrink: 0; }
 .notif-hero-meta b { color: var(--notice-ink); }
 .notif-msg { padding: 14px 16px; background: #fff; border-top: 1px solid var(--border); min-width: 0; }
-.notif-message-disclosure .notif-msg { border-top: 0; padding-top: 0; }
 .notif-msg-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
 .notif-msg-head > div { min-width: 0; }
 .notification-detail-page .notif-msg-icon { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; flex-shrink: 0; background: var(--notice-soft); color: var(--notice-accent); }
@@ -779,11 +778,10 @@ input[type='password']::-ms-reveal, input[type='password']::-ms-clear { display:
 .notification-detail-page .pickup-dates > div { padding: 8px; }
 .notification-detail-page .pickup-dates b { font-size: 0.93rem; }
 .notification-detail-page .pickup-dates > div > span:first-child { font-size: 0.68rem; }
-.notif-message-disclosure { border-top: 1px solid var(--border); }
-.notif-message-disclosure summary, .notif-progress-disclosure summary { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 44px; padding: 10px 16px; font-size: 0.82rem; font-weight: 600; cursor: pointer; list-style: none; color: #374151; }
-.notif-message-disclosure summary::-webkit-details-marker, .notif-progress-disclosure summary::-webkit-details-marker { display: none; }
-.notif-message-disclosure summary > svg, .notif-progress-disclosure summary > svg { flex-shrink: 0; }
-.notif-message-disclosure[open] summary > svg, .notif-progress-disclosure[open] summary > svg { transform: rotate(90deg); }
+.notif-progress-disclosure summary { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 44px; padding: 10px 16px; font-size: 0.82rem; font-weight: 600; cursor: pointer; list-style: none; color: #374151; }
+.notif-progress-disclosure summary::-webkit-details-marker { display: none; }
+.notif-progress-disclosure summary > svg { flex-shrink: 0; }
+.notif-progress-disclosure[open] summary > svg { transform: rotate(90deg); }
 .notif-progress-disclosure { border: 1px solid var(--border); border-radius: 12px; background: #fff; }
 .notif-progress-disclosure summary > span { display: flex; align-items: center; gap: 8px; }
 .notif-progress-body { padding: 4px 14px 14px; }
@@ -795,7 +793,7 @@ input[type='password']::-ms-reveal, input[type='password']::-ms-clear { display:
   .notif-hero-top { padding: 14px 12px 8px; gap: 8px 10px; }
   .notif-hero-meta { padding: 0 12px 12px; }
   .notif-msg { padding: 12px; }
-  .notif-message-disclosure summary, .notif-progress-disclosure summary { padding: 10px 12px; }
+  .notif-progress-disclosure summary { padding: 10px 12px; }
 }
 
 .detail-actions { display: flex; flex-direction: column; gap: 10px; }

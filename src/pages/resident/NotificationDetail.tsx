@@ -191,10 +191,7 @@ export default function NotificationDetail() {
         </div>
       </section>
 
-      {r ? <details className="notif-message-disclosure">
-        <summary>View full notification message<Svg d={ICONS.chevron} size={16} /></summary>
-        <NotificationMessage n={n} />
-      </details> : <NotificationMessage n={n} />}
+      {!r && <NotificationMessage n={n} />}
       </article>
 
       {r && <>
