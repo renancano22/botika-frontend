@@ -100,8 +100,7 @@ export default function ForgotPassword() {
         <form className="auth-card auth-card--focused register-card reset-card" onSubmit={reset} aria-labelledby="auth-title">
           <Message>{fe.general}</Message>
           <fieldset className="register-fields" disabled={busy}>
-          <section className="register-section" aria-labelledby="reset-verification-title">
-          <h2 id="reset-verification-title"><span>01</span> Verification code</h2>
+          <section className="register-section" aria-label="Verification code">
           <div className="register-grid">
           <label className="register-full"><span>6-digit code <span className="register-required" aria-hidden="true">*</span></span>
             <input value={code} onChange={(e) => { setCode(e.target.value.replace(/\D/g, '').slice(0, 6)); fe.clear('code'); fe.setGeneral(''); }}
@@ -110,8 +109,7 @@ export default function ForgotPassword() {
           </label>
           </div>
           </section>
-          <section className="register-section" aria-labelledby="reset-security-title">
-          <h2 id="reset-security-title"><span>02</span> Account security</h2>
+          <section className="register-section" aria-label="Account security">
           <div className="register-grid">
           <label><span>New password <span className="register-required" aria-hidden="true">*</span></span>
             <PasswordInput value={password} onChange={(e) => { setPassword(e.target.value); fe.clear('password'); fe.clear('password_confirmation'); fe.setGeneral(''); }} autoComplete="new-password" required maxLength={100} aria-describedby="reset-password-rules" {...FIELD.password} {...fe.invalid('password')} />
