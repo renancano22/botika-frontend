@@ -325,10 +325,10 @@ export default function Forecasting({ embedded = false }: { embedded?: boolean }
   const [demo, setDemo] = useState(false);
   return <>
     <div className="card fc-source">
-      <div><strong>Forecast data source</strong><p className="muted small">Use real records, or try sample dispensing data starting in September.</p></div>
+      <div><strong>Forecast data source</strong><p className="muted small">Use real records, or try six complete months of sample dispensing data.</p></div>
       <div className="fc-source-buttons" role="group" aria-label="Forecast data source">
         <button className={`btn ${demo ? 'btn-outline' : ''}`} aria-pressed={!demo} onClick={() => setDemo(false)}>Real records</button>
-        <button className={`btn ${demo ? '' : 'btn-outline'}`} aria-pressed={demo} onClick={() => setDemo(true)}>September sample data</button>
+        <button className={`btn ${demo ? '' : 'btn-outline'}`} aria-pressed={demo} onClick={() => setDemo(true)}>6-month sample data</button>
       </div>
     </div>
     <ForecastingView key={demo ? 'sample' : 'real'} embedded={embedded} demo={demo} />
@@ -343,6 +343,7 @@ function ForecastingView({ embedded, demo }: { embedded: boolean; demo: boolean 
   const params = useMemo(() => {
     const p: Record<string, string | number> = {};
     if (months) p.months = months;
+    else if (demo) p.months = 12; // Includes all six complete sample months and this month so far.
     if (horizon) p.horizon = horizon;
     if (method) p.method = method;
     if (demo) p.demo = 1;
@@ -506,7 +507,8 @@ function ForecastingView({ embedded, demo }: { embedded: boolean; demo: boolean 
       </header>
       <LoadError error={errorInfo} onRetry={() => reload()} />
       {demo && <Message type="warning" title="Sample data — demonstration only">
-        Fictional medicine quantities and stock starting in September. Nothing is added to resident records, inventory, SMS or saved forecasts.
+        Six complete months of fictional medicine quantities, plus the current month so far and fictional stock. Nothing is added to resident records, inventory, SMS or saved forecasts.
+        Choose Last 12 Months or Last 24 Months to include all six complete sample months; Last 6 Months includes the current month and five complete months.
         The current month is partial and is excluded from training while complete months are available.
         This demonstrates the calculations; it does not prove accuracy on real demand.
       </Message>}
