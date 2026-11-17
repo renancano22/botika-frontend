@@ -24,6 +24,7 @@ export function pickupText(r: MedicineRequest): string {
 export function PickupDeadlineBox({ r, reminder = false }: { r: MedicineRequest; reminder?: boolean }) {
   const p = pickupPeriod(r);
   if (!p || r.status !== 'approved') return null;
+  const hasPrescription = requiresPrescription(r) || storedPrescriptions(r).length > 0;
   return (
     <div className={`info-box pickup-box ${reminder ? 'info-warn' : 'info-ok'}`}>
       <strong><Svg d={ICONS.calendar} size={18} /> {reminder ? 'Pickup Reminder' : 'Pickup Schedule'}</strong>
@@ -36,8 +37,9 @@ export function PickupDeadlineBox({ r, reminder = false }: { r: MedicineRequest;
         You must claim your medicine within {p.days} days from the pickup date. If you do not claim it on or before <b>{p.deadline}</b>,
         the medicine will no longer be given to you and this request will no longer be valid for pickup.
       </p>
-      <small>When claiming, bring your Resident ID / QR code{r.resident?.qr_code ? ` (${r.resident.qr_code})` : ''} and a <b>valid ID or Barangay ID</b> for verification.</small>
-      {(requiresPrescription(r) || storedPrescriptions(r).length > 0) && <small><b>Bring all original prescriptions when claiming your medicines.</b></small>}
+      <small>When claiming your medicines, bring your Resident ID / QR code{r.resident?.qr_code ? ` (${r.resident.qr_code})` : ''}{hasPrescription ? ', a ' : ' and a '}
+        <b>valid ID or Barangay ID</b>{hasPrescription && <>, and <b>all original prescriptions</b></>} for verification.
+      </small>
     </div>
   );
 }
