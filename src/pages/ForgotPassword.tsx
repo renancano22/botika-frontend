@@ -23,7 +23,10 @@ export default function ForgotPassword() {
   const fe = useFormErrors(['login', 'code', 'password', 'password_confirmation']);
   const [busy, setBusy] = useState(false);
   const mobile = login.trim().replace(/[\s()-]/g, '').replace(/^\+?63(?=9\d{9}$)/, '0');
-  const checks = passwordRequirementChecks(password, confirm, [login, mobile], 'No login details or Botika name');
+  const checks = passwordRequirementChecks(password, confirm, [login, mobile]);
+  const displayedChecks = checks.map((check, index) => index === 3 && check.ok
+    ? { ...check, ok: null, hint: 'Your registered name and other account details are checked securely when you submit.' }
+    : check);
 
   const sendCode = async (e?: FormEvent) => {
     e?.preventDefault();
@@ -76,12 +79,12 @@ export default function ForgotPassword() {
 
   return (
     <div className={`auth-page ${step === 1 ? 'auth-page--compact' : 'auth-page--reset'}`}>
-      <div className={`auth-shell auth-shell--animated${step === 2 ? ' auth-shell--reset' : ''}`} key={step}>
+      <div className={`auth-shell auth-shell--animated${step === 2 ? ' auth-shell--register auth-shell--reset' : ''}`} key={step}>
         <header className="auth-header">
           <h1 id="auth-title">{step === 1 ? 'Forgot password' : 'Reset password'}</h1>
           {step === 1
             ? <p className="muted">Enter your account's email or mobile number. We'll send a 6-digit code to reset your password.</p>
-            : <Message type="info">{info}</Message>}
+            : <p className="muted" role="status">{info}</p>}
         </header>
       {step === 1 ? (
         <form className="auth-card auth-card--focused" onSubmit={sendCode} aria-labelledby="auth-title">
@@ -94,30 +97,41 @@ export default function ForgotPassword() {
           <p className="muted auth-footer"><Link to="/login">Back to log in</Link></p>
         </form>
       ) : (
-        <form className="auth-card auth-card--focused reset-card" onSubmit={reset} aria-labelledby="auth-title">
+        <form className="auth-card auth-card--focused register-card reset-card" onSubmit={reset} aria-labelledby="auth-title">
           <Message>{fe.general}</Message>
+          <fieldset className="register-fields" disabled={busy}>
+          <section className="register-section" aria-labelledby="reset-verification-title">
+          <h2 id="reset-verification-title"><span>01</span> Verification code</h2>
           <div className="register-grid">
-          <label className="register-full">6-digit code
+          <label className="register-full"><span>6-digit code <span className="register-required" aria-hidden="true">*</span></span>
             <input value={code} onChange={(e) => { setCode(e.target.value.replace(/\D/g, '').slice(0, 6)); fe.clear('code'); fe.setGeneral(''); }}
-              inputMode="numeric" autoComplete="one-time-code" placeholder="123456" required maxLength={6} {...FIELD.code} autoFocus {...fe.invalid('code')} />
+              inputMode="numeric" autoComplete="one-time-code" placeholder="123456" required maxLength={6} {...FIELD.code} {...fe.invalid('code')} />
             {fe.error('code')}
           </label>
-          <label>New password
+          </div>
+          </section>
+          <section className="register-section" aria-labelledby="reset-security-title">
+          <h2 id="reset-security-title"><span>02</span> Account security</h2>
+          <div className="register-grid">
+          <label><span>New password <span className="register-required" aria-hidden="true">*</span></span>
             <PasswordInput value={password} onChange={(e) => { setPassword(e.target.value); fe.clear('password'); fe.clear('password_confirmation'); fe.setGeneral(''); }} autoComplete="new-password" required maxLength={100} aria-describedby="reset-password-rules" {...FIELD.password} {...fe.invalid('password')} />
             {fe.error('password')}
           </label>
-          <label>Confirm new password
+          <label><span>Confirm new password <span className="register-required" aria-hidden="true">*</span></span>
             <PasswordInput value={confirm} onChange={(e) => { setConfirm(e.target.value); fe.clear('password_confirmation'); fe.setGeneral(''); }} autoComplete="new-password" required maxLength={100} aria-describedby="reset-password-rules" {...fe.invalid('password_confirmation')} />
             {fe.error('password_confirmation')}
           </label>
-          <PasswordRequirements checks={checks} id="reset-password-rules" />
-          <p className="field-hint register-full reset-personal-hint">Also avoid your registered name and other account details.</p>
+          <PasswordRequirements checks={displayedChecks} id="reset-password-rules" />
           </div>
-          <button className="btn" disabled={busy}>{busy ? 'Saving…' : 'Change password'}</button>
+          </section>
+          </fieldset>
+          <div className="register-actions">
           <p className="muted auth-footer auth-footer--stacked">
             <span>Didn't get a code? <button type="button" className="link-button" onClick={() => sendCode()} disabled={busy}>Send again</button></span>
             <Link to="/login">Back to log in</Link>
           </p>
+          <button className="btn" disabled={busy}>{busy ? 'Saving…' : 'Change password'}</button>
+          </div>
         </form>
       )}
       </div>
