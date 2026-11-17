@@ -40,13 +40,23 @@ export function registrationPasswordChecks(form: RegistrationForm) {
   ];
 }
 
+/** Require a written first and last name; a suffix or middle initial cannot stand in for either. */
+function hasCompleteName(name: string): boolean {
+  const parts = name.split(' ');
+  const suffix = /^(?:[Jj][Rr]|[Ss][Rr]|II|III|IV|V|VI|VII|VIII|IX|X)\.?$/;
+  while (parts.length && suffix.test(parts[parts.length - 1])) parts.pop();
+  const letters = (part: string) => (part.match(/\p{L}/gu) ?? []).length;
+  return parts.length >= 2 && letters(parts[0]) >= 2 && letters(parts[parts.length - 1]) >= 2
+    && parts.every((part) => letters(part) > 0);
+}
+
 export function validateRegistration(form: RegistrationForm, barangays: readonly string[] | null): Partial<Record<keyof RegistrationForm, string>> {
   const f = normalizeRegistration(form);
   const errors: Partial<Record<keyof RegistrationForm, string>> = {};
   if (!f.name) errors.name = 'Enter your full name.';
   else if (f.name.length > 100 || !/^[\p{L} .'\-]+$/u.test(f.name) || (f.name.match(/\p{L}/gu)?.length ?? 0) < 2) {
     errors.name = 'Use 2–100 characters with at least two letters. Spaces, periods, hyphens and apostrophes are allowed.';
-  }
+  } else if (!hasCompleteName(f.name)) errors.name = 'Enter your complete first and last names, not a single name or initials. Include your middle name if you have one.';
   if (!barangays?.length) errors.barangay = 'The barangay list is unavailable. Please reload it and try again.';
   else if (!barangays.includes(f.barangay)) errors.barangay = 'Choose a barangay of Bulan from the list.';
   if (f.address_line.length > 120 || /[\u0000-\u001f\u007f]/.test(f.address_line)) errors.address_line = 'Use at most 120 characters without line breaks or control characters.';

@@ -24,9 +24,14 @@ test('normalizes names, optional Gmail and mobile formats without changing passw
   assert.equal(normalizeRegistration({ ...valid, password: '  Kalinga4821  ' }).password, '  Kalinga4821  ');
 });
 
-test('names need letters but support accents, initials, apostrophes and hyphens', () => {
+test('full names require first and last names and support accents, middle initials, apostrophes and hyphens', () => {
   for (const name of ['  ', '...', " -.' ", 'A.', 'Ana123', '<script>']) assert.ok(validateRegistration({ ...valid, name }, barangays).name);
-  for (const name of ['Ña', "Ma. O'Neil-Cruz", 'Juan Dela Peña']) assert.equal(validateRegistration({ ...valid, name }, barangays).name, undefined);
+  for (const name of ['Ana', 'Santos', 'Ña', 'A. Cruz', 'Ana C.', 'Ana Jr.', 'Ana II', 'Ana Sr. Jr.', 'Ana . Cruz', 'Ana - Cruz']) {
+    assert.ok(validateRegistration({ ...valid, name }, barangays).name, name);
+  }
+  for (const name of ["Ma. O'Neil-Cruz", 'Juan Dela Peña', 'Ana M. Cruz', 'Ana Maria Cruz', 'Ana Cruz', 'Ana Cruz Jr.', 'Ana Cruz III', 'Ña Peña', 'Ai Ng']) {
+    assert.equal(validateRegistration({ ...valid, name }, barangays).name, undefined, name);
+  }
 });
 
 test('invalid mobile text, incomplete numbers and multiple recipients are refused', () => {

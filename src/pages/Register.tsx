@@ -23,7 +23,7 @@ export default function Register() {
   const fieldProps = (key: keyof RegistrationForm) => ({
     onBlur: () => setTouched((old) => ({ ...old, [key]: true })),
     'aria-invalid': problem(key) ? true as const : undefined,
-    'aria-describedby': problem(key) ? `err-${key}` : undefined,
+    'aria-describedby': [key === 'name' ? 'register-name-help' : '', problem(key) ? `err-${key}` : ''].filter(Boolean).join(' ') || undefined,
   });
   const fieldError = (key: keyof RegistrationForm) => <FieldError message={problem(key)} id={`err-${key}`} />;
   const set = (k: keyof typeof form) => (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -76,7 +76,8 @@ export default function Register() {
           <p className="register-section-hint">Check your name and barangay carefully. They are fixed after registration.</p>
           <div className="register-grid">
         <label className="register-full"><span>Full name <span className="register-required" aria-hidden="true">*</span></span>
-          <input value={form.name} onChange={set('name')} autoComplete="name" required maxLength={100} {...FIELD.name} {...fieldProps('name')} />
+          <input value={form.name} onChange={set('name')} autoComplete="name" placeholder="e.g. Juan Miguel Santos Cruz" required maxLength={100} {...FIELD.name} {...fieldProps('name')} />
+          <span className="field-hint" id="register-name-help">Enter your first name, middle name (if any), and last name as shown on your ID. Write out your first and last names.</span>
           {fieldError('name')}
         </label>
 
