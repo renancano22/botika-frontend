@@ -267,17 +267,21 @@ export default function ResidentMedicines() {
             <div className="page-title">
               <h1>{step === 'review' ? 'Review Your Request' : 'Medicine Request Form'}</h1>
             </div>
-            <p className="muted">{step === 'review' ? 'Please check the details before submitting.' : 'Enter the details of your medicine request.'}</p>
+            <p className="muted">{step === 'review' ? 'Check your medicines and quantities. Send your request when everything is correct.' : 'Choose your quantities, attach any required prescriptions, then review your request.'}</p>
           </div>
         </header>
         <ol className="mr-steps" aria-label="Request progress">
-          <li aria-current={step === 'form' ? 'step' : undefined} className={step === 'form' ? 'is-current' : 'is-complete'}><span>1</span> Request details</li>
+          <li aria-current={step === 'form' ? 'step' : undefined} className={step === 'form' ? 'is-current' : 'is-complete'}><span>{step === 'review' ? <Svg d={ICONS.check} size={14} /> : '1'}</span> Details</li>
           <li aria-current={step === 'review' ? 'step' : undefined} className={step === 'review' ? 'is-current' : ''}><span>2</span> Review &amp; submit</li>
         </ol>
 
         <section className="card form-card mr-card" aria-label="Medicine request">
           <fieldset className="mr-fields" disabled={busy}>
-          <div className="mr-section-heading"><h2>Requested medicines</h2><p>{cart.length} of {MAX_REQUEST_ITEMS} medicines · maximum {MAX_REQUEST_QUANTITY} of each</p></div>
+          <section className="mr-section" aria-labelledby="mr-medicines-title">
+          <div className="mr-section-heading">
+            <div className="mr-heading-line"><h2 id="mr-medicines-title">Your medicines</h2><span className="mr-count">{cart.length} / {MAX_REQUEST_ITEMS} selected</span></div>
+            <p>Up to {MAX_REQUEST_ITEMS} different medicines per request. Up to {MAX_REQUEST_QUANTITY} of each, depending on stock.</p>
+          </div>
           <FieldError message={requestErrors.items || requestIssues.items} />
           {currentCart.map((c, idx) => {
             const max = Math.min(c.medicine.available_stock, MAX_REQUEST_QUANTITY);
@@ -289,17 +293,15 @@ export default function ResidentMedicines() {
                   <div className="form-med-name">
                     <strong>{c.medicine.medicine_name}</strong>
                     <span className="muted">{c.medicine.category} · {c.medicine.unit}</span>
-                    <span className={`badge badge-${c.medicine.status}`}>{quantityText(c.medicine.available_stock, c.medicine.unit)} available</span>
-                    {c.medicine.requires_prescription && <RxBadge small />}
                   </div>
-                  {step === 'form' && (
-                    <button className="icon-btn" onClick={() => setCart(cart.filter((_, i) => i !== idx))} aria-label={`Remove ${c.medicine.medicine_name}`}>
-                      <Svg d={ICONS.trash} size={18} />
-                    </button>
-                  )}
+                </div>
+                <div className="mr-med-meta">
+                  <span className={`badge badge-${c.medicine.status}`}>{quantityText(c.medicine.available_stock, c.medicine.unit)} available</span>
+                  {c.medicine.requires_prescription && <RxBadge small />}
                 </div>
                 {step === 'form' ? (
-                  <label className="mr-quantity">Quantity requested <span className="field-hint">{max > 0 ? `Choose 1–${max} ${unitPlural(c.medicine.unit)}.` : 'No stock available. Remove this medicine.'}</span>
+                  <div className="mr-med-controls">
+                  <label className="mr-quantity">Quantity <span className="field-hint">{max > 0 ? `Choose 1–${max} ${unitPlural(c.medicine.unit)}` : 'No stock available. Remove this medicine.'}</span>
                     <select className="select-pill" value={c.quantity} disabled={max < 1} aria-invalid={quantityError ? true : undefined} aria-describedby={quantityError ? `mr-quantity-${idx}` : undefined} onChange={(e) => setCart(cart.map((x, i) => (i === idx ? { ...x, quantity: Number(e.target.value) } : x)))}>
                       {(!Number.isInteger(c.quantity) || c.quantity < 1 || c.quantity > max) && <option value={Number.isNaN(c.quantity) ? '' : c.quantity}>Choose quantity</option>}
                       {Array.from({ length: Math.max(0, max) }, (_, i) => i + 1).map((q) => (
@@ -307,6 +309,10 @@ export default function ResidentMedicines() {
                       ))}
                     </select>
                   </label>
+                  <button type="button" className="mr-remove" onClick={() => setCart(cart.filter((_, i) => i !== idx))} aria-label={`Remove ${c.medicine.medicine_name}`}>
+                    <Svg d={ICONS.trash} size={16} /> Remove
+                  </button>
+                  </div>
                 ) : (
                   <div className="review-row"><span>Requested quantity</span><strong>{quantityText(c.quantity, c.medicine.unit)}</strong></div>
                 )}
@@ -314,42 +320,43 @@ export default function ResidentMedicines() {
               </div>
             );
           })}
+          {step === 'form' && <button type="button" className="btn btn-outline mr-add-medicine" disabled={busy || cart.length >= MAX_REQUEST_ITEMS} onClick={() => goStep(null)}>
+            <span aria-hidden="true">+</span> {cart.length >= MAX_REQUEST_ITEMS ? `Maximum ${MAX_REQUEST_ITEMS} medicines selected` : 'Add another medicine'}
+          </button>}
+          </section>
 
           {step === 'form' ? (
             <>
-              <div className="mr-section-heading"><h2>Request details</h2><p>Add a short note for the pharmacy staff, if needed.</p></div>
-              <label><span>Reason for request <span className="muted small">(optional)</span></span>
-                <textarea rows={3} maxLength={MAX_REQUEST_NOTE} value={note} aria-invalid={(requestErrors.note || requestIssues.note) ? true : undefined} aria-describedby="mr-note-help" onChange={(e) => { setNote(e.target.value); setRequestErrors((old) => ({ ...old, note: '' })); }}
-                  placeholder="e.g. Ongoing maintenance, as advised by my doctor" />
-              </label>
-              <div className="mr-note-meta" id="mr-note-help"><FieldError message={requestErrors.note || requestIssues.note} /><span>{note.length}/{MAX_REQUEST_NOTE}</span></div>
-
               {needsRx && (
                 <div className="rx-section" role="group" aria-label="Prescription" aria-describedby="mr-prescription-error">
-                  <span className="rx-section-title"><Svg d={RX_ICON} size={18} width={2.4} /> Prescriptions <span className="req-star">*</span></span>
+                  <span className="rx-section-title"><Svg d={RX_ICON} size={18} width={2.4} /> Prescriptions <span className="mr-required">Required</span></span>
                   <p className="muted small">
-                    Required for {rxItems.map((c) => c.medicine.medicine_name).join(', ')}. Link each file to the medicines written on it, including prescriptions from different doctors.
+                    Upload each prescription, then select the medicines written on it. Use separate files for prescriptions from different doctors.
                   </p>
                   <PrescriptionsEditor key={medicineKey(cart)} medicines={rxItems.map((item) => item.medicine)} drafts={prescriptions} onBusyChange={setUploading}
                     onChange={(files) => { setPrescriptions(files); setRequestErrors((old) => Object.fromEntries(Object.entries(old).filter(([key]) => !key.startsWith('prescription')))); }} />
-                  <FieldError message={requestErrors.prescription || requestIssues.prescription} id="mr-prescription-error" />
-                  <p className="rx-note"><Svg d={ICONS.info} size={16} /> Pharmacy staff will check every prescription and its medicines before approving your request.</p>
+                  <FieldError message={requestErrors.prescription} id="mr-prescription-error" />
+                  <p className="rx-note"><Svg d={ICONS.info} size={16} /> Bring all original prescriptions when you claim your medicines.</p>
                 </div>
               )}
-
-              <div className="info-box info-warn">
-                <strong><Svg d={ICONS.info} size={18} /> Important reminder</strong>
+              <section className="mr-section mr-note-section" aria-labelledby="mr-note-title">
+                <div className="mr-section-heading"><div className="mr-heading-line"><h2 id="mr-note-title">Note for the pharmacy</h2><span className="mr-optional">Optional</span></div><p>Add a reason or any information the staff should know.</p></div>
+                <label className="sr-only" htmlFor="mr-note">Note for the pharmacy (optional)</label>
+                <textarea id="mr-note" rows={3} maxLength={MAX_REQUEST_NOTE} value={note} aria-invalid={(requestErrors.note || requestIssues.note) ? true : undefined} aria-describedby="mr-note-help" onChange={(e) => { setNote(e.target.value); setRequestErrors((old) => ({ ...old, note: '' })); }}
+                  placeholder="e.g. For ongoing maintenance, as advised by my doctor" />
+                <div className="mr-note-meta" id="mr-note-help"><FieldError message={requestErrors.note || requestIssues.note} /><span>{note.length} / {MAX_REQUEST_NOTE}</span></div>
+              </section>
+              <details className="mr-safety">
+                <summary><Svg d={ICONS.info} size={18} /> Medicine safety reminder</summary>
                 <p>Medicines are not suitable for everyone. Follow a doctor's or health worker's advice on whether to use them and how to take them.</p>
-                {needsRx && <p><b>Bring all original prescriptions when you claim your medicines.</b></p>}
-                <p>You can request up to {MAX_REQUEST_QUANTITY} of each medicine per request.</p>
-              </div>
+              </details>
 
             </>
           ) : (
             <>
               <div className="review-note">
-                <span className="muted small">Reason for request</span>
-                <p>{note.trim() || 'No reason given.'}</p>
+                <span className="muted small">Note for the pharmacy</span>
+                <p>{note.trim() || 'No note added.'}</p>
               </div>
               {needsRx && <PrescriptionsEditor readOnly medicines={rxItems.map((item) => item.medicine)} drafts={prescriptions} />}
               <div className="info-box info-ok">
@@ -363,11 +370,10 @@ export default function ResidentMedicines() {
           {step === 'review' && <Message>{requestIssues.prescription || requestIssues.note || requestIssues.items}</Message>}
           {sheetError && <Message>{sheetError}</Message>}
           {uploading && <p className="field-hint" role="status">Preparing your prescription. Please wait before reviewing.</p>}
-          <div className="mr-actions">
-            <button className="btn btn-outline" disabled={busy} onClick={cancelRequest}>Cancel request</button>
-            {step === 'form'
-              ? <button className="btn btn-outline" disabled={busy || cart.length >= MAX_REQUEST_ITEMS} onClick={() => goStep(null)}>Add medicine</button>
-              : <button className="btn btn-outline" disabled={busy} onClick={() => goStep('form')}>Edit details</button>}
+          <p className="mr-action-hint">{step === 'form' ? 'Next: check all details before sending. Your request has not been submitted yet.' : 'Ready to send? The pharmacy staff will review your request.'}</p>
+          <div className={`mr-actions${step === 'review' ? ' mr-actions-review' : ''}`}>
+            <button className="btn btn-outline mr-cancel" disabled={busy} onClick={cancelRequest}>Cancel request</button>
+            {step === 'review' && <button className="btn btn-outline" disabled={busy} onClick={() => goStep('form')}>Edit details</button>}
             <button className="btn mr-primary" disabled={busy || uploading || (step === 'review' && !requestValid)} onClick={step === 'form' ? reviewRequest : submitRequest}>
               {busy ? 'Submitting…' : step === 'form' ? 'Review request' : 'Confirm & submit'}
             </button>
