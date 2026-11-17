@@ -67,9 +67,9 @@ function MonthTick({ x = 0, y = 0, payload }: { x?: number; y?: number; payload?
 }
 
 /** Hover box: "Sep 2026 · Given out: 12 tablets" or "Oct 2026 · Expected: about 13 tablets". */
-function ChartTip({ active, payload, label, unit, forecastKeys, currentMonth, dataStart, today, currentUsed, provisional }: {
+function ChartTip({ active, payload, label, unit, forecastKeys, currentMonth, dataStart, today, currentUsed, provisional, demo = false }: {
   active?: boolean; payload?: { dataKey?: string | number; value?: number | string }[]; label?: string | number;
-  unit: string; forecastKeys: string[]; currentMonth: string; dataStart: string | null; today: string; currentUsed: boolean; provisional: boolean;
+  unit: string; forecastKeys: string[]; currentMonth: string; dataStart: string | null; today: string; currentUsed: boolean; provisional: boolean; demo?: boolean;
 }) {
   if (!active || label === undefined) return null;
   const key = String(label);
@@ -96,7 +96,7 @@ function ChartTip({ active, payload, label, unit, forecastKeys, currentMonth, da
         ? `${provisional ? 'Provisional forecast' : 'Forecast'} — not yet happened`
         : inProgress
           ? (currentUsed ? 'Month not finished — used as a provisional basis' : 'Month not finished — not used in the forecast yet')
-          : 'Actual — from dispensing records'}</small>
+          : demo ? 'Sample — fictional dispensing history' : 'Actual — from dispensing records'}</small>
     </div>
   );
 }
@@ -322,6 +322,20 @@ function SeasonalDemand() {
 /** Demand forecasting from historical dispensing data (Objective 3.5). */
 /** embedded: shown as the Demand Forecasting tab of Analytics (no page title of its own). */
 export default function Forecasting({ embedded = false }: { embedded?: boolean }) {
+  const [demo, setDemo] = useState(false);
+  return <>
+    <div className="card fc-source">
+      <div><strong>Forecast data source</strong><p className="muted small">Use real records, or try sample dispensing data starting in September.</p></div>
+      <div className="fc-source-buttons" role="group" aria-label="Forecast data source">
+        <button className={`btn ${demo ? 'btn-outline' : ''}`} aria-pressed={!demo} onClick={() => setDemo(false)}>Real records</button>
+        <button className={`btn ${demo ? '' : 'btn-outline'}`} aria-pressed={demo} onClick={() => setDemo(true)}>September sample data</button>
+      </div>
+    </div>
+    <ForecastingView key={demo ? 'sample' : 'real'} embedded={embedded} demo={demo} />
+  </>;
+}
+
+function ForecastingView({ embedded, demo }: { embedded: boolean; demo: boolean }) {
   // null = let the server use its default (history: config, horizon: 3, method: the most accurate one)
   const [months, setMonths] = useState<number | null>(null);
   const [horizon, setHorizon] = useState<number | null>(null);
@@ -331,9 +345,10 @@ export default function Forecasting({ embedded = false }: { embedded?: boolean }
     if (months) p.months = months;
     if (horizon) p.horizon = horizon;
     if (method) p.method = method;
+    if (demo) p.demo = 1;
     return p;
-  }, [months, horizon, method]);
-  const { data, errorInfo, loading, setData, reload } = useApi<ForecastReport>('/forecasts', params);
+  }, [months, horizon, method, demo]);
+  const { data, errorInfo, loading, setData, reload, current } = useApi<ForecastReport>('/forecasts', params);
 
   const [medicineId, setMedicineId] = useState<number | null>(null);
   const [tableFilter, setTableFilter] = useState<TableFilter>('restock');
@@ -418,7 +433,7 @@ export default function Forecasting({ embedded = false }: { embedded?: boolean }
   };
 
   const generate = async () => {
-    if (!data || busy) return;
+    if (!data || busy || demo || data.demo || loading || !current) return;
     if (!(await confirmSave({
       title: 'Generate and save this forecast?',
       message: <>The forecast for <strong>{periodText(data.forecast_keys)}</strong> ({METHOD_LABEL[data.method] ?? data.method}, based on the last {monthsText(data.history_months).toLowerCase()}) will be saved as the latest forecast.</>,
@@ -436,24 +451,24 @@ export default function Forecasting({ embedded = false }: { embedded?: boolean }
 
   const exportReport = () => {
     if (!data) return;
-    const head = ['Medicine', 'Category', 'Unit', 'Current Stock', 'Set Aside (Approved Requests)', 'Pending Requests', 'Restock Requests Waiting',
+    const head = ['Data Source', 'Medicine', 'Category', 'Unit', 'Current Stock', 'Set Aside (Approved Requests)', 'Pending Requests', 'Restock Requests Waiting',
       `Predicted Demand (Next ${monthsText(data.horizon)})`, 'Reorder Level', 'Suggested Restock', 'Priority', 'Forecasting Method', 'Forecast Period', 'Based On'];
     const status = !data.data_start ? 'No dispensing records yet'
       : `${basisText}${provisional ? ' (provisional)' : ''}`;
-    const rows = tableRows.map((r) => [r.medicine_name, r.category, r.unit, r.stock_recorded === false ? 'Not recorded' : r.available_stock,
+    const rows = tableRows.map((r) => [data.demo ? 'SAMPLE DATA - demonstration only' : 'Real records', r.medicine_name, r.category, r.unit, r.stock_recorded === false ? 'Not recorded' : r.available_stock,
       r.reserved_stock, r.pending_requests, r.restock_requests, r.predicted_demand, r.reorder_level, r.recommended_restock,
       r.stock_recorded === false ? 'Stock not recorded' : r.priority === 'high' ? 'High' : r.priority === 'medium' ? 'Medium' : 'Enough stock', METHOD_LABEL[data.method], periodText(data.forecast_keys), status]);
     const esc = (v: unknown) => `"${String(v ?? '').replace(/"/g, '""')}"`;
     const csv = [head, ...rows].map((r) => r.map(esc).join(',')).join('\r\n');
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' }));
-    a.download = `restocking_recommendations_${data.forecast_keys[0]}_to_${data.forecast_keys[data.forecast_keys.length - 1]}.csv`;
+    a.download = `${data.demo ? 'SAMPLE_' : ''}restocking_recommendations_${data.forecast_keys[0]}_to_${data.forecast_keys[data.forecast_keys.length - 1]}.csv`;
     a.click();
     URL.revokeObjectURL(a.href);
   };
 
-  const generateButton = () => (
-    <button className="btn" onClick={generate} disabled={busy || !data}>
+  const generateButton = () => demo ? <span className="muted small">Sample preview · saving disabled</span> : (
+    <button className="btn" onClick={generate} disabled={busy || !data || loading || !current}>
       <Svg d={ICON.trend} size={18} /> {busy ? 'Generating…' : 'Generate Forecast'}
     </button>
   );
@@ -470,7 +485,7 @@ export default function Forecasting({ embedded = false }: { embedded?: boolean }
       <header className={embedded ? 'card an-toolbar' : 'page-head hero-head db-hero fc-hero'}>
         <div>
           {!embedded && <div className="page-title"><h1>Demand Forecasting</h1></div>}
-          <p className="muted">Predicted medicine needs from the dispensing records, with restocking recommendations.</p>
+          <p className="muted">{demo ? 'Sample forecast from fictional dispensing history and stock.' : 'Predicted medicine needs from the dispensing records, with restocking recommendations.'}</p>
           {data && (
             <p className="fc-last-gen">
               <Svg d={ICONS.check} size={15} width={2.4} />
@@ -483,15 +498,20 @@ export default function Forecasting({ embedded = false }: { embedded?: boolean }
                     ? [data.last_generated.period_start] : [data.last_generated.period_start, data.last_generated.period_end])}
                   {' · '}based on the last {monthsText(data.last_generated.history_months).toLowerCase()}
                 </span>
-              ) : <span>Not generated yet. Use Generate Forecast in step 1 to save it.</span>}
+              ) : <span>{demo ? 'Sample preview — calculated with the same forecasting methods.' : 'Not generated yet. Use Generate Forecast in step 1 to save it.'}</span>}
             </p>
           )}
         </div>
         {!embedded && <div className="actions">{generateButton()}</div>}
       </header>
       <LoadError error={errorInfo} onRetry={() => reload()} />
+      {demo && <Message type="warning" title="Sample data — demonstration only">
+        Fictional medicine quantities and stock starting in September. Nothing is added to resident records, inventory, SMS or saved forecasts.
+        The current month is partial and is excluded from training while complete months are available.
+        This demonstrates the calculations; it does not prove accuracy on real demand.
+      </Message>}
 
-      {loading && !data ? <Loading /> : !data ? null : !results.length ? <Card><Empty>No medicines to forecast yet. Add medicines first.</Empty></Card> : (
+      {loading && !data ? <Loading /> : !data ? null : demo && !data.demo ? <Message type="warning">Sample data is not available on the backend yet. Try again after deployment finishes.</Message> : !results.length ? <Card><Empty>No medicines to forecast yet. Add medicines first.</Empty></Card> : (
         <div className={`fc-body ${loading ? 'tbl-updating' : ''}`}>
           <section className="fc-step" aria-label="Choose forecast settings">
             <div className="fc-step-head">
@@ -542,7 +562,7 @@ export default function Forecasting({ embedded = false }: { embedded?: boolean }
                 </p>
               )}
               <div className="fc-generate">
-                <p className="muted small">The forecast below updates as you change these settings. <b>Generate Forecast</b> saves it as the latest forecast.</p>
+                <p className="muted small">{demo ? 'The sample forecast updates as you change these settings. Sample results cannot be saved as official forecasts.' : <>The forecast below updates as you change these settings. <b>Generate Forecast</b> saves it as the latest forecast.</>}</p>
                 {generateButton()}
               </div>
             </Card>
@@ -570,7 +590,7 @@ export default function Forecasting({ embedded = false }: { embedded?: boolean }
             <div ref={chartRef}>
               <Card title={`Predicted Medicine Demand${selectedMedicine ? `: ${selectedMedicine.medicine_name}` : ''}`} actions={
                 <span className="fc-legend">
-                  <span><i className="lg-actual" /> Actual demand</span>
+                  <span><i className="lg-actual" /> {demo ? 'Sample history' : 'Actual demand'}</span>
                   <span><i className="lg-forecast" /> {provisional ? 'Provisional forecast' : 'Forecast demand'}</span>
                 </span>
               }>
@@ -642,8 +662,8 @@ export default function Forecasting({ embedded = false }: { embedded?: boolean }
                           <YAxis allowDecimals={false} fontSize={12} tickLine={false} axisLine={false} width={52}
                             label={{ value: `Quantity (${unitLabel})`, angle: -90, position: 'insideLeft', style: { fontSize: 12, fill: '#5f6f6b', textAnchor: 'middle' } }} />
                           <Tooltip content={<ChartTip unit={unitLabel} forecastKeys={data.forecast_keys} currentMonth={data.current_month}
-                            dataStart={data.data_start} today={data.today} currentUsed={currentUsed} provisional={provisional} />} />
-                          <Line dataKey="actual" name="Given out (actual)" stroke={ACTUAL} strokeWidth={2.5} activeDot={{ r: 6 }} isAnimationActive={false}
+                            dataStart={data.data_start} today={data.today} currentUsed={currentUsed} provisional={provisional} demo={demo} />} />
+                          <Line dataKey="actual" name={demo ? 'Sample history' : 'Given out (actual)'} stroke={ACTUAL} strokeWidth={2.5} activeDot={{ r: 6 }} isAnimationActive={false}
                             dot={({ cx, cy, index, payload }: { cx?: number; cy?: number; index?: number; payload?: { key: string } }) => (
                               <ActualDot key={`a-${index}`} cx={cx} cy={cy} index={index} payload={payload} currentMonth={data.current_month} />
                             )} />
@@ -654,7 +674,7 @@ export default function Forecasting({ embedded = false }: { embedded?: boolean }
                       </ResponsiveContainer>
                     </div>
                     <div className="fc-periods">
-                      <span style={{ flex: Math.max(data.history_keys.length - 1, 1) }}>Past months (actual, this month so far)</span>
+                      <span style={{ flex: Math.max(data.history_keys.length - 1, 1) }}>Past months ({demo ? 'sample' : 'actual'}, this month so far)</span>
                       <span className="fc-period-forecast" style={{ flex: data.forecast_keys.length }}>{provisional ? 'Forecast period (provisional)' : 'Forecast period'}</span>
                     </div>
                     <MethodExplanation method={data.method} result={methodResult} unit={unitLabel} forecast={forecastList} basisMonths={basisMonths}
@@ -736,7 +756,7 @@ export default function Forecasting({ embedded = false }: { embedded?: boolean }
               </Card>
             </div>
           </section>
-          <section className="fc-step" aria-label="Demand patterns">
+          {!demo && <section className="fc-step" aria-label="Demand patterns">
             <div className="fc-step-head">
               <span className="fc-step-no fc-step-more"><Svg d={ICONS.info} size={14} width={2.4} /></span>
               <div><h2>Demand patterns</h2><p className="muted small">Supporting information: demand by season, barangay and medicine.</p></div>
@@ -752,7 +772,7 @@ export default function Forecasting({ embedded = false }: { embedded?: boolean }
                 <p className="muted small fc-note">Based on medicine requests (pending, approved and completed) since {since}.</p>
               </Card>
             </div>
-          </section>
+          </section>}
         </div>
       )}
 
@@ -790,7 +810,7 @@ export default function Forecasting({ embedded = false }: { embedded?: boolean }
             worked out from how many were given out in past months.
           </p>
           <div className="fc-calc">
-            <strong className="fc-calc-title"><Svg d={ICONS.clock} size={16} /> Given out per month (dispensing records)</strong>
+            <strong className="fc-calc-title"><Svg d={ICONS.clock} size={16} /> Given out per month ({demo ? 'sample data' : 'dispensing records'})</strong>
             {data.data_start ? (
               <p className="fc-calc-formula">
                 {data.history_keys.filter((k) => k >= (data.data_start ?? '')).map((k) => (

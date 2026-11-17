@@ -351,6 +351,8 @@ export interface ForecastRunInfo {
 }
 
 export interface ForecastReport {
+  /** Synthetic preview, never saved as an operational forecast. */
+  demo?: boolean;
   generated_at: string;
   /** null: a forecast was never generated (saved) yet */
   last_generated?: ForecastRunInfo | null;

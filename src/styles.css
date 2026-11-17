@@ -2239,6 +2239,13 @@ a.db-person:hover { background: rgba(255, 255, 255, 0.2); }
 .cp-form .btn-block { margin-top: 12px; }
 
 /* User Accounts → Create / Edit: same sections as My Profile */
+.fc-source { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; width: 100%; max-width: 1280px; margin: 0 auto 20px; }
+.fc-source p { margin: 4px 0 0; }
+.fc-source-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+@media (max-width: 700px) {
+  .fc-source-buttons { width: 100%; }
+  .fc-source-buttons > .btn { flex: 1 1 150px; }
+}
 .ua-row-actions, .rq-row-actions { display: grid; grid-template-columns: 136px; justify-content: end; gap: 6px; }
 .ua-row-actions > .btn, .rq-row-actions > .btn {
   display: inline-flex; align-items: center; justify-content: center; width: 136px; height: 38px;
