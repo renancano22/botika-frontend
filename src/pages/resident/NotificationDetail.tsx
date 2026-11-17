@@ -169,7 +169,7 @@ export default function NotificationDetail() {
   const advice = nextStep(r);
 
   return (
-    <div className="page page-narrow">
+    <div className={`page page-narrow notification-detail-page k-${kind}`}>
       <BackButton fallback="/notifications" />
       <header className="detail-topbar">
         <h1>Notification Details</h1>
