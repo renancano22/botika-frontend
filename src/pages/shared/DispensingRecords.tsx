@@ -46,6 +46,8 @@ export default function DispensingRecords() {
   };
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState<'newest' | 'oldest'>('newest');
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [customDates, setCustomDates] = useState(false);
   const badRange = !!from && !!to && from > to;
   const searchTerm = useDebounced(search.trim());
   // One page at a time from the server; the search, dates and sort are applied to ALL records there.
@@ -62,7 +64,7 @@ export default function DispensingRecords() {
   const filtered = !!from || !!to || !!search.trim();
 
   return (
-    <div className="page dr-page">
+    <div className={`page dr-page${isResident ? ' dr-page--resident' : ''}`}>
       <BackButton linkedOnly />
       <header className="page-head">
         <div>
@@ -74,7 +76,38 @@ export default function DispensingRecords() {
       </header>
       <LoadError error={errorInfo} onRetry={() => reload()} />
 
-      <section className="card dr-filters" aria-label="Filters">
+      {isResident ? <section className="history-toolbar" aria-label="Search and filter medicine history">
+        <div className="history-search-row">
+          <label className="history-search dr-input">
+            <Svg d={SEARCH} size={18} />
+            <input type="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search medicines" aria-label="Search medicine or request number" />
+          </label>
+          <button type="button" className={`btn btn-outline history-filter-toggle${from || to ? ' is-filtered' : ''}`} aria-expanded={filtersOpen} aria-controls="history-date-filters" onClick={() => setFiltersOpen((open) => !open)}>
+            <Svg d="M4 7h16M7 12h10M10 17h4" size={18} />Filters{(from || to) && <span className="history-filter-dot" aria-label="Date filter active" />}
+          </button>
+        </div>
+        <div className="history-toolbar-meta">
+          <span className="history-range">{rangeText}</span>
+          <label className="history-sort"><span className="sr-only">Sort history</span><select value={sort} onChange={(e) => setSort(e.target.value as 'newest' | 'oldest')} aria-label="Sort history"><option value="newest">Newest first</option><option value="oldest">Oldest first</option></select></label>
+        </div>
+        {filtersOpen && <div id="history-date-filters" className="history-date-filters">
+          <label className="history-range-select">Date range
+            <select aria-label="Date range" value={customDates ? 'custom' : activePreset ?? 'custom'} onChange={(e) => { setCustomDates(e.target.value === 'custom'); const preset = PRESETS.find((p) => p.key === e.target.value); if (preset) setRange(...preset.range()); }}>
+              {PRESETS.map((p) => <option key={p.key} value={p.key}>{p.label}</option>)}
+              <option value="custom">Custom dates</option>
+            </select>
+          </label>
+          <div className="history-custom-dates">
+            <label>From<input type="date" value={from} max={to || undefined} onChange={(e) => setRange(e.target.value, to)} aria-label="From date" /></label>
+            <label>To<input type="date" value={to} min={from || undefined} onChange={(e) => setRange(from, e.target.value)} aria-label="To date" /></label>
+          </div>
+          {badRange && <p className="field-warning">The dates were swapped because the From date was after the To date.</p>}
+          <div className="history-filter-actions">
+            <button type="button" className="link-button" disabled={!filtered && !customDates} onClick={() => { setSearch(''); setRange('', ''); setCustomDates(false); }}>Reset filters</button>
+            <button type="button" className="btn btn-outline" onClick={() => setFiltersOpen(false)}>Done</button>
+          </div>
+        </div>}
+      </section> : <section className="card dr-filters" aria-label="Filters">
         <div className="dr-presets" role="group" aria-label="Quick date range">
           {PRESETS.map((p) => (
             <button key={p.key} type="button" className={`chip ${activePreset === p.key ? 'active' : ''}`} aria-pressed={activePreset === p.key} onClick={() => setRange(...p.range())}>
@@ -118,10 +151,10 @@ export default function DispensingRecords() {
           </button>
         </div>
         {badRange && <p className="field-warning">The "From" date is after the "To" date, so the dates were swapped.</p>}
-      </section>
+      </section>}
 
       <div className="dr-summary">
-        <div><small>Showing</small><strong>{rangeText}</strong></div>
+        {!isResident && <div><small>Showing</small><strong>{rangeText}</strong></div>}
         <div><small>Records</small><strong>{summary?.records ?? '—'}</strong></div>
         {!isResident && <div><small>Residents served</small><strong>{summary?.residents ?? '—'}</strong></div>}
         <div><small>Total quantity given</small><strong>{summary?.total_quantity ?? '—'}</strong></div>

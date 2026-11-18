@@ -145,3 +145,44 @@
   .resident-ui .modal-actions .btn { flex: 1 1 120px; }
 }
 @media (max-width: 359px) { .resident-ui .pickup-dates { grid-template-columns: minmax(0, 1fr); } }
+
+/* Medicine history: search first; date controls only when requested. */
+.resident-ui .history-toolbar { display: flex; flex-direction: column; gap: 10px; }
+.resident-ui .history-search-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; }
+.resident-ui .history-search { margin: 0; min-width: 0; height: 46px; flex-direction: row; align-items: center; border-radius: 10px; box-shadow: var(--shadow-sm); }
+.resident-ui .history-search input { font-size: 0.875rem; }
+.resident-ui .history-search svg { flex-shrink: 0; }
+.resident-ui .history-filter-toggle { display: inline-flex; align-items: center; gap: 6px; padding: 10px 12px; background: white; color: var(--text); border-color: #cfdcd8; }
+.resident-ui .history-filter-toggle.is-filtered { color: var(--primary-dark); border-color: var(--primary); }
+.resident-ui .history-filter-dot { width: 6px; height: 6px; background: var(--primary); border-radius: 50%; }
+.resident-ui .history-toolbar-meta { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.resident-ui .history-range { min-width: 0; font-size: 0.78rem; line-height: 1.5; color: var(--muted); }
+.resident-ui .history-sort { flex: 0 0 135px; width: 135px; display: block; margin: 0; }
+.resident-ui .history-sort select { width: auto; height: 36px; min-height: 36px; padding: 4px 26px 4px 8px; border: 0; background-color: transparent; border-radius: 6px; font-size: 0.8rem; color: var(--text); }
+.resident-ui .history-date-filters { display: flex; flex-direction: column; gap: 14px; padding: 16px; background: white; border: 1px solid var(--border); border-radius: 12px; }
+.resident-ui .history-date-filters label { margin: 0; font-size: 0.8rem; gap: 6px; min-width: 0; }
+.resident-ui .history-date-filters input, .resident-ui .history-date-filters select { width: 100%; height: 44px; border-radius: 8px; }
+.resident-ui .history-custom-dates { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.resident-ui .history-custom-dates input { appearance: none; min-width: 0; padding: 8px; }
+.resident-ui .history-filter-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
+.resident-ui .history-filter-actions .link-button { font-size: 0.8rem; min-height: 40px; }
+.resident-ui .history-filter-actions .btn { min-height: 40px; padding: 8px 20px; }
+.resident-ui .dr-page--resident .dr-summary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.resident-ui .dr-page--resident .dr-summary > div { grid-column: auto; display: flex; flex-direction: column; align-items: flex-start; padding: 12px 16px; gap: 4px; background: white; border: 1px solid var(--border); }
+.resident-ui .dr-page--resident .dr-summary strong { font-size: 1.35rem; line-height: 1.25; color: var(--text); }
+.resident-ui .dr-page--resident .dr-summary small { font-size: 0.78rem; font-weight: 500; }
+@media (min-width: 761px) {
+  .resident-ui .history-toolbar { max-width: 100%; }
+  .resident-ui .history-date-filters { display: grid; grid-template-columns: minmax(160px, 1fr) minmax(280px, 2fr) auto; align-items: end; }
+  .resident-ui .history-filter-actions { border: 0; padding: 0; }
+}
+@media (max-width: 760px) {
+  .resident-ui .dr-page--resident .dr-table .col-no { display: none; }
+  .resident-ui .dr-page--resident .dr-table td[data-label='Date & time'] { display: block; padding: 12px 14px; background: #f7faf8; border-bottom: 1px solid var(--border); }
+  .resident-ui .dr-page--resident .dr-table td[data-label='Date & time']::before { display: none; }
+  .resident-ui .dr-page--resident .dr-table td[data-label='Medicines given'] { display: block; padding: 12px 14px; }
+  .resident-ui .dr-page--resident .dr-table td[data-label='Medicines given']::before { display: block; margin-bottom: 10px; }
+  .resident-ui .dr-page--resident .dr-table td { padding: 10px 14px; font-size: 0.825rem; }
+  .resident-ui .dr-page--resident .dr-table td::before { font-size: 0.65rem; }
+  .resident-ui .dr-page--resident .dr-meds { font-size: 0.85rem; line-height: 1.5; }
+}
