@@ -44,7 +44,7 @@ export default function ResidentDashboard() {
   const activity = [
     ...(sec.requests ? [
       { to: '/requests?status=review', tone: 'review', icon: REVIEW_ICON, value: pending, label: 'Under review',
-        hint: pending ? 'Being checked by the pharmacy' : 'Nothing under review', alert: false },
+        hint: pending ? 'Awaiting review' : 'No pending requests', alert: false },
       { to: '/requests?status=claim', tone: 'ready', icon: ICONS.check, value: approved, label: 'Ready to claim',
         hint: approved ? 'Bring your QR code' : 'Nothing to claim', alert: approved > 0 },
       { to: '/requests?status=claimed', tone: 'completed', icon: ICONS.hand, value: dispensed, label: 'Claimed',
@@ -67,7 +67,7 @@ export default function ResidentDashboard() {
       <header className="page-head hero-head db-hero rd-hero">
         <div>
           <h1>Hello, {resident.name.split(' ')[0]}!</h1>
-          <p className="muted">Check medicines, send requests and follow their status here.</p>
+          <p className="muted">Find medicines and track your requests.</p>
           <p className="db-people">
             <Link to="/profile" className="db-person"><Svg d={QR_ICON} size={16} /> Resident ID: {resident.qr_code}</Link>
           </p>
@@ -80,13 +80,17 @@ export default function ResidentDashboard() {
       {sec.requests && toClaim && (
         <Link to={`/requests/${toClaim.request_id}`} className="rd-claim k-ready">
           <span className="rd-claim-icon"><Svg d={ICONS.check} size={22} width={2.6} /></span>
-          <span className="rd-claim-text">
-            <strong>Ready for pickup · Request No. {toClaim.request_id}</strong>
-            <span>{itemsText(toClaim)}{claimPeriod ? ` · Claim on or before ${claimPeriod.deadline}` : ''}</span>
-            <small>Bring your QR code / Resident ID and a valid ID or Barangay ID.</small>
+          <span className="rd-claim-heading">
+            <strong>Ready for pickup</strong>
+            <small>Request No. {toClaim.request_id}</small>
           </span>
           <PickupCountdown claimBy={toClaim.claim_by} />
           <span className="rd-go" aria-hidden="true"><Svg d={ICONS.chevron} size={20} /></span>
+          <span className="rd-claim-text">
+            <span>{itemsText(toClaim)}</span>
+            {claimPeriod && <span className="rd-claim-deadline">Claim on or before <strong>{claimPeriod.deadline}</strong>.</span>}
+            <small>Bring your QR code / Resident ID and a valid ID or Barangay ID.</small>
+          </span>
         </Link>
       )}
 

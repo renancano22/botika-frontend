@@ -2847,6 +2847,43 @@ tr.row-hit > td:first-child { box-shadow: inset 4px 0 0 #eab308; }
   .rd-row { padding: 10px 2px; }
   .rd-row-icon { width: 34px; height: 34px; }
 }
+/* Keep the pickup message readable without squeezing it beside the icon. */
+.rd-page .rd-claim { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; gap: 12px; align-items: center; }
+.rd-claim-heading { display: flex; flex-direction: column; min-width: 0; gap: 2px; }
+.rd-claim-heading strong { font-size: 0.95rem; color: color-mix(in srgb, var(--k) 70%, black); }
+.rd-claim-heading small { font-size: 0.78rem; color: var(--muted); }
+.rd-page .rd-claim-text { grid-column: 2 / -1; gap: 6px; overflow-wrap: anywhere; line-height: 1.5; }
+.rd-page .rd-claim-text span { font-size: 0.85rem; }
+.rd-page .rd-claim-text .rd-claim-deadline { color: #33443f; }
+.rd-page .rd-claim-deadline strong { font-size: inherit; color: inherit; }
+.rd-page .rd-claim .countdown { margin: 0; }
+@media (max-width: 700px) {
+  .rd-page { gap: 14px; }
+  .rd-page .rd-hero { padding: 18px; gap: 14px; margin-bottom: 0; border-radius: 16px; }
+  .rd-page .rd-hero h1 { font-size: 1.3rem; line-height: 1.3; }
+  .rd-page .rd-hero > div > .muted { font-size: 0.85rem; line-height: 1.5; margin-top: 4px; }
+  .rd-page .rd-hero .db-person { white-space: normal; overflow-wrap: anywhere; font-size: 0.75rem; }
+  .rd-page .rd-hero .actions .btn { min-height: 44px; padding: 10px 14px; font-size: 0.875rem; }
+  .rd-page .db-panel { padding: 14px; border-radius: 16px; }
+  .rd-page .db-panel-head h2 { font-size: 0.95rem; }
+  .rd-page .db-more { font-size: 0.78rem; white-space: nowrap; }
+  .rd-page .db-req { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .rd-page .db-req-item[class*=' t-'] { grid-template-columns: 30px minmax(0, 1fr); gap: 8px; padding: 12px; border-radius: 12px; }
+  .rd-page .db-req-text { display: contents; }
+  .rd-page .db-req-item .db-req-icon { width: 30px; height: 30px; grid-column: 1; grid-row: 1; }
+  .rd-page .db-req-item .db-req-icon svg { width: 16px; height: 16px; }
+  .rd-page .db-req-item .db-req-value { grid-column: 2; grid-row: 1; align-self: center; margin: 0; font-size: 1.5rem; line-height: 1.2; }
+  .rd-page .db-req-item .db-req-label { grid-column: 1 / -1; grid-row: 2; font-size: 0.8rem; font-weight: 600; line-height: 1.4; }
+  .rd-page .db-req-item .db-req-hint { display: block; grid-column: 1 / -1; grid-row: 3; font-size: 0.72rem; line-height: 1.4; overflow: visible; -webkit-line-clamp: unset; }
+  .rd-page .rd-claim { grid-template-columns: 32px minmax(0, 1fr); padding: 14px; gap: 10px; border-radius: 14px; border-left-width: 3px; }
+  .rd-page .rd-claim-icon { width: 32px; height: 32px; border-radius: 9px; }
+  .rd-page .rd-claim-icon svg { width: 18px; height: 18px; }
+  .rd-page .rd-claim-heading strong { font-size: 0.9rem; }
+  .rd-page .rd-claim-text { grid-column: 1 / -1; grid-row: 2; }
+  .rd-page .rd-claim-text small { font-size: 0.78rem; line-height: 1.5; }
+  .rd-page .rd-claim .countdown { grid-column: 1 / -1; grid-row: 3; justify-self: start; font-size: 0.72rem; }
+  .rd-page .rd-go { display: none; }
+}
 /* Resident dashboard: recent requests use the full width — two columns of rows on wide screens */
 @media (min-width: 900px) {
   .rd-panel-wide .rd-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 28px; }
