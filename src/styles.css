@@ -2884,6 +2884,34 @@ tr.row-hit > td:first-child { box-shadow: inset 4px 0 0 #eab308; }
   .rd-page .rd-claim .countdown { grid-column: 1 / -1; grid-row: 3; justify-self: start; font-size: 0.72rem; }
   .rd-page .rd-go { display: none; }
 }
+.rd-followup { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; align-items: start; }
+.rd-followup > .card { min-width: 0; margin: 0; }
+.rd-pickup-panel { border-top: 3px solid var(--k); }
+.rd-pickup-panel .db-panel-head { flex-wrap: wrap; gap: 8px; }
+.rd-pickup-body { display: flex; flex-direction: column; gap: 12px; }
+.rd-pickup-number { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; font-weight: 600; color: color-mix(in srgb, var(--k) 75%, black); }
+.rd-pickup-medicines { margin: 0; font-size: 0.85rem; line-height: 1.5; overflow-wrap: anywhere; }
+.rd-pickup-deadline { display: flex; flex-direction: column; gap: 3px; margin: 0; padding: 10px 12px; border-radius: 10px; background: color-mix(in srgb, var(--k) 7%, white); }
+.rd-pickup-deadline span { font-size: 0.75rem; color: var(--muted); }
+.rd-pickup-deadline strong { font-size: 0.95rem; }
+.rd-pickup-hint { margin: 0; font-size: 0.78rem; line-height: 1.5; color: var(--muted); }
+.rd-pickup-action { display: flex; justify-content: center; gap: 8px; min-height: 44px; font-size: 0.85rem; }
+.rd-recent-list { list-style: none; margin: 0; padding: 0; }
+.rd-recent-list > li + li { border-top: 1px solid var(--border); }
+.rd-recent-link { display: flex; flex-direction: column; gap: 8px; padding: 14px 0; color: var(--text); text-decoration: none; border-radius: 6px; }
+.rd-recent-list > li:first-child .rd-recent-link { padding-top: 2px; }
+.rd-recent-list > li:last-child .rd-recent-link { padding-bottom: 2px; }
+.rd-recent-link:hover { background: #f8faf9; }
+.rd-recent-link:focus-visible, .rd-pickup-action:focus-visible { outline: 2px solid var(--primary); outline-offset: 4px; }
+.rd-recent-top { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px 10px; }
+.rd-recent-top > strong { font-size: 0.875rem; }
+.rd-recent-top .pill { font-size: 0.7rem; }
+.rd-recent-medicines { font-size: 0.825rem; line-height: 1.5; overflow-wrap: anywhere; }
+.rd-recent-footer { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px 12px; }
+.rd-recent-footer small { font-size: 0.74rem; color: var(--muted); }
+.rd-recent-footer > span { display: inline-flex; align-items: center; gap: 2px; font-size: 0.75rem; font-weight: 600; color: var(--primary-dark); }
+@media (min-width: 1000px) { .rd-followup--pickup { grid-template-columns: minmax(260px, 0.8fr) minmax(0, 1.6fr); } }
+@media (max-width: 700px) { .rd-followup { gap: 14px; } }
 /* Resident dashboard: recent requests use the full width — two columns of rows on wide screens */
 @media (min-width: 900px) {
   .rd-panel-wide .rd-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 28px; }
