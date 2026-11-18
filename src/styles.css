@@ -2369,6 +2369,23 @@ a.db-person:hover { background: rgba(255, 255, 255, 0.2); }
 .temp-login-warn { padding: 8px 10px; border-radius: 8px; background: #fff7ed; color: #9a3412; font-weight: 600; }
 .drawer-action { margin: 0 12px; width: calc(100% - 24px); border: none; background: none; font: inherit; cursor: pointer; text-align: left; }
 .cp-form .btn-block { margin-top: 12px; }
+.cp-required-page { min-height: 100svh; padding: 24px 16px; }
+.cp-required-card { max-width: 460px; gap: 18px; }
+.cp-required-card .cp-heading { text-align: center; }
+.cp-required-card .cp-icon { width: 40px; height: 40px; margin: 0 auto 12px; border-radius: 12px; box-shadow: none; }
+.cp-required-card h1 { margin: 0 0 8px; font-size: clamp(1.25rem, 4.8vw, 1.5rem); line-height: 1.3; letter-spacing: -0.02em; text-wrap: balance; }
+.cp-required-card .cp-who { margin: 0; font-size: 0.8rem; line-height: 1.5; overflow-wrap: anywhere; }
+.cp-required-card .cp-who span { display: block; }
+.cp-required-card .cp-intro { margin: 0; padding: 12px 14px; border: 1px solid #dce9df; border-radius: 10px; background: #f5faf6; color: #42624b; font-size: 0.825rem; line-height: 1.55; }
+.cp-required-card .cp-form { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.cp-required-card .cp-form label { margin: 0; }
+.cp-required-card .register-checks { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; font-size: 0.78rem; }
+.cp-required-card .cp-form .btn-block { margin: 0; min-height: 44px; }
+.cp-required-card .auth-footer { margin: 0; padding-top: 14px; border-top: 1px solid var(--border); }
+@media (max-width: 480px) {
+  .cp-required-page { padding: 16px 12px; }
+  .cp-required-card { padding: 22px 20px; border-radius: 18px; gap: 16px; }
+}
 
 /* User Accounts → Create / Edit: same sections as My Profile */
 .fc-source { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; width: 100%; max-width: 1280px; margin: 0 auto 20px; }

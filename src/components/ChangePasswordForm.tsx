@@ -5,6 +5,7 @@ import { Message, PasswordInput } from './ui';
 import { confirmSave, useFormErrors } from './feedback';
 import type { User } from '../types';
 import { FIELD, passwordHasPersonalInfo } from '../validation';
+import PasswordRequirements from './PasswordRequirements';
 
 /**
  * Change own password with the current one (POST /account/password). Used at the first log-in with a
@@ -52,10 +53,10 @@ export default function ChangePasswordForm({ temporary, onDone, onCancel, submit
   };
 
   return (
-    <form onSubmit={submit} className="cp-form">
+    <form onSubmit={submit} className="cp-form" aria-labelledby={temporary ? 'temporary-password-title' : undefined}>
       <Message>{fe.general}</Message>
-      <label>{temporary ? 'Temporary password (from the administrator)' : 'Current password'}
-        <PasswordInput value={form.current_password} onChange={set('current_password')} autoComplete="current-password" required autoFocus {...fe.invalid('current_password')} />
+      <label>{temporary ? 'Temporary password' : 'Current password'}
+        <PasswordInput value={form.current_password} onChange={set('current_password')} autoComplete="current-password" required autoFocus={!temporary} {...fe.invalid('current_password')} />
         {fe.error('current_password')}
       </label>
       <label>New password
@@ -66,9 +67,9 @@ export default function ChangePasswordForm({ temporary, onDone, onCancel, submit
         <PasswordInput value={form.password_confirmation} onChange={set('password_confirmation')} autoComplete="new-password" required {...fe.invalid('password_confirmation')} />
         {fe.error('password_confirmation')}
       </label>
-      <ul className={`pf-pw-rules ${form.password || form.password_confirmation ? 'is-active' : ''}`} aria-label="Password requirements">
+      {temporary ? <PasswordRequirements checks={checks} /> : <ul className={`pf-pw-rules ${form.password || form.password_confirmation ? 'is-active' : ''}`} aria-label="Password requirements">
         {checks.map((c) => <li key={c.text} className={c.ok ? 'ok' : ''}>{c.text}</li>)}
-      </ul>
+      </ul>}
       <div className={onCancel ? 'modal-actions' : undefined}>
         {onCancel && <button type="button" className="btn btn-outline" onClick={onCancel} disabled={busy}>Cancel</button>}
         <button className={`btn ${onCancel ? '' : 'btn-block'}`} disabled={busy || !checks.every((c) => c.ok)}>{busy ? 'Saving…' : submitLabel}</button>
