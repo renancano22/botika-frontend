@@ -192,7 +192,7 @@ export default function Layout() {
         </button>
       </aside>
 
-      <main className="content">
+      <main className={`content${user.role === 'resident' && location.pathname !== '/profile' ? ' resident-ui' : ''}`}>
         <Outlet />
       </main>
     </div>

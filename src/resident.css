@@ -1,0 +1,147 @@
+/* Resident pages only. Profile and staff/admin pages keep their existing styles. */
+.resident-ui { --resident-radius: 14px; }
+.resident-ui > .page { gap: 18px; }
+.resident-ui .page-narrow { max-width: 780px; }
+.resident-ui .page-head:not(.rd-hero) { align-items: center; gap: 16px; margin: 0; }
+.resident-ui .page-head:not(.rd-hero) h1,
+.resident-ui .detail-topbar h1 { font-size: clamp(1.3rem, 2.2vw, 1.65rem); line-height: 1.3; letter-spacing: -0.025em; margin: 0; }
+.resident-ui .page-head:not(.rd-hero) .page-title { margin: 0; }
+.resident-ui .page-head:not(.rd-hero) .muted { margin: 6px 0 0; max-width: 65ch; font-size: 0.875rem; line-height: 1.5; }
+.resident-ui .detail-topbar { margin: 0; }
+.resident-ui .section-title { font-size: 1rem; line-height: 1.4; margin-bottom: 10px; }
+.resident-ui .card:not(.db-panel):not(.dr-card) { padding: 20px; border-radius: var(--resident-radius); }
+.resident-ui .btn { min-height: 44px; padding: 10px 16px; border-radius: 10px; font-size: 0.875rem; line-height: 1.4; }
+.resident-ui .btn-sm { min-height: 36px; padding: 7px 12px; font-size: 0.78rem; }
+.resident-ui .chip { min-height: 38px; font-size: 0.8rem; }
+.resident-ui .back-btn { width: 36px; height: 36px; }
+.resident-ui input:not([type='checkbox']):not([type='radio']),
+.resident-ui select, .resident-ui textarea { min-width: 0; font-size: 1rem; }
+.resident-ui .search-box { min-height: 46px; border-radius: 10px; }
+.resident-ui .search-box input { min-width: 0; }
+.resident-ui .search-box svg { flex-shrink: 0; }
+.resident-ui .filter-panel { padding: 16px; border-radius: var(--resident-radius); gap: 12px; }
+.resident-ui .filter-label { font-size: 0.75rem; }
+.resident-ui .filter-foot h2 { font-size: 0.95rem; }
+.resident-ui .med-grid { grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr)); gap: 12px; }
+.resident-ui .med-card { padding: 14px; border-radius: var(--resident-radius); gap: 10px; }
+.resident-ui .med-top { gap: 10px; align-items: start; }
+.resident-ui .med-icon { width: 34px; height: 34px; border-radius: 9px; flex-shrink: 0; }
+.resident-ui .med-name { min-width: 0; }
+.resident-ui .med-name strong { font-size: 0.95rem; line-height: 1.4; overflow-wrap: anywhere; }
+.resident-ui .med-sub, .resident-ui .med-stock { font-size: 0.78rem; line-height: 1.5; }
+.resident-ui .med-actions .btn { min-height: 40px; height: auto; padding: 8px 12px; white-space: normal; }
+.resident-ui .req-toolbar { grid-template-columns: minmax(0, 1fr) minmax(220px, 280px); gap: 12px; }
+.resident-ui .status-dd-btn { min-height: 46px; border-radius: 10px; }
+.resident-ui .req-rows { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; align-items: stretch; }
+.resident-ui .req-row { padding: 16px; gap: 12px; border-radius: var(--resident-radius); min-width: 0; }
+.resident-ui .req-row-head { gap: 10px; }
+.resident-ui .req-row .req-icon { width: 34px; height: 34px; border-radius: 9px; }
+.resident-ui .req-row-title { min-width: 0; }
+.resident-ui .req-row-title-top { flex-wrap: wrap; gap: 6px 10px; }
+.resident-ui .req-row-title-top strong { font-size: 0.9rem; }
+.resident-ui .req-row-date { font-size: 0.75rem; line-height: 1.5; }
+.resident-ui .req-row-body { padding-left: 0; gap: 6px; }
+.resident-ui .req-row-med { font-size: 0.9rem; line-height: 1.45; overflow-wrap: anywhere; }
+.resident-ui .req-row-sub { font-size: 0.78rem; flex-wrap: wrap; }
+.resident-ui .req-row-foot { margin-top: auto; padding-top: 10px; flex-wrap: wrap; gap: 8px; }
+.resident-ui .req-row-hint { min-width: 0; flex-wrap: wrap; font-size: 0.76rem; }
+.resident-ui .req-row-view { font-size: 0.78rem; }
+.resident-ui .nf-bar { padding: 12px 14px; background: white; border: 1px solid var(--border); border-radius: var(--resident-radius); gap: 10px; flex-wrap: wrap; }
+.resident-ui .nf-bar .link-button { font-size: 0.78rem; min-height: 36px; }
+.resident-ui .notif-list { gap: 10px; }
+.resident-ui .notif-body { padding: 16px; gap: 12px; border-radius: var(--resident-radius); }
+.resident-ui .notif-icon { width: 34px; height: 34px; border-radius: 9px; }
+.resident-ui .notif-title { align-items: baseline; font-size: 0.875rem; line-height: 1.45; }
+.resident-ui .notif-message { font-size: 0.825rem; line-height: 1.5; }
+.resident-ui .notif-foot { flex-wrap: wrap; gap: 6px 10px; }
+.resident-ui .notif-meta, .resident-ui .notif-view { font-size: 0.74rem; }
+.resident-ui .notif-read .notif-title { color: #475569; }
+.resident-ui .notif-read .notif-message { color: var(--muted); }
+.resident-ui .detail-card, .resident-ui .notif-detail-card { border-radius: var(--resident-radius); }
+.resident-ui .detail-card-head { padding: 16px; gap: 10px; flex-wrap: wrap; align-items: center; }
+.resident-ui .detail-id { font-size: 1.05rem; }
+.resident-ui .detail-meds { padding: 0 16px; }
+.resident-ui .detail-meds li { padding: 12px 0; gap: 10px; }
+.resident-ui .detail-meds strong { font-size: 0.875rem; line-height: 1.45; }
+.resident-ui .detail-rows { padding: 0 16px 14px; font-size: 0.825rem; }
+.resident-ui .detail-rows dd { min-width: 0; overflow-wrap: anywhere; }
+.resident-ui .detail-rows dt { font-size: 0.78rem; gap: 6px; align-items: flex-start; }
+.resident-ui .detail-rows dt svg { width: 14px; height: 14px; flex-shrink: 0; margin-top: 2px; }
+.resident-ui .detail-rows dd { font-size: 0.825rem; font-weight: 500; line-height: 1.5; }
+.resident-ui .detail-meds .req-icon-sm { width: 32px; height: 32px; flex-shrink: 0; border-radius: 9px; }
+.resident-ui .detail-meds .small, .resident-ui .detail-card-head .small { font-size: 0.75rem; line-height: 1.5; }
+.resident-ui .rx-dd, .resident-ui .rx-dd-actions { flex-wrap: wrap; gap: 8px; }
+.resident-ui .info-box, .resident-ui .status-box { padding: 14px 16px; border-radius: var(--resident-radius); font-size: 0.825rem; line-height: 1.5; }
+.resident-ui .info-box p, .resident-ui .status-box p { font-size: 0.825rem; line-height: 1.55; }
+.resident-ui .pickup-dates { gap: 10px; }
+.resident-ui .pickup-dates > div { min-width: 0; padding: 10px 12px; }
+.resident-ui .pickup-dates b { font-size: 0.9rem; }
+.resident-ui .vstep-title { flex-wrap: wrap; gap: 6px; font-size: 0.875rem; }
+.resident-ui .vstep-text { font-size: 0.825rem; line-height: 1.5; }
+.resident-ui .vstep-date { font-size: 0.74rem; }
+.resident-ui .detail-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.resident-ui .detail-actions .btn { flex: 1 1 180px; margin: 0; }
+.resident-ui .submitted-banner { padding: 16px; gap: 12px; border-radius: var(--resident-radius); }
+.resident-ui .submitted-banner strong { font-size: 1rem; }
+.resident-ui .submitted-banner p { font-size: 0.825rem; line-height: 1.5; }
+.resident-ui .mr-card { padding: 20px; }
+.resident-ui .mr-section-heading h2 { font-size: 1rem; }
+.resident-ui .mr-section-heading p { font-size: 0.825rem; line-height: 1.5; }
+.resident-ui .form-med { padding: 14px; border-radius: 12px; }
+.resident-ui .form-med-name strong { font-size: 0.9rem; line-height: 1.4; }
+.resident-ui .form-med-name .muted { font-size: 0.78rem; }
+.resident-ui .mr-heading-line { flex-wrap: wrap; gap: 8px; }
+.resident-ui .mr-actions .btn { min-height: 44px; }
+.resident-ui .prescription-entry { padding: 12px; border-radius: 10px; }
+.resident-ui .prescription-entry-head { flex-wrap: wrap; gap: 8px; }
+.resident-ui .prescription-coverage .checkbox-row { font-size: 0.825rem; line-height: 1.5; }
+.resident-ui .dr-filters { gap: 14px; }
+.resident-ui .dr-field > span:first-child { text-transform: none; letter-spacing: 0; font-size: 0.78rem; font-weight: 600; }
+.resident-ui .dr-summary { grid-template-columns: minmax(0, 1.5fr) repeat(2, minmax(0, 1fr)); }
+.resident-ui .dr-summary small { font-size: 0.72rem; text-transform: none; letter-spacing: 0; }
+.resident-ui .dr-card { border-radius: var(--resident-radius); }
+.resident-ui .rd-row-top { flex-wrap: wrap; }
+.resident-ui .rd-row-sub { white-space: normal; overflow: visible; font-size: 0.825rem; line-height: 1.5; overflow-wrap: anywhere; }
+.resident-ui .rd-row { padding: 14px 0; }
+.resident-ui .rd-row-icon { width: 32px; height: 32px; border-radius: 9px; }
+.resident-ui .rd-row-top strong { font-size: 0.875rem; }
+.resident-ui .modal { border-radius: 16px; padding: 20px; }
+.resident-ui .modal .card-head h2 { font-size: 1.1rem; line-height: 1.4; }
+.resident-ui .modal-actions { gap: 10px; flex-wrap: wrap; }
+.resident-ui .modal-actions .btn { min-width: 110px; }
+@media (max-width: 760px) {
+  .resident-ui > .page { gap: 14px; }
+  .resident-ui .page-head:not(.rd-hero) { align-items: flex-start; flex-wrap: wrap; gap: 12px; }
+  .resident-ui .page-head:not(.rd-hero) h1, .resident-ui .detail-topbar h1 { font-size: 1.3rem; }
+  .resident-ui .page-head:not(.rd-hero) .muted { font-size: 0.825rem; }
+  .resident-ui .card:not(.db-panel):not(.dr-card) { padding: 16px; }
+  .resident-ui .req-toolbar, .resident-ui .req-rows { grid-template-columns: minmax(0, 1fr); }
+  .resident-ui .req-row { padding: 14px; gap: 10px; }
+  .resident-ui .med-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .resident-ui .med-bottom { flex-direction: column; align-items: stretch; }
+  .resident-ui .med-actions { width: 100%; }
+  .resident-ui .med-actions .btn { width: 100%; }
+  .resident-ui .filter-panel .chips { flex-wrap: wrap; }
+  .resident-ui .nf-bar { padding: 10px 12px; }
+  .resident-ui .notif-body { padding: 14px; gap: 10px; }
+  .resident-ui .notif-title { font-size: 0.85rem; }
+  .resident-ui .detail-rows > div { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+  .resident-ui .pickup-dates { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .resident-ui .dr-summary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .resident-ui .dr-summary > div:first-child { grid-column: 1 / -1; }
+  .resident-ui .dr-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-areas: 'from to' 'search search' 'sort clear'; gap: 10px; }
+  .resident-ui .dr-presets { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .resident-ui .dr-presets .chip { width: 100%; }
+  .resident-ui .dr-input, .resident-ui .dr-field-sort select, .resident-ui .dr-clear { height: 44px; }
+  .resident-ui .mr-card { padding: 16px; }
+  .resident-ui .modal { padding: 16px; max-height: calc(100dvh - 24px); overflow-y: auto; }
+}
+@media (max-width: 480px) {
+  .resident-ui .med-grid { grid-template-columns: minmax(0, 1fr); }
+  .resident-ui .med-bottom { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 10px; }
+  .resident-ui .med-actions { width: 140px; max-width: 100%; margin-left: auto; }
+  .resident-ui .mr-actions .btn { width: 100%; }
+  .resident-ui .detail-actions .btn { flex-basis: 100%; }
+  .resident-ui .modal-actions .btn { flex: 1 1 120px; }
+}
+@media (max-width: 359px) { .resident-ui .pickup-dates { grid-template-columns: minmax(0, 1fr); } }

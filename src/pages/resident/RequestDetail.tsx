@@ -136,10 +136,10 @@ export default function RequestDetail() {
         ) : undefined} />
         <PickupDeadlineBox r={r} />
 
-        <section>
-          <h2 className="section-title">Request Tracking</h2>
-          <div className="card"><RequestTracker request={r} forResident /></div>
-        </section>
+        <details className="notif-progress-disclosure">
+          <summary><span><Svg d={ICONS.clock} size={18} /> Request progress</span><Svg d={ICONS.chevron} size={16} /></summary>
+          <div className="notif-progress-body"><RequestTracker request={r} forResident /></div>
+        </details>
 
         <StatusBox r={r} />
 

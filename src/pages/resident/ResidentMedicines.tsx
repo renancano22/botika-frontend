@@ -386,7 +386,7 @@ export default function ResidentMedicines() {
   return (
     <div className="page page-with-bar">
       <BackButton linkedOnly />
-      <header className="page-head hero-head">
+      <header className="page-head">
         <div>
           <h1>Check Medicines</h1>
           <p className="muted">Find a medicine and tap <b>Request</b>. If it is out of stock, you can ask for a restock.</p>

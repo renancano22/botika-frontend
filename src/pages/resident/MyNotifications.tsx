@@ -39,7 +39,7 @@ export default function MyNotifications() {
       <header className="page-head nf-head">
         <div>
           <div className="page-title"><h1>Notifications</h1></div>
-          <p className="muted">Updates on your requests. SMS messages sent to you are kept here too.</p>
+          <p className="muted">Request updates, pickup reminders, and pharmacy announcements.</p>
         </div>
       </header>
       <LoadError error={errorInfo} onRetry={() => reload()} />

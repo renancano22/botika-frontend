@@ -12,14 +12,9 @@ import { LoadError } from '../../components/feedback';
 
 const FILTERS: ('all' | StatusKey)[] = ['all', 'review', 'claim', 'stock', 'claimed', 'available', 'cancelled', 'expired', 'rejected'];
 
-function greeting(): string {
-  const h = new Date().getHours();
-  return h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
-}
-
 /** Resident: list of their requests with search and status filters. Tapping one opens its status timeline. */
 export default function MyRequests() {
-  const { user, can } = useAuth();
+  const { can } = useAuth();
   const { data, errorInfo, loading, reload } = useApi<MedicineRequest[]>('/requests', undefined, 30000);
   // ?status=review / claim / claimed … opens the list already filtered (e.g. from the dashboard tiles).
   // '' = no status chosen yet (shows "Select status", lists everything); 'all' = "All requests" chosen.
@@ -53,10 +48,10 @@ export default function MyRequests() {
   return (
     <div className="page">
       <BackButton linkedOnly />
-      <header className="page-head hero-head">
+      <header className="page-head">
         <div>
-          <div className="page-title"><h1>{greeting()}, {user?.name.split(' ')[0]}!</h1></div>
-          <p className="muted">Here are your medicine requests.</p>
+          <div className="page-title"><h1>My requests</h1></div>
+          <p className="muted">Track your medicine and restock requests.</p>
         </div>
         {can('medicines.view') && can('requests.create') && <Link className="btn" to="/medicines">+ New request</Link>}
       </header>
@@ -65,7 +60,7 @@ export default function MyRequests() {
       <div className="req-toolbar">
         <div className="search-box">
           <Svg d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14M21 21l-5-5" size={20} />
-          <input type="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search by medicine name or request number…" />
+          <input type="search" aria-label="Search requests" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Medicine or request number" />
         </div>
         <StatusDropdown
           value={filter}
@@ -81,7 +76,7 @@ export default function MyRequests() {
 
       <section>
         <div className="section-head">
-          <h2 className="section-title">My Requests</h2>
+          <h2 className="section-title">Requests</h2>
           <span className="muted small">
             {shown.length} {shown.length === 1 ? 'request' : 'requests'}{filter !== '' && filter !== 'all' && <> · {STATUS_LABEL[filter]} <button type="button" className="link-button" onClick={() => changeFilter('')}>Show all</button></>}
           </span>
