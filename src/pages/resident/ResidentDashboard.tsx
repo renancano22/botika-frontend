@@ -77,6 +77,23 @@ export default function ResidentDashboard() {
         </div>
       </header>
 
+      {sec.requests && toClaim && (
+        <Link to={`/requests/${toClaim.request_id}`} className="rd-claim k-ready">
+          <span className="rd-claim-icon"><Svg d={ICONS.check} size={22} width={2.6} /></span>
+          <span className="rd-claim-heading">
+            <strong>Ready for pickup</strong>
+            <small>Request No. {toClaim.request_id}</small>
+          </span>
+          <PickupCountdown claimBy={toClaim.claim_by} />
+          <span className="rd-go" aria-hidden="true"><Svg d={ICONS.chevron} size={20} /></span>
+          <span className="rd-claim-text">
+            <span>{itemsText(toClaim)}</span>
+            {claimPeriod && <span className="rd-claim-deadline">Claim on or before <strong>{claimPeriod.deadline}</strong>.</span>}
+            <small>Bring your QR code / Resident ID and a valid ID or Barangay ID.</small>
+          </span>
+        </Link>
+      )}
+
       {activity.length > 0 && <section className="card db-panel" aria-labelledby="rd-act-title">
         <div className="db-panel-head">
           <h2 id="rd-act-title">My activity</h2>
@@ -96,38 +113,23 @@ export default function ResidentDashboard() {
         </div>
       </section>}
 
-      {sec.requests && <div className={`rd-followup${toClaim ? ' rd-followup--pickup' : ''}`}>
-      {toClaim && <section className="card db-panel rd-pickup-panel k-ready" aria-labelledby="rd-pickup-title">
-        <div className="db-panel-head">
-          <h2 id="rd-pickup-title">Ready for pickup</h2>
-          <PickupCountdown claimBy={toClaim.claim_by} />
-        </div>
-        <div className="rd-pickup-body">
-          <span className="rd-pickup-number"><Svg d={ICONS.check} size={18} />Request No. {toClaim.request_id}</span>
-          <p className="rd-pickup-medicines">{itemsText(toClaim)}</p>
-          {claimPeriod && <p className="rd-pickup-deadline"><span>Claim on or before</span><strong>{claimPeriod.deadline}</strong></p>}
-          <p className="rd-pickup-hint">Check the pickup details and what to bring before visiting.</p>
-          <Link to={`/requests/${toClaim.request_id}`} className="btn btn-outline rd-pickup-action">View pickup details <Svg d={ICONS.chevron} size={16} /></Link>
-        </div>
-      </section>}
-
-      <section className="card db-panel rd-panel rd-recent-panel" aria-labelledby="rd-req-title">
+      {sec.requests && <section className="card db-panel rd-panel rd-panel-wide" aria-labelledby="rd-req-title">
         <div className="db-panel-head">
           <h2 id="rd-req-title">My recent requests</h2>
           <Link to="/requests" className="db-more">See all <Svg d={ICONS.chevron} size={16} /></Link>
         </div>
         {!requests.length ? <Empty>No requests yet.</Empty> : (
-          <ul className="rd-recent-list">
+          <ul className="rd-list">
             {requests.map((r) => {
               const key = statusKey(r);
               return (
                 <li key={r.request_id}>
-                  <Link to={`/requests/${r.request_id}`} className={`rd-recent-link k-${STATUS_COLOR_KEY[key]}`}>
-                    <span className="rd-recent-top"><strong>Request No. {r.request_id}</strong><span className={`pill k-${STATUS_COLOR_KEY[key]}`}>{STATUS_LABEL[key]}</span></span>
-                    <span className="rd-recent-medicines">{itemsText(r)}</span>
-                    <span className="rd-recent-footer">
-                      <small>{r.request_type === 'restock' ? 'Restock' : 'Medicine'} · {formatDate(r.request_date)}</small>
-                      <span>Details <Svg d={ICONS.chevron} size={14} /></span>
+                  <Link to={`/requests/${r.request_id}`} className={`rd-row k-${STATUS_COLOR_KEY[key]}`}>
+                    <span className="rd-row-icon kicon"><Svg d={r.request_type === 'restock' ? ICONS.box : ICONS.pill} size={18} /></span>
+                    <span className="rd-row-text">
+                      <span className="rd-row-top"><strong>Request No. {r.request_id}</strong><span className={`pill k-${STATUS_COLOR_KEY[key]}`}>{STATUS_LABEL[key]}</span></span>
+                      <span className="rd-row-sub">{itemsText(r)}</span>
+                      <small>{r.request_type === 'restock' ? 'Restock request' : 'Medicine request'} · {formatDate(r.request_date)}</small>
                     </span>
                   </Link>
                 </li>
@@ -135,8 +137,7 @@ export default function ResidentDashboard() {
             })}
           </ul>
         )}
-      </section>
-      </div>}
+      </section>}
     </div>
   );
 }
