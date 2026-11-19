@@ -34,6 +34,7 @@ function highlight(text: string): ReactNode[] {
 }
 
 const TAG: Record<Kind, string> = {
+  account_updated: 'Account update',
   submitted: 'Under review', approved: 'Ready for pickup', reminder: 'Pickup reminder', expired: 'Expired',
   closure: 'Pharmacy closure', hours: 'Operating hours', distribution: 'Distribution', available: 'Available',
   dispensed: 'Dispensed / Completed', rejected: 'Not approved', cancelled: 'Cancelled', announcement: 'Announcement',
@@ -47,6 +48,8 @@ function heroOf(kind: Kind, n: SmsNotification, r: MedicineRequest | null): { ti
   const p = r ? pickupPeriod(r) : null;
   const tag = TAG[kind];
   switch (kind) {
+    case 'account_updated':
+      return { title: 'Resident Details Corrected', text: 'An administrator saved a correction to your registered details after an identity check.', tag };
     case 'submitted':
       return { title: 'Request Submitted', text: `Your ${type} request${no} was submitted successfully and is now waiting for review by ${reviewer}.`, tag };
     case 'approved':

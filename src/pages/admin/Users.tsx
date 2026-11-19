@@ -8,6 +8,7 @@ import type { Role, User } from '../../types';
 import { FIELD } from '../../validation';
 import { Link } from 'react-router-dom';
 import { Svg } from '../../components/RequestCards';
+import { ResidentCorrectionFields, ResidentCorrectionHistory, emptyVerification, correctionVerified } from '../../components/ResidentCorrection';
 
 const UF_ICON = {
   user: 'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8',
@@ -96,9 +97,10 @@ export default function Users() {
   const list = usePagedApi<AccountRow>('/users', { role, search: term, status, sort }, { table: 'users' });
   const { data, errorInfo, loading, reload, rows, meta } = list;
   const [editing, setEditing] = useState<User | null>(null);
+  const [verification, setVerification] = useState(emptyVerification);
   const [form, setForm] = useState<Form | null>(null);
   const { data: barangays } = useApi<string[]>('/barangays');
-  const fe = useFormErrors(['name', 'email', 'role']);
+  const fe = useFormErrors(['name', 'email', 'role', 'barangay']);
   const [busy, setBusy] = useState(false);
   // "Create online account" for a resident registered at the counter (same record, Resident ID and history).
   const [accountFor, setAccountFor] = useState<AccountRow | null>(null);
@@ -108,14 +110,14 @@ export default function Users() {
   const [fixing, setFixing] = useState<AccountRow | null>(null);
   const [fixForm, setFixForm] = useState({ name: '', barangay: '' });
   const ffe = useFormErrors(['name', 'barangay']);
-  const openFix = (r: AccountRow) => { ffe.clear(); setFixForm({ name: r.name, barangay: barangayOf(r.resident?.address, barangays) }); setFixing(r); };
+  const openFix = (r: AccountRow) => { ffe.clear(); setVerification(emptyVerification()); setFixForm({ name: r.name, barangay: barangayOf(r.resident?.address, barangays) }); setFixing(r); };
   const fixChanges = fixing ? ([
     ['Name', fixing.name, fixForm.name.trim().replace(/\s+/g, ' ')],
     ['Barangay', barangayOf(fixing.resident?.address, barangays), fixForm.barangay],
   ] as const).filter(([, a, b]) => a !== b).map(([label, from, to]) => ({ label, from, to })) : [];
   const saveFix = async (e: FormEvent) => {
     e.preventDefault();
-    if (!fixing?.resident || busy || !fixChanges.length) return;
+    if (!fixing?.resident || busy || !fixChanges.length || !correctionVerified(verification)) return;
     if (!(await confirmSave({
       title: 'Save the corrections?',
       message: <>Resident <strong>{fixing.resident.qr_code}</strong>. The Resident ID and history stay the same.</>,
@@ -124,7 +126,7 @@ export default function Users() {
     setBusy(true);
     ffe.clear();
     try {
-      await api.put(`/residents/${fixing.resident.resident_id}`, fixForm);
+      await api.put(`/residents/${fixing.resident.resident_id}`, { ...fixForm, ...verification });
       toast.success('Resident record corrected', { description: `${fixForm.name.trim()} (${fixing.resident.qr_code}) was updated.` });
       setFixing(null);
       reload(true);
@@ -173,6 +175,7 @@ export default function Users() {
   const open = (u?: User) => {
     setEditing(u ?? null);
     setResetOpen(false);
+    setVerification(emptyVerification());
     fe.clear();
     setForm(u ? { name: u.name, email: u.email ?? '', role: u.role, barangay: barangayOf(u.resident?.address, barangays) } : { name: '', email: '', role: 'staff', barangay: '' });
   };
@@ -191,7 +194,7 @@ export default function Users() {
 
   const save = async (e: FormEvent) => {
     e.preventDefault();
-    if (!form || busy || unchanged) return;
+    if (!form || busy || unchanged || (editing?.role === 'resident' && !correctionVerified(verification))) return;
     if (!(await confirmSave(editing ? {
       title: 'Save changes to this account?',
       message: <>You are about to update the account of <strong>{editing.name}</strong>.</>,
@@ -205,7 +208,7 @@ export default function Users() {
     setBusy(true);
     try {
       if (editing) {
-        await api.put<User>(`/users/${editing.user_id}`, form);
+        await api.put<User>(`/users/${editing.user_id}`, { ...form, ...(editing.role === 'resident' ? verification : {}) });
         toast.success('Account updated', { description: `The changes to ${form.name}'s account were saved.` });
         setForm(null);
         reload(true);
@@ -361,10 +364,10 @@ export default function Users() {
               </div>
               <div className="fb-sec-body pf-fields">
                 <label className="pf-field-wide">Full Name
-                  <input {...FIELD.name} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} maxLength={100} required {...fe.invalid('name')} />{fe.error('name')}
+                  <input {...FIELD.name} value={form.name} onChange={(e) => { setForm({ ...form, name: e.target.value }); setVerification((old) => ({ ...old, identity_verified: false })); }} maxLength={100} required {...fe.invalid('name')} />{fe.error('name')}
                 </label>
                 <label><span>Email Address <span className="pf-optional">{editing?.role === 'resident' ? '(Gmail, optional)' : '(Gmail, used to log in)'}</span></span>
-                  <input type="email" {...FIELD.gmail} placeholder="name@gmail.com" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required={editing?.role !== 'resident'} {...fe.invalid('email')} />{fe.error('email')}
+                  <input type="email" {...FIELD.gmail} placeholder="name@gmail.com" value={form.email} onChange={(e) => { setForm({ ...form, email: e.target.value }); setVerification((old) => ({ ...old, identity_verified: false })); }} required={editing?.role !== 'resident'} {...fe.invalid('email')} />{fe.error('email')}
                 </label>
                 <label>Role
                   <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value as Role })} disabled={editing?.role === 'resident' || editingSelf} {...fe.invalid('role')}>
@@ -375,14 +378,19 @@ export default function Users() {
                 </label>
                 {editing?.role === 'resident' && (
                   <label>Barangay <span className="pf-optional">(correct it if it is wrong)</span>
-                    <select value={form.barangay} onChange={(e) => setForm({ ...form, barangay: e.target.value })} required>
+                    <select value={form.barangay} onChange={(e) => { setForm({ ...form, barangay: e.target.value }); setVerification((old) => ({ ...old, identity_verified: false })); }} required {...fe.invalid('barangay')}>
                       <option value="">Select barangay…</option>
                       {barangays?.map((b) => <option key={b} value={b}>{b}</option>)}
-                    </select>
+                    </select>{fe.error('barangay')}
                   </label>
                 )}
               </div>
             </section>
+
+            {editing?.role === 'resident' && <>
+              <ResidentCorrectionFields value={verification} onChange={setVerification} disabled={busy} />
+              {editing.resident && <ResidentCorrectionHistory key={editing.resident.resident_id} residentId={editing.resident.resident_id} />}
+            </>}
 
             {!editing ? (
               <section className="card fb-sec">
@@ -432,7 +440,7 @@ export default function Users() {
             <div className="modal-actions">
               {unchanged && <span className="no-change-hint">No changes yet. Edit a detail to save.</span>}
               <button type="button" className="btn btn-outline" onClick={() => setForm(null)}>Cancel</button>
-              <button className="btn" disabled={busy || unchanged} title={unchanged ? 'Nothing was changed' : undefined}>{busy ? 'Saving…' : 'Save'}</button>
+              <button className="btn" disabled={busy || unchanged || (editing?.role === 'resident' && !correctionVerified(verification))} title={unchanged ? 'Nothing was changed' : undefined}>{busy ? 'Saving…' : 'Save'}</button>
             </div>
           </form>
         </Modal>
@@ -444,18 +452,20 @@ export default function Users() {
             <p className="muted small">Resident ID <strong>{fixing.resident?.qr_code}</strong> · registered at the counter. Correct the name or barangay if they were entered wrong; the Resident ID and history stay the same.</p>
             <Message>{ffe.general}</Message>
             <label>Full name
-              <input {...FIELD.name} value={fixForm.name} onChange={(e) => setFixForm({ ...fixForm, name: e.target.value })} maxLength={100} required {...ffe.invalid('name')} />{ffe.error('name')}
+              <input {...FIELD.name} value={fixForm.name} onChange={(e) => { setFixForm({ ...fixForm, name: e.target.value }); setVerification((old) => ({ ...old, identity_verified: false })); }} maxLength={100} required {...ffe.invalid('name')} />{ffe.error('name')}
             </label>
             <label>Barangay
-              <select value={fixForm.barangay} onChange={(e) => setFixForm({ ...fixForm, barangay: e.target.value })} required {...ffe.invalid('barangay')}>
+              <select value={fixForm.barangay} onChange={(e) => { setFixForm({ ...fixForm, barangay: e.target.value }); setVerification((old) => ({ ...old, identity_verified: false })); }} required {...ffe.invalid('barangay')}>
                 <option value="">Select barangay…</option>
                 {barangays?.map((b) => <option key={b} value={b}>{b}</option>)}
               </select>{ffe.error('barangay')}
             </label>
+            <ResidentCorrectionFields value={verification} onChange={setVerification} disabled={busy} hasOnlineAccount={false} />
+            {fixing.resident && <ResidentCorrectionHistory key={fixing.resident.resident_id} residentId={fixing.resident.resident_id} />}
             <div className="modal-actions">
               {!fixChanges.length && <span className="no-change-hint">No changes yet.</span>}
               <button type="button" className="btn btn-outline" onClick={() => setFixing(null)} disabled={busy}>Cancel</button>
-              <button className="btn" disabled={busy || !fixChanges.length}>{busy ? 'Saving…' : 'Save'}</button>
+              <button className="btn" disabled={busy || !fixChanges.length || !correctionVerified(verification)}>{busy ? 'Saving…' : 'Save'}</button>
             </div>
           </form>
         </Modal>

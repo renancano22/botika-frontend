@@ -30,7 +30,7 @@ export async function markAllRead(): Promise<void> {
 }
 
 export type Kind = 'submitted' | 'approved' | 'reminder' | 'rejected' | 'dispensed' | 'cancelled' | 'expired' | 'available'
-  | 'announcement' | 'closure' | 'hours' | 'distribution';
+  | 'announcement' | 'closure' | 'hours' | 'distribution' | 'account_updated';
 
 /** Older notifications have no type saved, so it is worked out from the message. */
 export function kindOf(n: SmsNotification): Kind {
@@ -50,6 +50,7 @@ export function kindOf(n: SmsNotification): Kind {
 
 /** Title and icon for each kind of notification. */
 export const KIND: Record<Kind, { title: string; icon: string }> = {
+  account_updated: { title: 'Resident Details Corrected', icon: ICONS.user },
   submitted: { title: 'Request Submitted — Under Review', icon: ICONS.note },
   approved: { title: 'Request Approved — Ready for Pickup', icon: ICONS.check },
   reminder: { title: 'Pickup Reminder — Claim Before the Deadline', icon: ICONS.clock },

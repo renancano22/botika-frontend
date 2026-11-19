@@ -37,6 +37,26 @@
   color: var(--text);
   background: var(--bg);
 }
+.k-account_updated { --k: #1d4ed8; }
+.resident-correction-fields { min-width: 0; padding: 16px; margin: 16px 0; border: 1px solid var(--border); border-radius: 12px; background: #f8faf9; }
+.resident-correction-fields legend { padding: 0 6px; font-size: 0.9rem; font-weight: 700; }
+.resident-correction-fields > p { margin: 0 0 14px; font-size: 0.825rem; line-height: 1.5; color: var(--muted); }
+.resident-correction-fields > label { font-size: 0.825rem; }
+.resident-correction-fields textarea { resize: vertical; }
+.resident-correction-fields .correction-confirm { display: flex; flex-direction: row; align-items: flex-start; gap: 10px; font-size: 0.825rem; line-height: 1.5; }
+.correction-confirm input { width: 18px; height: 18px; flex: 0 0 18px; margin: 2px 0 0; }
+.resident-correction-fields small { display: block; font-size: 0.75rem; line-height: 1.5; color: var(--muted); }
+.correction-history { margin: 12px 0 18px; font-size: 0.825rem; }
+.correction-history > .link-button { min-height: 40px; }
+.correction-history ol { list-style: none; padding: 0; margin: 10px 0 0; }
+.correction-history li { padding: 12px; margin: 10px 0; border: 1px solid var(--border); border-radius: 10px; background: #fff; overflow-wrap: anywhere; }
+.correction-history time, .correction-history li > span { display: block; color: var(--muted); margin-top: 4px; font-size: 0.75rem; }
+.correction-history p { margin: 10px 0; line-height: 1.5; }
+.correction-history dl { margin: 0; }
+.correction-history dl > div + div { margin-top: 8px; }
+.correction-history dt { font-weight: 600; font-size: 0.75rem; color: var(--muted); }
+.correction-history dd { margin: 3px 0 0; line-height: 1.5; }
+.correction-history-pages { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
 
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); -webkit-font-smoothing: antialiased; }
