@@ -1,3 +1,4 @@
+import ResponsiveTable from '../../components/ResponsiveTable';
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../auth';
@@ -164,7 +165,7 @@ export default function DispensingRecords() {
         {loading && !data ? <Loading /> : !data ? null : rows.length === 0 ? (
           <Empty>{filtered ? 'No dispensing records match these filters. Try another date range or clear the filters.' : 'No dispensing records yet.'}</Empty>
         ) : (<>
-          <table className={`dr-table ${loading ? 'tbl-updating' : ''}`}>
+          <ResponsiveTable className={`dr-table ${loading ? 'tbl-updating' : ''}`}>
             <thead>
               <tr>
                 <th className="col-no">No.</th>
@@ -220,7 +221,7 @@ export default function DispensingRecords() {
                 );
               })}
             </tbody>
-          </table>
+          </ResponsiveTable>
         </>)}
         {/* Residents on a phone see all their records in one list (page buttons only if there are ever more than 100). */}
         {(!allAtOnce || (meta?.last_page ?? 1) > 1) && <Pagination meta={meta} onPage={list.setPage} onPerPage={allAtOnce ? undefined : list.setPerPage} busy={loading} />}

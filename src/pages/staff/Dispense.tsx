@@ -1,3 +1,4 @@
+import ResponsiveTable from '../../components/ResponsiveTable';
 import { useCallback, useState, type FormEvent } from 'react';
 import { api, describeError, errorMessage, formatDate } from '../../api';
 import { alertDialog, confirmSave, toast } from '../../components/feedback';
@@ -314,7 +315,7 @@ export default function Dispense() {
             {found.approved_requests.length > 0 && (
               <div className="dv-approved">
                 <h3 className="dv-sub">Approved requests ({found.approved_requests.length})</h3>
-                <table>
+                <ResponsiveTable>
                   <thead><tr><th>Request No.</th><th>Medicines</th><th>Approved</th><th className="right">Actions</th></tr></thead>
                   <tbody>
                     {found.approved_requests.map((r) => (
@@ -334,14 +335,14 @@ export default function Dispense() {
                       </tr>
                     ))}
                   </tbody>
-                </table>
+                </ResponsiveTable>
               </div>
             )}
           </Card>
 
           <Card title="Dispensing history of this resident">
             {found.dispensing_history.length === 0 ? <Empty>No previous dispensing.</Empty> : (
-              <table>
+              <ResponsiveTable>
                 <thead><tr><th>Date</th><th>Request</th><th>Medicines</th><th>Dispensed by</th><th>Status</th></tr></thead>
                 <tbody>
                   {found.dispensing_history.map((d) => {
@@ -369,7 +370,7 @@ export default function Dispense() {
                     );
                   })}
                 </tbody>
-              </table>
+              </ResponsiveTable>
             )}
           </Card>
         </>

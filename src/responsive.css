@@ -1,0 +1,60 @@
+/* All roles: tables respond to their available space, including an open desktop sidebar. */
+.content .page, .content .card, .content .grid-main > *, .content .grid-2 > *,
+.content .fc-main > *, .content .fc-restock > *, .content .rp-grid > * { min-width: 0; }
+.content .filters { max-width: 100%; flex-wrap: wrap; }
+.content .filters > *, .content .card-actions, .content .actions > * { min-width: 0; max-width: 100%; }
+.content .card-head { flex-wrap: wrap; }
+.content .chips { min-width: 0; max-width: 100%; flex-wrap: wrap; }
+.content .da-dates { min-width: 0; max-width: 100%; flex-wrap: wrap; }
+.content .recharts-tooltip-wrapper[style*='visibility: hidden'] { display: none; }
+.content .card p, .content .note-text, .content .rx-name, .content .prescription-file-name { overflow-wrap: anywhere; }
+.adaptive-table { container: adaptive-table / inline-size; width: 100%; min-width: 0; }
+.adaptive-table > .adaptive-data-table { table-layout: fixed; width: 100%; min-width: 0; }
+.adaptive-table > .adaptive-data-table th,
+.adaptive-table > .adaptive-data-table td { min-width: 0; padding: 12px 10px; white-space: normal; overflow-wrap: anywhere; }
+.adaptive-table .adaptive-cell-value { min-width: 0; max-width: 100%; overflow-wrap: anywhere; }
+.adaptive-table .adaptive-cell-value .nowrap { white-space: normal; }
+.adaptive-table .adaptive-cell-value :is(.badge, .pill, .no-account-badge, .temp-badge) { max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
+.adaptive-table .adaptive-cell-value :is(.rq-row-actions, .ua-row-actions) { grid-template-columns: minmax(0, 136px); width: 100%; }
+.adaptive-table .adaptive-cell-value .btn { width: auto; max-width: 100%; min-width: 0; height: auto; min-height: 38px; white-space: normal; padding: 8px 10px; }
+.adaptive-table .adaptive-cell-value :is(.rq-row-actions, .ua-row-actions) > .btn { width: 100%; }
+.adaptive-table .adaptive-cell-value :is(.rq-row-actions, .ua-row-actions) > .btn { min-height: 44px; height: 44px; padding: 6px; }
+.adaptive-table > .adaptive-data-table th.col-no { width: 44px; white-space: nowrap; }
+@media screen and (min-width: 761px) {
+  .content .dr-fields { grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr)); }
+}
+@media screen {
+  @container adaptive-table (max-width: 820px) {
+    .adaptive-table--wide > .adaptive-data-table { display: block; border: 0; }
+    .adaptive-table--wide > .adaptive-data-table colgroup,
+    .adaptive-table--wide > .adaptive-data-table thead { display: none; }
+    .adaptive-table--wide > .adaptive-data-table tbody { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 12px; width: 100%; }
+    .adaptive-table--wide > .adaptive-data-table tr { display: flex; flex-direction: column; width: auto; min-width: 0; margin: 0; padding: 12px 14px; border: 1px solid var(--border); border-radius: 12px; background: white; }
+    .adaptive-table--wide > .adaptive-data-table td { display: grid; grid-template-columns: minmax(80px, 0.7fr) minmax(0, 1.5fr); gap: 8px; width: 100%; padding: 8px 0; border: 0; text-align: left; background: transparent; }
+    .adaptive-table--wide > .adaptive-data-table td::before { content: attr(data-label); font-size: 0.74rem; line-height: 1.5; font-weight: 600; color: var(--muted); text-transform: none; letter-spacing: 0; }
+    .adaptive-table--wide > .adaptive-data-table td > .adaptive-cell-value { grid-column: 2; width: 100%; justify-self: stretch; }
+    .adaptive-table--wide > .adaptive-data-table td.adaptive-actions-cell { display: block; margin-top: auto; padding-top: 12px; border-top: 1px solid var(--border); }
+    .adaptive-table--wide > .adaptive-data-table td.adaptive-actions-cell::before { display: none; }
+    .adaptive-table--wide > .adaptive-data-table .adaptive-actions-cell .adaptive-cell-value { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+    .adaptive-table--wide > .adaptive-data-table .adaptive-actions-cell :is(.rq-row-actions, .ua-row-actions) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .adaptive-table--wide > .adaptive-data-table .adaptive-actions-cell .btn { flex: 1 1 110px; min-height: 40px; }
+  }
+  @container adaptive-table (max-width: 760px) {
+    .adaptive-table--medium > .adaptive-data-table { display: block; border: 0; }
+    .adaptive-table--medium > .adaptive-data-table colgroup,
+    .adaptive-table--medium > .adaptive-data-table thead { display: none; }
+    .adaptive-table--medium > .adaptive-data-table tbody { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 12px; width: 100%; }
+    .adaptive-table--medium > .adaptive-data-table tr { display: flex; flex-direction: column; width: auto; min-width: 0; margin: 0; padding: 12px 14px; border: 1px solid var(--border); border-radius: 12px; background: white; }
+    .adaptive-table--medium > .adaptive-data-table td { display: grid; grid-template-columns: minmax(80px, 0.7fr) minmax(0, 1.5fr); gap: 8px; width: 100%; padding: 8px 0; border: 0; text-align: left; background: transparent; }
+    .adaptive-table--medium > .adaptive-data-table td::before { content: attr(data-label); font-size: 0.74rem; line-height: 1.5; font-weight: 600; color: var(--muted); text-transform: none; letter-spacing: 0; }
+    .adaptive-table--medium > .adaptive-data-table td > .adaptive-cell-value { grid-column: 2; width: 100%; justify-self: stretch; }
+    .adaptive-table--medium > .adaptive-data-table td.adaptive-actions-cell { display: block; margin-top: auto; padding-top: 12px; border-top: 1px solid var(--border); }
+    .adaptive-table--medium > .adaptive-data-table td.adaptive-actions-cell::before { display: none; }
+    .adaptive-table--medium > .adaptive-data-table .adaptive-actions-cell .adaptive-cell-value { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+    .adaptive-table--medium > .adaptive-data-table .adaptive-actions-cell :is(.rq-row-actions, .ua-row-actions) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .adaptive-table--medium > .adaptive-data-table .adaptive-actions-cell .btn { flex: 1 1 110px; min-height: 40px; }
+  }
+  @container adaptive-table (max-width: 520px) {
+    .adaptive-table:is(.adaptive-table--wide, .adaptive-table--medium) > .adaptive-data-table tbody { grid-template-columns: minmax(0, 1fr); }
+  }
+}

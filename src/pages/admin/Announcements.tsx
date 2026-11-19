@@ -1,3 +1,4 @@
+import ResponsiveTable from '../../components/ResponsiveTable';
 import { useState, type FormEvent } from 'react';
 import { api, describeError, formatDate } from '../../api';
 import { Pagination, rowNo, useDebounced, usePagedApi } from '../../components/Pagination';
@@ -111,7 +112,7 @@ export default function Announcements() {
         </div>
         {badRange && <p className="field-warning">The "From" date is after the "To" date, so the dates were swapped.</p>}
         {loading && !data ? <Loading /> : !data ? null : !rows.length ? <Empty>{filtered ? 'No messages match these filters.' : 'No SMS sent yet.'}</Empty> : (
-          <table className={loading ? 'tbl-updating' : ''}>
+          <ResponsiveTable className={loading ? 'tbl-updating' : ''}>
             <thead><tr><th className="col-no">No.</th><th>Date</th><th>Resident</th><th>Mobile</th><th>Message</th><th>Status</th></tr></thead>
             <tbody>
               {rows.map((n, i) => (
@@ -125,7 +126,7 @@ export default function Announcements() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </ResponsiveTable>
         )}
         <Pagination meta={meta} onPage={log.setPage} onPerPage={log.setPerPage} noun="messages" busy={loading} />
       </Card>

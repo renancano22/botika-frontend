@@ -1,3 +1,4 @@
+import ResponsiveTable from '../../components/ResponsiveTable';
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api, formatDate } from '../../api';
@@ -163,7 +164,7 @@ export default function Inventory() {
         {loading && !data ? <Loading /> : !data ? null : !batches.length ? (
           <Empty>{search.trim() ? 'No batches match this search.' : expiry === 'empty' ? 'No empty batches yet.' : expiry ? 'No batches with this expiry status.' : 'No stock yet. Record a stock-in.'}</Empty>
         ) : (
-          <table className={loading ? 'tbl-updating' : ''}>
+          <ResponsiveTable className={loading ? 'tbl-updating' : ''}>
             <thead><tr><th className="col-no">No.</th><th>Batch #</th><th>Medicine</th><th>Quantity</th><th>Expiration date</th><th>Expiry status</th><th>Last updated</th>{canManage && <th className="right">Actions</th>}</tr></thead>
             <tbody>
               {batches.map((b, i) => (
@@ -179,7 +180,7 @@ export default function Inventory() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </ResponsiveTable>
         )}
         <Pagination meta={batchMeta} onPage={batchList.setPage} onPerPage={batchList.setPerPage} noun="batches" busy={loading} />
       </Card>
@@ -206,7 +207,7 @@ export default function Inventory() {
         </div>
         {txBadRange && <p className="field-warning">The "From" date is after the "To" date, so the dates were swapped.</p>}
         {tx.loading && !tx.data ? <Loading /> : !tx.rows.length ? <Empty>{txFiltered ? 'No transactions match these filters.' : 'No transactions yet.'}</Empty> : (
-          <table className={tx.loading ? 'tbl-updating' : ''}>
+          <ResponsiveTable className={tx.loading ? 'tbl-updating' : ''}>
             <thead><tr><th className="col-no">No.</th><th>Date</th><th>Type</th><th>Medicine</th><th>Quantity</th><th>Batch #</th><th>Reason</th><th>By</th></tr></thead>
             <tbody>
               {tx.rows.map((t, i) => (
@@ -222,7 +223,7 @@ export default function Inventory() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </ResponsiveTable>
         )}
         <Pagination meta={tx.meta} onPage={tx.setPage} onPerPage={tx.setPerPage} noun="transactions" busy={tx.loading} />
       </Card>

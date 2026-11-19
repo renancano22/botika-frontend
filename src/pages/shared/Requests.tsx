@@ -1,3 +1,4 @@
+import ResponsiveTable from '../../components/ResponsiveTable';
 import { Fragment, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api, errorMessage, formatDate } from '../../api';
@@ -203,7 +204,7 @@ export default function Requests() {
         {badRange && <p className="field-warning">The "From" date is after the "To" date, so the dates were swapped.</p>}
         {loading && !data ? <Loading /> : !data ? null : !rows.length ? <Empty>{filtered ? 'No requests match this search or date range.' : 'No requests found.'}</Empty> : (
           <div className={`req-table-wrap ${loading ? 'tbl-updating' : ''}`}>
-          <table className="req-table">
+          <ResponsiveTable className="req-table">
             <thead>
               <tr><th className="col-no">No.</th><th>Request No.</th><th className="rq-date">Date</th><th className="rq-resident">Resident</th><th>Type</th><th className="rq-meds">Medicines</th><th className="rq-status">Status</th><th className="rq-note">Resident's note / Remarks</th><th className="right">Actions</th></tr>
             </thead>
@@ -255,7 +256,7 @@ export default function Requests() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </ResponsiveTable>
           </div>
         )}
         <Pagination meta={meta} onPage={list.setPage} onPerPage={list.setPerPage} noun="requests" busy={loading} />

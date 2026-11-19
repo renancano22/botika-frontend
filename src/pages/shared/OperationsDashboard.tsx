@@ -1,3 +1,4 @@
+import ResponsiveTable from '../../components/ResponsiveTable';
 import { useState, type ReactNode } from 'react';
 import { Link, type LinkProps } from 'react-router-dom';
 import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
@@ -260,7 +261,7 @@ function DemandAnalysis({ a, preset, custom, badRange, busy, isAdmin, onPreset, 
         <h3 className="da-table-title">Top 10 most requested medicines</h3>
         {a.top_medicines.length === 0 ? <Empty>No medicine was requested or dispensed in this period.</Empty> : (
           <div className="da-table-wrap">
-            <table className="da-table">
+            <ResponsiveTable className="da-table">
               <thead>
                 <tr>
                   <th className="col-no">No.</th><th>Medicine</th>
@@ -286,7 +287,7 @@ function DemandAnalysis({ a, preset, custom, badRange, busy, isAdmin, onPreset, 
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </ResponsiveTable>
           </div>
         )}
         {a.top_medicines.length > 0 && <Pagination meta={topPages.meta} onPage={topPages.setPage} onPerPage={topPages.setPerPage} noun="medicines" />}
@@ -311,7 +312,7 @@ function ReadyForPickup({ requests, total }: { requests: MedicineRequest[]; tota
   return (
     <Card title={`Ready for pickup (${total})`} actions={<Link to="/requests?status=approved">View all approved requests</Link>}>
       {requests.length === 0 ? <Empty>No approved requests are waiting to be claimed.</Empty> : (
-        <table>
+        <ResponsiveTable>
           <thead><tr><th>Request No.</th><th>Resident</th><th>Medicines</th><th>Approved</th><th>Claim by</th></tr></thead>
           <tbody>
             {requests.map((r) => (
@@ -327,7 +328,7 @@ function ReadyForPickup({ requests, total }: { requests: MedicineRequest[]; tota
               </tr>
             ))}
           </tbody>
-        </table>
+        </ResponsiveTable>
       )}
       {total > requests.length && <p className="muted small">Showing the {requests.length} with the nearest deadline. <Link to="/requests?status=approved">See all {total}</Link></p>}
     </Card>

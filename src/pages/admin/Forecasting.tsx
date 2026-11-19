@@ -1,3 +1,4 @@
+import ResponsiveTable from '../../components/ResponsiveTable';
 import { useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { CartesianGrid, LabelList, Line, LineChart, ReferenceArea, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { api, formatDate } from '../../api';
@@ -278,7 +279,7 @@ function SeasonalDemand() {
             </Message>
           )}
           <div className="fc-table-wrap">
-            <table className="fc-table">
+            <ResponsiveTable className="fc-table">
               <thead>
                 <tr>
                   <th className="col-no">No.</th><th>Medicine</th><th className="right">Expected per month</th><th className="right">Expected for the season<br /><small>(6 months)</small></th>
@@ -306,7 +307,7 @@ function SeasonalDemand() {
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </ResponsiveTable>
           </div>
           <Pagination meta={pages.meta} onPage={pages.setPage} onPerPage={pages.setPerPage} noun="medicines" />
         </>
@@ -715,7 +716,7 @@ function ForecastingView({ embedded, demo }: { embedded: boolean; demo: boolean 
                   <Empty>{tableFilter === 'high' ? 'No medicine is expected to run out in the forecast period.' : 'All medicines have enough stock for the forecast period.'}</Empty>
                 ) : (
                   <div className="fc-table-wrap">
-                    <table className="fc-table">
+                    <ResponsiveTable className="fc-table">
                       <thead>
                         <tr>
                           <th className="col-no">No.</th><th>Medicine</th><th className="right">Current stock</th><th className="right">Waiting requests<br /><small>(as of now)</small></th>
@@ -742,7 +743,7 @@ function ForecastingView({ embedded, demo }: { embedded: boolean; demo: boolean 
                           </tr>
                         ))}
                       </tbody>
-                    </table>
+                    </ResponsiveTable>
                   </div>
                 )}
                 <Pagination meta={fcPages.meta} onPage={fcPages.setPage} onPerPage={fcPages.setPerPage} noun="medicines" />
@@ -792,7 +793,7 @@ function ForecastingView({ embedded, demo }: { embedded: boolean; demo: boolean 
           ) : (
             <div className="fc-calc" aria-label="How the suggested restock is calculated">
               <h3 className="fc-detail-title">How the suggested restock is calculated</h3>
-              <table>
+              <ResponsiveTable>
                 <tbody>
                   <tr><td>Predicted demand, {horizonText.toLowerCase()} <small className="muted">(expected to be given out: {detailMonthly(details)})</small></td><td className="right">{details.predicted_demand}</td></tr>
                   <tr><td>+ Pending medicine requests <small className="muted">(not reviewed yet)</small></td><td className="right">{details.pending_requests}</td></tr>
@@ -801,7 +802,7 @@ function ForecastingView({ embedded, demo }: { embedded: boolean; demo: boolean 
                   <tr><td>− Free stock <small className="muted">({details.available_stock} not expired{details.reserved_stock ? ` − ${details.reserved_stock} set aside for approved requests` : ''})</small></td><td className="right">{details.free_stock}</td></tr>
                   <tr className="fc-calc-total"><td>Suggested restock {details.recommended_restock === 0 && <small className="muted">(the stock is enough)</small>}</td><td className="right">{details.recommended_restock}</td></tr>
                 </tbody>
-              </table>
+              </ResponsiveTable>
             </div>
           )}
           <PriorityBadge priority={details.priority} recorded={details.stock_recorded !== false} />
@@ -824,16 +825,16 @@ function ForecastingView({ embedded, demo }: { embedded: boolean; demo: boolean 
           <MethodExplanation method={data.method} result={details.methods[data.method]} unit={unitPlural(details.unit)} forecast={[]}
             basisMonths={basisMonths} partial={data.basis.partial} currentMonth={data.current_month} today={data.today} provisional={provisional}
             allMedicines={false} showResult={false} />
-          <table>
+          <ResponsiveTable>
             <thead><tr><th>Month</th><th className="right">Expected to be given out</th></tr></thead>
             <tbody>
               {data.forecast_keys.map((k) => <tr key={k}><td>{monthText(k)}</td><td className="right">{quantityText(details.forecast[k], details.unit)}</td></tr>)}
               <tr className="fc-calc-total"><td>Total, {horizonText.toLowerCase()}</td><td className="right">{quantityText(details.predicted_demand, details.unit)}</td></tr>
             </tbody>
-          </table>
+          </ResponsiveTable>
 
           <h3 className="fc-detail-title">Compare methods</h3>
-          <table>
+          <ResponsiveTable>
             <thead><tr><th>Method</th><th className="right">{horizonText}</th><th className="right">Avg. error</th></tr></thead>
             <tbody>
               {METHODS.map((m) => {
@@ -847,7 +848,7 @@ function ForecastingView({ embedded, demo }: { embedded: boolean; demo: boolean 
                 );
               })}
             </tbody>
-          </table>
+          </ResponsiveTable>
           <p className="muted small">Average error = how far each method's forecast was from the actual dispensed quantity of this medicine when tested month by month on its past records.</p>
           <div className="modal-actions">
             <button className="btn btn-outline" onClick={() => setDetails(null)}>Close</button>

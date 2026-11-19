@@ -7,6 +7,7 @@ import ScrollManager from './components/ScrollManager';
 import { DialogHost, Toaster } from './components/feedback';
 import './styles.css';
 import './resident.css';
+import './responsive.css';
 import './numberInputs'; // no leading zeros in quantity fields ("01" → "1")
 
 createRoot(document.getElementById('root')!).render(

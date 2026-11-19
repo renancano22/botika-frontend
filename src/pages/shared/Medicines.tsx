@@ -1,3 +1,4 @@
+import ResponsiveTable from '../../components/ResponsiveTable';
 import { useMemo, useState, type FormEvent } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { api, formatDate } from '../../api';
@@ -222,7 +223,7 @@ export default function Medicines() {
           </div>
         </div>
         {loading && !data ? <Loading /> : !data ? null : !shown.length ? <Empty>{filtered ? 'No medicines match these filters.' : 'No medicines yet.'}</Empty> : (
-          <table className={`mi-table ${loading ? 'tbl-updating' : ''}`}>
+          <ResponsiveTable className={`mi-table ${loading ? 'tbl-updating' : ''}`}>
             <thead>
               <tr>
                 <th className="col-no">No.</th><th>Medicine ID</th><th>Generic Name</th><th>Category</th><th>Strength</th><th>Dosage Form</th>
@@ -266,7 +267,7 @@ export default function Medicines() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </ResponsiveTable>
         )}
         <Pagination meta={meta} onPage={list.setPage} onPerPage={list.setPerPage} noun="medicines" busy={loading} />
       </Card>
