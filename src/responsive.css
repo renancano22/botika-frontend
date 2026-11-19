@@ -1,4 +1,8 @@
 /* All roles: tables respond to their available space, including an open desktop sidebar. */
+.dr-table .dr-meds-head { gap: 10px; }
+.dr-table .dr-meds-head > :last-child { text-align: right; }
+.dr-table .dr-meds li { display: grid; grid-template-columns: 24px minmax(0, 1fr) minmax(0, auto); gap: 8px; align-items: start; }
+.dr-table .dr-meds b { max-width: 88px; white-space: normal; text-align: right; }
 .medicine-review { margin: 16px 0; min-width: 0; }
 .medicine-review h3 { margin: 0 0 8px; font-size: 1rem; }
 .medicine-review fieldset { min-width: 0; margin: 12px 0; padding: 12px; border: 1px solid var(--border); border-radius: 10px; }
@@ -50,6 +54,8 @@
 }
 @media screen {
   @container adaptive-table (max-width: 820px) {
+    .adaptive-table--wide > .dr-table td[data-label='Medicines given'] { display: block; }
+    .adaptive-table--wide > .dr-table td[data-label='Medicines given']::before { display: block; margin-bottom: 8px; }
     .adaptive-table--wide > .adaptive-data-table { display: block; border: 0; }
     .adaptive-table--wide > .adaptive-data-table colgroup,
     .adaptive-table--wide > .adaptive-data-table thead { display: none; }
@@ -65,6 +71,8 @@
     .adaptive-table--wide > .adaptive-data-table .adaptive-actions-cell .btn { flex: 1 1 110px; min-height: 40px; }
   }
   @container adaptive-table (max-width: 760px) {
+    .adaptive-table--medium > .dr-table td[data-label='Medicines given'] { display: block; }
+    .adaptive-table--medium > .dr-table td[data-label='Medicines given']::before { display: block; margin-bottom: 8px; }
     .adaptive-table--medium > .adaptive-data-table { display: block; border: 0; }
     .adaptive-table--medium > .adaptive-data-table colgroup,
     .adaptive-table--medium > .adaptive-data-table thead { display: none; }

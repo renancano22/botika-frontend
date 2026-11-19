@@ -166,6 +166,15 @@ export default function DispensingRecords() {
           <Empty>{filtered ? 'No dispensing records match these filters. Try another date range or clear the filters.' : 'No dispensing records yet.'}</Empty>
         ) : (<>
           <ResponsiveTable className={`dr-table ${loading ? 'tbl-updating' : ''}`}>
+            <colgroup>
+              <col style={{ width: '4%' }} />
+              <col style={{ width: isResident ? '17%' : '15%' }} />
+              {!isResident && <col style={{ width: '17%' }} />}
+              <col style={{ width: isResident ? '43%' : '33%' }} />
+              <col style={{ width: isResident ? '8%' : '7%' }} />
+              <col style={{ width: isResident ? '14%' : '12%' }} />
+              <col style={{ width: isResident ? '14%' : '12%' }} />
+            </colgroup>
             <thead>
               <tr>
                 <th className="col-no">No.</th>
@@ -173,7 +182,7 @@ export default function DispensingRecords() {
                 {!isResident && <th>Resident</th>}
                 <th>
                   {/* Two labels: the medicine names, and the quantity of each one (right side, above the quantities). */}
-                  <span className="dr-meds-head"><span>Medicines given</span><span>Number of medicine</span></span>
+                  <span className="dr-meds-head"><span>Medicines given</span><span>Quantity</span></span>
                 </th>
                 <th className="center">Total qty</th>
                 <th>Request</th>
