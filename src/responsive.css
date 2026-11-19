@@ -1,4 +1,13 @@
 /* All roles: tables respond to their available space, including an open desktop sidebar. */
+.medicine-review { margin: 16px 0; min-width: 0; }
+.medicine-review h3 { margin: 0 0 8px; font-size: 1rem; }
+.medicine-review fieldset { min-width: 0; margin: 12px 0; padding: 12px; border: 1px solid var(--border); border-radius: 10px; }
+.medicine-review legend { padding: 0 4px; font-size: 0.85rem; font-weight: 700; overflow-wrap: anywhere; }
+.medicine-review label { font-size: 0.8rem; }
+.medicine-review textarea { resize: vertical; }
+.item-decision { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; margin-top: 5px; overflow-wrap: anywhere; }
+.item-decision > .small { flex-basis: 100%; color: var(--danger); }
+.medicine-review-results > div { padding: 10px 0; border-bottom: 1px solid var(--border); }
 .content .page, .content .card, .content .grid-main > *, .content .grid-2 > *,
 .content .fc-main > *, .content .fc-restock > *, .content .rp-grid > * { min-width: 0; }
 .content .filters { max-width: 100%; flex-wrap: wrap; }

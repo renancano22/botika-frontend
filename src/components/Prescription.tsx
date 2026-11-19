@@ -12,7 +12,7 @@ export const RX_ICON = 'M6 3h6a4 4 0 0 1 0 8H6zM6 11v10M10 11l9 10M19 13l-7 8';
 
 /** Does this request include a medicine that needs a doctor's prescription? */
 export function requiresPrescription(r: Pick<MedicineRequest, 'items' | 'request_type'>): boolean {
-  return r.request_type === 'medicine' && r.items.some((i) => i.medicine.requires_prescription);
+  return r.request_type === 'medicine' && r.items.some((i) => i.review_status !== 'rejected' && i.medicine.requires_prescription);
 }
 
 export function RxBadge({ small = false }: { small?: boolean }) {

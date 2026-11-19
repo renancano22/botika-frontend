@@ -9,6 +9,8 @@ import { Pagination, rowNo, useDebounced, usePagedApi } from '../../components/P
 import { Badge, Card, Empty, Loading, Message, Modal } from '../../components/ui';
 import RequestTracker from '../../components/RequestTracker';
 import { PrescriptionViewer, requiresPrescription, RxBadge, RX_ICON } from '../../components/Prescription';
+import MedicineReview, { reviewProblem, type ItemReviews } from '../../components/MedicineReview';
+import { ItemDecision } from '../../components/RequestCards';
 import { prescriptionStatus } from '../../components/RequestDetailParts';
 import { storedPrescriptions } from '../../medicineRequest';
 import { isMixed, PickupCountdown, SourceTag, Svg } from '../../components/RequestCards';
@@ -109,8 +111,9 @@ export default function Requests() {
   const [viewingId, setViewingId] = useState<number | null>(null);
   const viewing = rows.find((r) => r.request_id === viewingId) ?? null;
   const [checkedRxIds, setCheckedRxIds] = useState<number[]>([]);
+  const [itemReviews, setItemReviews] = useState<ItemReviews>({});
   const [viewRxId, setViewRxId] = useState<number | null>(null);
-  const openDetails = (r: MedicineRequest) => { setCheckedRxIds([]); setViewingId(r.request_id); };
+  const openDetails = (r: MedicineRequest) => { setCheckedRxIds([]); setItemReviews({}); setViewingId(r.request_id); };
 
   const canReview = (r: MedicineRequest) =>
     r.status === 'pending' && can('requests.review') && (r.request_type === 'medicine' || user?.role === 'admin');
@@ -142,14 +145,40 @@ export default function Requests() {
     } finally { setActingId(null); }
   };
 
-  /** Prescription medicines: approving is only possible inside Details, after viewing and confirming the prescription. */
+  const saveReview = async (r: MedicineRequest) => {
+    if (actingId || reviewProblem(r, itemReviews, checkedRxIds)) return;
+    const approved = r.items.filter((i) => itemReviews[i.request_item_id]?.decision === 'approved');
+    const rejected = r.items.filter((i) => itemReviews[i.request_item_id]?.decision === 'rejected');
+    if (!(await confirmSave({
+      title: `Save review for Request No. ${r.request_id}?`,
+      message: <><p><strong>Approved:</strong> {approved.map((i) => `${i.medicine.medicine_name} ×${i.quantity}`).join(', ') || 'None'}</p>
+        <p><strong>Rejected:</strong> {rejected.map((i) => `${i.medicine.medicine_name}: ${itemReviews[i.request_item_id].reason.trim()}`).join('; ') || 'None'}</p></>,
+      details: 'The resident will be notified of both decisions. Only approved medicines will be set aside for pickup.',
+      confirmLabel: 'Confirm and Save Review',
+    }))) return;
+    setActingId(r.request_id);
+    try {
+      await api.post(`/requests/${r.request_id}/review`, {
+        item_reviews: r.items.map((i) => ({ request_item_id: i.request_item_id, ...itemReviews[i.request_item_id] })),
+        prescription_verified: checkedRxIds.length > 0,
+        verified_prescription_ids: checkedRxIds,
+      });
+      toast.success('Medicine review saved', { description: `${approved.length} approved · ${rejected.length} rejected. The resident was notified.` });
+      setViewingId(null); reload(true);
+    } catch (err) { toast.fromError(err, { title: 'The review was not saved' }); }
+    finally { setActingId(null); }
+  };
+
+  /** Medicine decisions are made separately; restock requests keep their existing workflow. */
   const reviewButtons = (r: MedicineRequest, inDetails = false) => canReview(r) && <>
-    {requiresPrescription(r) && !inDetails
-      ? <button className="btn btn-sm" onClick={() => openDetails(r)}>Check & approve</button>
+    {r.request_type === 'medicine' && inDetails
+      ? <button className="btn btn-sm" disabled={actingId !== null || !!reviewProblem(r, itemReviews, checkedRxIds)} onClick={() => saveReview(r)}>{actingId ? 'Saving…' : 'Save review'}</button>
+      : r.request_type === 'medicine' && (requiresPrescription(r) || r.items.length > 1)
+      ? <button className="btn btn-sm" onClick={() => openDetails(r)}>Review medicines</button>
       : <button className="btn btn-sm" disabled={actingId !== null || (requiresPrescription(r) && (!storedPrescriptions(r).length || !storedPrescriptions(r).every((file) => checkedRxIds.includes(file.prescription_id))))} onClick={() => approve(r)}>
         {actingId === r.request_id ? 'Approving…' : 'Approve'}
       </button>}
-    <button className="btn btn-danger btn-sm" disabled={actingId !== null} onClick={() => openReject(r)}>Reject</button>
+    {(!inDetails || r.request_type === 'restock') && <button className="btn btn-danger btn-sm" disabled={actingId !== null} onClick={() => openReject(r)}>{r.request_type === 'medicine' && r.items.length > 1 ? 'Reject all' : 'Reject'}</button>}
   </>;
 
   // On phones the status tabs are one swipeable row: keep the selected tab in view.
@@ -222,7 +251,7 @@ export default function Requests() {
                   <td><Badge value={r.request_type} /></td>
                   <td>
                     {r.items.map((it, n) => (
-                      <Fragment key={it.request_item_id}>{n > 0 && ', '}<Hl q={term}>{it.medicine.medicine_name}</Hl>{it.quantity === null ? '' : ` ×${it.quantity}`}{isMixed(r.items) && <> <SourceTag source={it.source} /></>}</Fragment>
+                      <Fragment key={it.request_item_id}>{n > 0 && ', '}<Hl q={term}>{it.medicine.medicine_name}</Hl>{it.quantity === null ? '' : ` ×${it.quantity}`}{isMixed(r.items) && <> <SourceTag source={it.source} /></>}<ItemDecision item={it} /></Fragment>
                     ))}
                     {requiresPrescription(r) && (
                       <div className="rx-cell"><RxBadge small /> <span className={r.prescription_verified_at ? 'rx-ok small' : 'muted small'}>{r.prescription ? (r.prescription_verified_at ? 'checked' : 'uploaded') : 'not uploaded'}</span></div>
@@ -230,6 +259,7 @@ export default function Requests() {
                   </td>
                   <td>
                     <Badge value={r.status} />
+                    {r.status === 'approved' && r.items.some((i) => i.review_status === 'rejected') && <div className="muted small">Partially approved — see medicine decisions</div>}
                     {r.status === 'approved' && r.claim_by && (
                       <div className="muted small">Ready for pickup · claim by {formatDate(r.claim_by)} <PickupCountdown claimBy={r.claim_by} /></div>
                     )}
@@ -270,6 +300,7 @@ export default function Requests() {
             <div><small className="muted">Type</small><strong>{viewing.request_type === 'restock' ? 'Restock request' : 'Medicine request'}</strong></div>
           </div>
           <p className="req-items">{itemsText(viewing)}</p>
+          {!canReview(viewing) && viewing.items.some((i) => i.review_status) && <div className="medicine-review-results">{viewing.items.map((item) => <div key={item.request_item_id}><strong>{item.medicine.medicine_name}</strong><ItemDecision item={item} /></div>)}</div>}
           {viewing.resident_note && (
             <div className="review-note"><span className="muted small">Resident's reason for request</span><p>{viewing.resident_note}</p></div>
           )}
@@ -292,15 +323,19 @@ export default function Requests() {
               )}
               {canReview(viewing) && viewing.prescription && (
                 <div className="prescription-verifications">
-                  <p className="small">Confirm each file is valid, signed by a licensed doctor, written for this resident, and matches its medicines and quantities.</p>
+                  <p className="small">Check only the valid files: signed by a licensed doctor, written for this resident, and matching the medicines and quantities you will approve. Leave invalid files unchecked. Each approved prescription medicine needs at least one checked file covering it.</p>
                   {storedPrescriptions(viewing).map((file) => <label className="checkbox-row rx-check" key={file.prescription_id}>
                     <input type="checkbox" checked={checkedRxIds.includes(file.prescription_id)} onChange={(e) => setCheckedRxIds((ids) => e.target.checked ? [...ids, file.prescription_id] : ids.filter((id) => id !== file.prescription_id))} />
-                    <span>I checked {file.file_name}</span>
+                    <span>Valid prescription: {file.file_name}</span>
                   </label>)}
                 </div>
               )}
             </div>
           )}
+          {canReview(viewing) && viewing.request_type === 'medicine' && <>
+            <MedicineReview request={viewing} reviews={itemReviews} onChange={setItemReviews} disabled={actingId !== null} />
+            {reviewProblem(viewing, itemReviews, checkedRxIds) && <p className="field-hint" role="status">{reviewProblem(viewing, itemReviews, checkedRxIds)}</p>}
+          </>}
           <RequestTracker request={viewing} forResident={false} />
           <div className="modal-actions rq-dialog-actions">
             {reviewButtons(viewing, true)}

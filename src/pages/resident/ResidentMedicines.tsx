@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api, errorMessage } from '../../api';
 import { useApi } from '../../hooks';
 import { Empty, Loading, Message, Modal } from '../../components/ui';
-import { ICONS, quantityText, Svg, unitPlural } from '../../components/RequestCards';
+import { eligibleItems, ICONS, quantityText, Svg, unitPlural } from '../../components/RequestCards';
 import type { Medicine, MedicineRequest } from '../../types';
 import { MAX_REQUEST_QUANTITY, quantityWarning } from '../../validation';
 import { RX_ICON, RxBadge } from '../../components/Prescription';
@@ -62,7 +62,7 @@ export default function ResidentMedicines() {
   const { data: myRequests, reload: reloadMine } = useApi<MedicineRequest[]>('/requests', undefined, 30000);
   const openRestock = new Map<number, number>(); // medicine_id → request_id
   const openMedicineReq = new Map<number, { requestId: number; status: string }>();
-  (myRequests ?? []).filter((r) => r.status === 'pending' || r.status === 'approved').forEach((r) => r.items.forEach((i) => {
+  (myRequests ?? []).filter((r) => r.status === 'pending' || r.status === 'approved').forEach((r) => eligibleItems(r).forEach((i) => {
     if (r.request_type === 'restock' && !openRestock.has(i.medicine_id)) openRestock.set(i.medicine_id, r.request_id);
     if (r.request_type === 'medicine' && !openMedicineReq.has(i.medicine_id)) openMedicineReq.set(i.medicine_id, { requestId: r.request_id, status: r.status });
   }));

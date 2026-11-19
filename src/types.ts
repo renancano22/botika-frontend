@@ -153,6 +153,8 @@ export interface PickupRisk {
 }
 
 export interface RequestItem {
+  review_status?: 'approved' | 'rejected' | null;
+  rejection_reason?: string | null;
   request_item_id: number;
   medicine_id: number;
   quantity: number | null; // null: restock requests have no quantity

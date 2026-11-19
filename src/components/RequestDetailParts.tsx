@@ -5,6 +5,7 @@ import { pickupPeriod, statusSummary } from './RequestTracker';
 import { dateTime, ICONS, isMixed, PickupCountdown, quantityText, RequestNo, SourceTag, STATUS_COLOR_KEY, statusKey, StatusPill, Svg } from './RequestCards';
 import { PrescriptionViewer, requiresPrescription, RX_ICON, RxBadge } from './Prescription';
 import { storedPrescriptions } from '../medicineRequest';
+import { ItemDecision } from './RequestCards';
 
 /** "Pickup schedule" row: approval means the medicines are ready at Botika ng Bayan until the claim deadline. */
 export function pickupText(r: MedicineRequest): string {
@@ -24,11 +25,12 @@ export function pickupText(r: MedicineRequest): string {
 export function PickupDeadlineBox({ r, reminder = false }: { r: MedicineRequest; reminder?: boolean }) {
   const p = pickupPeriod(r);
   if (!p || r.status !== 'approved') return null;
-  const hasPrescription = requiresPrescription(r) || storedPrescriptions(r).length > 0;
+  const hasPrescription = requiresPrescription(r);
   return (
     <div className={`info-box pickup-box ${reminder ? 'info-warn' : 'info-ok'}`}>
       <strong><Svg d={ICONS.calendar} size={18} /> {reminder ? 'Pickup Reminder' : 'Pickup Schedule'}</strong>
       <p><Svg d={ICONS.pin} size={16} /> Botika ng Bayan, Bulan, Sorsogon</p>
+      {r.items.some((i) => i.review_status === 'rejected') && <p className="small">Only the approved medicines are ready for pickup. Rejected medicines and their reasons are listed above.</p>}
       <div className="pickup-dates">
         <div><span>Pickup date</span><b>{p.pickup}</b></div>
         <div className="pickup-deadline"><span>Claim deadline</span><b>{p.deadline}</b><PickupCountdown claimBy={r.claim_by} /></div>
@@ -54,7 +56,7 @@ export function notesText(r: MedicineRequest): string {
 /** Where the prescription check stands, e.g. "Checked by Ana Cruz". */
 export function prescriptionStatus(r: MedicineRequest): string {
   if (!r.prescription) return 'Not uploaded';
-  if (r.prescription_verified_at) return `Checked by ${r.prescription_verifier?.name ?? 'the pharmacy staff'} · ${formatDate(r.prescription_verified_at)}`;
+  if (r.prescription_verified_at) return `Prescriptions for approved medicines checked by ${r.prescription_verifier?.name ?? 'the pharmacy staff'} · ${formatDate(r.prescription_verified_at)}`;
   if (r.status === 'pending') return 'Waiting for pharmacy staff to check the uploaded files';
   return 'Uploaded';
 }
@@ -83,6 +85,7 @@ export function RequestSummaryCard({ r, prescriptionAction }: { r: MedicineReque
               {i.quantity !== null && <span className="muted small">{quantityText(i.quantity, i.medicine.unit)}</span>}
               {i.medicine.requires_prescription && r.request_type === 'medicine' && <RxBadge small />}
               {isMixed(r.items) && <SourceTag source={i.source} />}
+              <ItemDecision item={i} />
             </span>
           </li>
         ))}

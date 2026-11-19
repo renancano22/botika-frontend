@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../../auth';
 import { useApi } from '../../hooks';
 import { Empty, Loading } from '../../components/ui';
-import { ICONS, PickupCountdown, STATUS_COLOR_KEY, STATUS_LABEL, statusKey, Svg } from '../../components/RequestCards';
+import { eligibleItems, ICONS, PickupCountdown, STATUS_COLOR_KEY, STATUS_LABEL, statusKey, Svg } from '../../components/RequestCards';
 import { pickupPeriod } from '../../components/RequestTracker';
 import { formatDate } from '../../api';
 import type { MedicineRequest, Resident, SmsNotification } from '../../types';
@@ -22,7 +22,7 @@ const QR_ICON = 'M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2v2h-2zM18 18h2v2h-2
 
 /** "Paracetamol 500mg ×10, Amoxicillin 500mg ×21" (first two, then "+N more"). */
 function itemsText(r: MedicineRequest): string {
-  const parts = r.items.map((i) => (i.quantity === null ? i.medicine.medicine_name : `${i.medicine.medicine_name} ×${i.quantity}`));
+  const parts = eligibleItems(r).map((i) => (i.quantity === null ? i.medicine.medicine_name : `${i.medicine.medicine_name} ×${i.quantity}`));
   return parts.slice(0, 2).join(', ') + (parts.length > 2 ? ` +${parts.length - 2} more` : '');
 }
 

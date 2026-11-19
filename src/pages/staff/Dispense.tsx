@@ -6,7 +6,7 @@ import { useApi } from '../../hooks';
 import { Badge, Card, Empty, Message, Modal } from '../../components/ui';
 import { PrescriptionViewer, requiresPrescription, RX_ICON, RxBadge } from '../../components/Prescription';
 import { prescriptionStatus } from '../../components/RequestDetailParts';
-import { ICONS, isMixed, RequestNo, SourceTag, Svg, unitPlural } from '../../components/RequestCards';
+import { eligibleItems, ICONS, isMixed, RequestNo, SourceTag, Svg, unitPlural } from '../../components/RequestCards';
 import type { Medicine, MedicineRequest } from '../../types';
 import { MAX_WALK_IN_QUANTITY, quantityWarning } from '../../validation';
 import QrScanner from './QrScanner';
@@ -322,7 +322,7 @@ export default function Dispense() {
                       <tr key={r.request_id}>
                         <td className="nowrap">No. {r.request_id}</td>
                         <td>
-                          {r.items.map((i) => `${i.medicine.medicine_name} ×${i.quantity}`).join(', ')}
+                          {eligibleItems(r).map((i) => `${i.medicine.medicine_name} ×${i.quantity}`).join(', ')}
                           {requiresPrescription(r) && <div className="rx-cell"><RxBadge small /></div>}
                           <PickupWarnings warnings={r.stock_warnings} />
                         </td>
@@ -379,11 +379,11 @@ export default function Dispense() {
       {confirming && (
         <Modal title={`Dispense request No. ${confirming.request_id}`} onClose={() => !busy && setConfirming(null)}>
           <p className="muted small">Release these medicines to <strong>{found?.resident.name}</strong>? They are deducted from the stock.</p>
-          {walkIn.length === 0 ? <p className="req-items">{confirming.items.map((i) => `${i.medicine.medicine_name} ×${i.quantity}`).join(', ')}</p> : (
+          {walkIn.length === 0 ? <p className="req-items">{eligibleItems(confirming).map((i) => `${i.medicine.medicine_name} ×${i.quantity}`).join(', ')}</p> : (
             <>
               <p className="muted small">Given in one dispensing record. Each medicine is marked as asked for in the request or in person (walk-in).</p>
               <ul className="dv-confirm-list">
-                {confirming.items.map((i) => (
+                {eligibleItems(confirming).map((i) => (
                   <li key={`r${i.request_item_id}`}><span>{i.medicine.medicine_name} <SourceTag source="request" /></span><b>{i.quantity} {i.quantity === 1 ? i.medicine.unit : unitPlural(i.medicine.unit)}</b></li>
                 ))}
                 {walkIn.map((i, n) => {
@@ -418,7 +418,7 @@ export default function Dispense() {
           <div className="modal-actions">
             <button className="btn btn-outline" onClick={() => setConfirming(null)} disabled={busy}>Cancel</button>
             <button className="btn" disabled={busy || ((requiresPrescription(confirming) || walkInRx.length > 0) && !rxChecked)}
-              onClick={() => dispenseRequest(confirming)}>{busy ? 'Dispensing…' : walkIn.length ? `Confirm and Dispense all (${confirming.items.length + walkIn.length})` : 'Confirm and Dispense'}</button>
+              onClick={() => dispenseRequest(confirming)}>{busy ? 'Dispensing…' : walkIn.length ? `Confirm and Dispense all (${eligibleItems(confirming).length + walkIn.length})` : 'Confirm and Dispense'}</button>
           </div>
         </Modal>
       )}

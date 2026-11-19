@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { formatDate } from '../api';
-import type { ItemSource, MedicineRequest } from '../types';
+import type { ItemSource, MedicineRequest, RequestItem } from '../types';
 import { Hl, HlId, rowHit } from './SearchHighlight';
 
 /** Small line icons used on request and notification cards. */
@@ -94,7 +94,18 @@ export const STATUS_COLOR_KEY: Record<StatusKey, string> = {
 
 export function StatusPill({ request }: { request: MedicineRequest }) {
   const key = statusKey(request);
-  return <span className={`pill k-${STATUS_COLOR_KEY[key]}`}>{STATUS_LABEL[key]}</span>;
+  const partial = request.status === 'approved' && request.items.some((i) => i.review_status === 'rejected');
+  return <span className={`pill k-${STATUS_COLOR_KEY[key]}`}>{partial ? 'Partially approved' : STATUS_LABEL[key]}</span>;
+}
+
+/** Rejected lines remain visible in details but cannot be claimed or block a new request. */
+export const eligibleItems = (r: Pick<MedicineRequest, 'items'>) => r.items.filter((i) => i.review_status !== 'rejected');
+
+export function ItemDecision({ item }: { item: RequestItem }) {
+  if (!item.review_status) return null;
+  return <div className="item-decision"><span className={`pill k-${item.review_status}`}>{item.review_status === 'rejected' ? 'Rejected' : 'Approved'}</span>
+    {item.review_status === 'rejected' && <span className="small">{item.rejection_reason}</span>}
+  </div>;
 }
 
 /** "tablet" → "tablets" (units already ending in s stay the same). */

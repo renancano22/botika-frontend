@@ -28,12 +28,15 @@ function buildSteps(r: MedicineRequest, forResident: boolean): Step[] {
   const restock = r.request_type === 'restock';
   const your = forResident ? 'Your' : 'The';
   const p = pickupPeriod(r);
+  const rejected = r.items.filter((i) => i.review_status === 'rejected');
 
   const submitted: Step = { k: 'submitted', title: 'Request Submitted', state: 'done', date: r.request_date, text: `${your} request has been submitted successfully.` };
   const review: Step = { k: 'review', title: 'Under Review', state: 'done', text: `${restock ? 'The administrator' : 'The pharmacy staff'} reviewed ${forResident ? 'your' : 'the'} request.` };
   const approved: Step = {
-    k: 'approved', title: 'Approved', state: 'done', date: r.reviewed_at,
-    text: `${your} request has been approved${r.reviewer ? ` by ${r.reviewer.name}` : ''}${r.prescription_verified_at ? ' after checking the prescription' : ''}.`,
+    k: 'approved', title: rejected.length ? 'Partially Approved' : 'Approved', state: 'done', date: r.reviewed_at,
+    text: rejected.length
+      ? `Only the approved medicines were set aside. Not approved: ${rejected.map((i) => `${i.medicine.medicine_name}: ${i.rejection_reason}`).join('; ')}.`
+      : `${your} request has been approved${r.reviewer ? ` by ${r.reviewer.name}` : ''}${r.prescription_verified_at ? ' after checking the prescription' : ''}.`,
   };
   const ready: Step = {
     k: 'ready', title: 'Ready for Pickup', state: 'done', date: r.reviewed_at,

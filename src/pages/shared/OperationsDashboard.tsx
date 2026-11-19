@@ -7,7 +7,7 @@ import { useAuth } from '../../auth';
 import { useApi } from '../../hooks';
 import { Badge, Card, Empty, Loading } from '../../components/ui';
 import type { MedicineRequest } from '../../types';
-import { ICONS, PickupCountdown, Svg } from '../../components/RequestCards';
+import { eligibleItems, ICONS, PickupCountdown, Svg } from '../../components/RequestCards';
 import { LoadError } from '../../components/feedback';
 import { Pagination, useClientPages } from '../../components/Pagination';
 
@@ -322,7 +322,7 @@ function ReadyForPickup({ requests, total }: { requests: MedicineRequest[]; tota
                   <strong>{r.resident?.name}</strong>
                   <div className="muted small">{r.resident?.qr_code}{r.resident?.contact_no ? ` · ${r.resident.contact_no}` : ''}</div>
                 </td>
-                <td>{r.items.map((i) => `${i.medicine.medicine_name} ×${i.quantity}`).join(', ')}</td>
+                <td>{eligibleItems(r).map((i) => `${i.medicine.medicine_name} ×${i.quantity}`).join(', ')}</td>
                 <td className="nowrap">{formatDate(r.reviewed_at, true)}{r.reviewer && <div className="muted small">by {r.reviewer.name}</div>}</td>
                 <td className="nowrap">{formatDate(r.claim_by)}<div><PickupCountdown claimBy={r.claim_by} /></div></td>
               </tr>
