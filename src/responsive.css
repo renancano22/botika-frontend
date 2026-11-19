@@ -5,6 +5,11 @@
 .content .filters > *, .content .card-actions, .content .actions > * { min-width: 0; max-width: 100%; }
 .content .card-head { flex-wrap: wrap; }
 .content .chips { min-width: 0; max-width: 100%; flex-wrap: wrap; }
+@media screen and (min-width: 1024px) {
+  .content .request-status-tabs { gap: 5px; }
+  .request-status-tabs .chip { gap: 5px; padding: 8px; font-size: 0.8rem; white-space: nowrap; min-height: 38px; }
+  .request-status-tabs .chip-count { min-width: 20px; height: 20px; padding: 0 5px; font-size: 0.7rem; }
+}
 .content .da-dates { min-width: 0; max-width: 100%; flex-wrap: wrap; }
 .content .recharts-tooltip-wrapper[style*='visibility: hidden'] { display: none; }
 .content .card p, .content .note-text, .content .rx-name, .content .prescription-file-name { overflow-wrap: anywhere; }

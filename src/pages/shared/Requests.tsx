@@ -180,7 +180,7 @@ export default function Requests() {
           </select>
         </div>
       }>
-        <div className="chips status-tabs" role="tablist" aria-label="Status" ref={tabsRef}>
+        <div className="chips status-tabs request-status-tabs" role="tablist" aria-label="Status" ref={tabsRef}>
           {statusTabs(apiType).map(([value, label]) => (
             <button key={value || 'all'} role="tab" aria-selected={apiStatus === value} className={`chip ${apiStatus === value ? 'active' : ''}`}
               onClick={() => setFilter({ status: value })}>
