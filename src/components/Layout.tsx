@@ -91,13 +91,28 @@ const NAV: Record<Role, Section[]> = {
 };
 
 /**
- * Persistent navigation: selecting a page keeps the menu open. The desktop page is laid out
- * beside the menu; on smaller screens the menu sits above it without covering the page.
+ * Desktop navigation stays beside the page. Smaller screens use a temporary drawer that
+ * closes when a page is selected, the backdrop is tapped, or the X is pressed.
  */
 export default function Layout() {
   const { user, logout, can } = useAuth();
   const location = useLocation();
   const [open, setOpen] = useState(false);
+  const [compact, setCompact] = useState(() => window.matchMedia('(max-width: 1023px)').matches);
+
+  useEffect(() => {
+    const media = window.matchMedia('(max-width: 1023px)');
+    const update = () => setCompact(media.matches);
+    media.addEventListener('change', update);
+    return () => media.removeEventListener('change', update);
+  }, []);
+  useEffect(() => { if (compact) setOpen(false); }, [location.pathname, location.search, compact]);
+  useEffect(() => {
+    if (!open || !compact) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = previousOverflow; };
+  }, [open, compact]);
 
   // Keep the page scrollable while the menu is open. Escape is a keyboard alternative to X.
   useEffect(() => {
@@ -145,10 +160,11 @@ export default function Layout() {
         </div>
       </header>
 
+      {compact && <div className={`drawer-overlay ${open ? 'is-open' : ''}`} onClick={() => setOpen(false)} aria-hidden="true" />}
       <aside id="side-menu" className={`drawer ${open ? 'is-open' : ''}`} aria-hidden={!open} aria-label="Main menu">
         <div className="drawer-head">
           {/* The picture and name open My Profile (all roles). */}
-          <Link to="/profile" state={NAV_STATE} className="drawer-profile" tabIndex={open ? 0 : -1} aria-label="Open my profile" title="My profile">
+          <Link to="/profile" state={NAV_STATE} className="drawer-profile" tabIndex={open ? 0 : -1} aria-label="Open my profile" title="My profile" onClick={() => { if (compact) setOpen(false); }}>
             <Avatar name={user.name} photo={user.resident?.photo ?? user.photo} size={38} />
             <span className="drawer-user">
               <strong>{user.name}</strong>
@@ -167,6 +183,7 @@ export default function Layout() {
                   key={item.to}
                   to={item.to}
                   state={NAV_STATE}
+                  onClick={() => { if (compact) setOpen(false); }}
                   tabIndex={open ? 0 : -1}
                   className={({ isActive }) => `drawer-item ${isActive ? 'active' : ''}`}
                 >
