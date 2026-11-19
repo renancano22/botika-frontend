@@ -2919,6 +2919,24 @@ tr.row-hit > td:first-child { box-shadow: inset 4px 0 0 #eab308; }
 .drawer { visibility: hidden; transition: transform 0.25s ease, visibility 0.25s; }
 .drawer.is-open { visibility: visible; }
 
+/* Navigation stays open across routes and never overlays the selected page. */
+.app { --sidebar-width: 280px; }
+.app > .drawer { top: 64px; width: var(--sidebar-width); box-shadow: 2px 0 10px rgba(20, 63, 28, 0.12); z-index: 35; }
+.app > .drawer .drawer-nav { min-height: 0; overscroll-behavior: contain; }
+.app > .drawer .drawer-close { flex-shrink: 0; width: 40px; height: 40px; }
+@media screen and (min-width: 1024px) {
+  .app--sidebar-open > .content { margin-left: var(--sidebar-width); margin-right: 0; width: calc(100% - var(--sidebar-width)); max-width: none; }
+}
+@media screen and (max-width: 1023px) {
+  .app > .drawer { position: relative; top: auto; bottom: auto; left: auto; display: none; width: calc(100% - 24px); max-height: min(460px, 55svh); margin: 12px 12px 0; transform: none; border-radius: 14px; flex-shrink: 0; z-index: 1; }
+  .app > .drawer.is-open { display: flex; }
+  .app > .drawer .drawer-head { padding: 12px 14px; }
+  .app > .drawer .drawer-user small { font-size: 0.75rem; }
+  .app > .drawer .drawer-nav { padding: 8px; }
+  .app > .drawer .drawer-item { min-height: 42px; }
+  .app > .drawer .drawer-logout { flex-shrink: 0; }
+}
+
 /* Check Medicines: medicine cards */
 .med-grid { gap: 10px; }
 .med-card, .med-card.med-rx { background: #fff; padding: 12px 14px; gap: 8px; border-radius: 14px;

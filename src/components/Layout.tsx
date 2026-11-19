@@ -91,28 +91,20 @@ const NAV: Record<Role, Section[]> = {
 };
 
 /**
- * Top bar with a hamburger button on the left. Tapping it slides the menu in from the left
- * (same on computers and phones). The menu closes when a page is chosen, when tapping the
- * dimmed area, with the ✕ button, or with the Esc key.
+ * Persistent navigation: selecting a page keeps the menu open. The desktop page is laid out
+ * beside the menu; on smaller screens the menu sits above it without covering the page.
  */
 export default function Layout() {
   const { user, logout, can } = useAuth();
   const location = useLocation();
   const [open, setOpen] = useState(false);
 
-  // Close the menu after moving to another page.
-  useEffect(() => { setOpen(false); }, [location.pathname]);
-
-  // Esc closes the menu; the page behind it doesn't scroll while it is open.
+  // Keep the page scrollable while the menu is open. Escape is a keyboard alternative to X.
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
     document.addEventListener('keydown', onKey);
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.removeEventListener('keydown', onKey);
-      document.body.style.overflow = '';
-    };
+    return () => document.removeEventListener('keydown', onKey);
   }, [open]);
 
   if (!user) return null;
@@ -122,7 +114,7 @@ export default function Layout() {
     .filter((s) => s.items.length > 0);
 
   return (
-    <div className="app">
+    <div className={`app${open ? ' app--sidebar-open' : ''}`}>
       <header className="topbar">
         <button
           className="hamburger"
@@ -153,7 +145,6 @@ export default function Layout() {
         </div>
       </header>
 
-      <div className={`drawer-overlay ${open ? 'is-open' : ''}`} onClick={() => setOpen(false)} aria-hidden="true" />
       <aside id="side-menu" className={`drawer ${open ? 'is-open' : ''}`} aria-hidden={!open} aria-label="Main menu">
         <div className="drawer-head">
           {/* The picture and name open My Profile (all roles). */}
