@@ -280,7 +280,7 @@ export default function Users() {
       </header>
       <LoadError error={errorInfo} onRetry={() => reload()} />
 
-      <Card actions={
+      <div className="users-list"><Card actions={
         <div className="filters">
           <select value={role} onChange={(e) => setRole(e.target.value)} aria-label="Role">
             <option value="">All roles</option>
@@ -303,22 +303,23 @@ export default function Users() {
         </div>
       }>
         {loading && !data ? <Loading /> : !data ? null : !rows.length ? <Empty>No users found.</Empty> : (
-          <table className={loading ? 'tbl-updating' : ''}>
+          <table className={`users-table${loading ? ' tbl-updating' : ''}`}>
+            <colgroup><col className="ut-no" /><col className="ut-name" /><col className="ut-email" /><col className="ut-role" /><col className="ut-resident" /><col className="ut-status" /><col className="ut-created" /><col className="ut-actions" /></colgroup>
             <thead><tr><th className="col-no">No.</th><th>Name</th><th>Email</th><th>Role</th><th>Resident ID / Mobile / Address</th><th>Status</th><th>Created</th><th className="right">Actions</th></tr></thead>
             <tbody>
               {rows.map((u, i) => {
                 const noAccount = u.user_id === null; // registered at the counter (Register resident): no log-in account
                 return (
                 <tr key={noAccount ? `r${u.resident?.resident_id}` : u.user_id} className={u.is_active ? '' : 'row-muted'}>
-                  <td className="col-no">{rowNo(meta, i)}</td>
-                  <td><Hl q={term}>{u.name}</Hl></td><td>{u.email ? <Hl q={term}>{u.email}</Hl> : '—'}</td><td><Badge value={u.role} /></td>
-                  <td>
+                  <td data-label="No." className="col-no">{rowNo(meta, i)}</td>
+                  <td data-label="Name"><Hl q={term}>{u.name}</Hl></td><td data-label="Email">{u.email ? <Hl q={term}>{u.email}</Hl> : '—'}</td><td data-label="Role"><Badge value={u.role} /></td>
+                  <td data-label="Resident details">
                     {u.resident ? <>
-                      <Hl q={term}>{u.resident.qr_code}</Hl>{u.resident.contact_no && <> · <Hl q={term}>{u.resident.contact_no}</Hl></>}
+                      <div><Hl q={term}>{u.resident.qr_code}</Hl></div>{u.resident.contact_no && <div><Hl q={term}>{u.resident.contact_no}</Hl></div>}
                       {u.resident.address && <div className="muted small">{u.resident.address}</div>}
                     </> : '—'}
                   </td>
-                  <td>
+                  <td data-label="Status">
                     {noAccount ? (
                       <>No online account<div><span className="no-account-badge" title="Registered by the pharmacy staff at the counter (e.g. no cellphone). The resident has a Resident ID and QR code but cannot log in.">Registered at the counter</span></div></>
                     ) : u.is_active ? 'Active' : 'Deactivated'}
@@ -330,8 +331,8 @@ export default function Users() {
                         </span></div>
                     )}
                   </td>
-                  <td>{formatDate(u.created_at)}</td>
-                  <td className="right">
+                  <td data-label="Created">{formatDate(u.created_at)}</td>
+                  <td data-label="Actions" className="right">
                     <div className="ua-row-actions" role="group" aria-label={`Actions for ${u.name}`}>
                     {noAccount ? <>
                       <button className="btn btn-outline btn-sm" onClick={() => openAccount(u)}>Create account</button>
@@ -352,7 +353,7 @@ export default function Users() {
           </table>
         )}
         <Pagination meta={meta} onPage={list.setPage} onPerPage={list.setPerPage} noun="records" busy={loading} />
-      </Card>
+      </Card></div>
 
       {form && (
         <Modal title={editing ? 'Edit user' : 'Create staff account'} onClose={() => setForm(null)}>
