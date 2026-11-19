@@ -15,6 +15,17 @@
 .adaptive-table .adaptive-cell-value { min-width: 0; max-width: 100%; overflow-wrap: anywhere; }
 .adaptive-table .adaptive-cell-value .nowrap { white-space: normal; }
 .adaptive-table .adaptive-cell-value :is(.badge, .pill, .no-account-badge, .temp-badge) { max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
+.adaptive-table .adaptive-cell-value .rx-badge { max-width: 100%; white-space: normal; line-height: 1.4; }
+.adaptive-table .adaptive-cell-value .rx-badge svg { flex-shrink: 0; }
+.adaptive-table .mi-batch { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 6px; white-space: normal; }
+.adaptive-table .mi-batch + .mi-batch { margin-top: 6px; }
+.mi-table .mi-specs { display: flex; flex-wrap: wrap; gap: 3px 8px; margin-top: 4px; color: var(--muted); font-size: 0.8rem; line-height: 1.5; }
+.mi-table .mi-code { margin-top: 4px; font-size: 0.72rem; }
+.mi-table .mi-stock-quantity { font-weight: 600; margin-bottom: 6px; }
+.mi-table .adaptive-cell-value > .badge { margin-bottom: 4px; }
+.mi-table .mi-actions { display: flex; flex-direction: column; gap: 6px; width: 100%; }
+.adaptive-table .mi-actions > .btn { width: 100%; min-height: 38px; margin: 0; }
+.adaptive-table > .mi-table .adaptive-actions-cell .mi-actions > .btn { flex: none; width: 100%; min-height: 40px; }
 .adaptive-table .adaptive-cell-value :is(.rq-row-actions, .ua-row-actions) { grid-template-columns: minmax(0, 136px); width: 100%; }
 .adaptive-table .adaptive-cell-value .btn { width: auto; max-width: 100%; min-width: 0; height: auto; min-height: 38px; white-space: normal; padding: 8px 10px; }
 .adaptive-table .adaptive-cell-value :is(.rq-row-actions, .ua-row-actions) > .btn { width: 100%; }

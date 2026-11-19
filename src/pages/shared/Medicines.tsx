@@ -224,37 +224,36 @@ export default function Medicines() {
         </div>
         {loading && !data ? <Loading /> : !data ? null : !shown.length ? <Empty>{filtered ? 'No medicines match these filters.' : 'No medicines yet.'}</Empty> : (
           <ResponsiveTable className={`mi-table ${loading ? 'tbl-updating' : ''}`}>
+            <colgroup><col style={{ width: '4%' }} /><col style={{ width: showActions ? '26%' : '36%' }} /><col style={{ width: '16%' }} /><col style={{ width: '15%' }} /><col style={{ width: '17%' }} /><col style={{ width: '12%' }} />{showActions && <col style={{ width: '10%' }} />}</colgroup>
             <thead>
               <tr>
-                <th className="col-no">No.</th><th>Medicine ID</th><th>Generic Name</th><th>Category</th><th>Strength</th><th>Dosage Form</th>
-                <th>Quantity in Stock</th><th>Expiration Date</th><th>Stock Status</th><th>Date Last Updated</th>{showActions && <th className="right">Actions</th>}
+                <th className="col-no">No.</th><th>Medicine</th><th>Category</th><th>Stock</th><th>Batch expiry</th><th>Last updated</th>{showActions && <th className="right">Actions</th>}
               </tr>
             </thead>
             <tbody>
               {shown.map((m, i) => (
                 <tr key={m.medicine_id} className={m.status === 'unrecorded' ? 'mi-unrecorded' : ''}>
                   <td className="col-no">{rowNo(meta, i)}</td>
-                  <td className="nowrap mi-code">{m.medicine_code}</td>
                   <td>
                     <strong><Hl q={term}>{m.generic_name ?? m.medicine_name}</Hl></strong>
+                    <div className="mi-specs"><span>{m.strength || <span className="mi-missing">Strength not specified</span>}</span><span>{m.dosage_form || <span className="mi-missing">Form not specified</span>}</span></div>
+                    <div className="mi-code">{m.medicine_code}</div>
                     {m.requires_prescription && <div><RxBadge small /></div>}
                   </td>
                   <td><Hl q={term}>{m.category}</Hl></td>
-                  <td>{m.strength || <span className="mi-missing">Not specified</span>}</td>
-                  <td>{m.dosage_form || <span className="mi-missing">Not specified</span>}</td>
-                  <td className="nowrap">
-                    {m.status === 'unrecorded' ? <span className="mi-missing">Not recorded</span> : qty(m.available_stock, m.unit)}
+                  <td>
+                    <div className="mi-stock-quantity">{m.status === 'unrecorded' ? <span className="mi-missing">Not recorded</span> : qty(m.available_stock, m.unit)}</div>
+                    <Badge value={m.status} />
                     {!!m.reserved_stock && <div className="muted small">{m.reserved_stock} reserved · {m.free_stock} free</div>}
                   </td>
-                  <td className="nowrap">
+                  <td>
                     {/* one line per stock batch: expiration date (quantity) */}
                     {m.batches?.length ? m.batches.map((b) => (
                       <div key={b.inventory_id} className={`mi-batch mi-exp-${b.expiry_status}`}>{formatDate(b.expiration_date)} <span className="muted small">({b.quantity})</span></div>
                     )) : '—'}
                   </td>
-                  <td><Badge value={m.status} /></td>
-                  <td className="nowrap">{m.last_updated ? formatDate(m.last_updated, true) : '—'}</td>
-                  {showActions && <td className="right nowrap">
+                  <td>{m.last_updated ? formatDate(m.last_updated, true) : '—'}</td>
+                  {showActions && <td className="right"><div className="mi-actions">
                     {m.status === 'unrecorded' && (
                       <>
                         {canStock && <><Link className="btn btn-sm" to={`/inventory?stockin=${m.medicine_id}`}>Record stock</Link>{' '}</>}
@@ -263,7 +262,7 @@ export default function Medicines() {
                     )}
                     {canManage && <><button className="btn btn-outline btn-sm" onClick={() => open(m)}>Edit</button>{' '}</>}
                     {user?.role === 'admin' && <button className="btn btn-danger btn-sm" onClick={() => remove(m)}>Delete</button>}
-                  </td>}
+                  </div></td>}
                 </tr>
               ))}
             </tbody>
