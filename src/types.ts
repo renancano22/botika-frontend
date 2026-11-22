@@ -158,7 +158,7 @@ export interface RequestItem {
   request_item_id: number;
   medicine_id: number;
   quantity: number | null; // null: restock requests have no quantity
-  medicine: Pick<Medicine, 'medicine_id' | 'medicine_name' | 'unit'> & { requires_prescription?: boolean };
+  medicine: Pick<Medicine, 'medicine_id' | 'medicine_name' | 'unit'> & { requires_prescription?: boolean; dosage_form?: string | null };
   /** Asked for in the online request, or in person at the Botika ng Bayan (walk-in, e.g. added when claiming it). */
   source?: ItemSource;
 }

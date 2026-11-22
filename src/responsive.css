@@ -1,4 +1,6 @@
 /* All roles: tables respond to their available space, including an open desktop sidebar. */
+.mr-fixed-quantity output { display: block; margin-top: 6px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--primary-50); font-weight: 700; color: var(--primary-dark); }
+.mr-preset-inline { display: inline-block; padding: 8px 12px; border-radius: 8px; background: var(--primary-50); color: var(--primary-dark); font-weight: 700; font-size: 0.85rem; overflow-wrap: anywhere; }
 .dr-table .dr-meds-head { gap: 10px; }
 .dr-table .dr-meds-head > :last-child { text-align: right; }
 .dr-table .dr-meds li { display: grid; grid-template-columns: 24px minmax(0, 1fr) minmax(0, auto); gap: 8px; align-items: start; }

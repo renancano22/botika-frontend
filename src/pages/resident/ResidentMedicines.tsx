@@ -5,7 +5,7 @@ import { useApi } from '../../hooks';
 import { Empty, Loading, Message, Modal } from '../../components/ui';
 import { eligibleItems, ICONS, quantityText, Svg, unitPlural } from '../../components/RequestCards';
 import type { Medicine, MedicineRequest } from '../../types';
-import { MAX_REQUEST_QUANTITY, quantityWarning } from '../../validation';
+import { MAX_REQUEST_QUANTITY } from '../../validation';
 import { RX_ICON, RxBadge } from '../../components/Prescription';
 import PrescriptionsEditor from '../../components/PrescriptionsEditor';
 import { jumpToTop } from '../../scroll';
@@ -13,7 +13,7 @@ import BackButton from '../../components/BackButton';
 import { confirmSave, FieldError, LoadError, toast } from '../../components/feedback';
 import { useAuth } from '../../auth';
 import { Hl } from '../../components/SearchHighlight';
-import { MAX_REQUEST_ITEMS, MAX_REQUEST_NOTE, medicineRequestErrors, prescriptionPayload, retainPrescriptionCoverage, validateMedicineRequest, type PrescriptionDraft } from '../../medicineRequest';
+import { MAX_REQUEST_ITEMS, MAX_REQUEST_NOTE, automaticRequestQuantity, requestItemPayload, residentQuantityWarning, medicineRequestErrors, prescriptionPayload, retainPrescriptionCoverage, validateMedicineRequest, type PrescriptionDraft } from '../../medicineRequest';
 
 type CartItem = { medicine: Medicine; quantity: number };
 
@@ -90,7 +90,7 @@ export default function ResidentMedicines() {
       setPrescriptions((files) => retainPrescriptionCoverage(files, items.filter((item) => item.medicine.requires_prescription).map((item) => item.medicine.medicine_id)));
     }
     if (items.length === 0) setNote('');
-    setCartState(items);
+    setCartState(items.map((item) => ({ ...item, quantity: automaticRequestQuantity(item.medicine) ?? item.quantity })));
   };
   const navigate = useNavigate();
   const { can } = useAuth();
@@ -119,8 +119,11 @@ export default function ResidentMedicines() {
   }, [step, cart.length, setParams]);
 
   const inCart = (m: Medicine) => cart.find((c) => c.medicine.medicine_id === m.medicine_id);
-  const currentCart = cart.map((c) => ({ ...c, medicine: data?.find((m) => m.medicine_id === c.medicine.medicine_id) ?? c.medicine }));
-  const cartWarnings = currentCart.map((c) => quantityWarning(c.quantity, unitPlural(c.medicine.unit), { available: c.medicine.available_stock }));
+  const currentCart = cart.map((c) => {
+    const medicine = data?.find((m) => m.medicine_id === c.medicine.medicine_id) ?? c.medicine;
+    return { medicine, quantity: automaticRequestQuantity(medicine) ?? c.quantity };
+  });
+  const cartWarnings = currentCart.map((c) => residentQuantityWarning(c.medicine, c.quantity));
   const cartValid = cart.length > 0 && cartWarnings.every((w) => !w);
   const requestIssues = validateMedicineRequest(currentCart, note, prescriptions, new Set(openMedicineReq.keys()));
   const requestValid = Object.keys(requestIssues).length === 0 && !uploading;
@@ -141,7 +144,7 @@ export default function ResidentMedicines() {
     setPrescriptions((files) => retainPrescriptionCoverage(files, rxSignature ? rxSignature.split(',').map(Number) : []));
   }, [rxSignature]);
 
-  /** "Request": goes straight to the Medicine Request Form with this medicine (the quantity is chosen there). */
+  /** Tablets/capsules start at 10; other medicine forms keep an editable quantity. */
   const startRequest = (m: Medicine) => {
     if (submitting.current) return;
     setSheetError('');
@@ -172,7 +175,7 @@ export default function ResidentMedicines() {
       const res = await api.post<{ request_id: number }>('/requests', {
         request_type: 'medicine',
         note: note.trim() || null,
-        items: cart.map((c) => ({ medicine_id: c.medicine.medicine_id, quantity: c.quantity })),
+        items: currentCart.map((c) => requestItemPayload(c.medicine, c.quantity)),
         ...(needsRx ? { prescriptions: prescriptionPayload(prescriptions) } : {}),
       });
       setCart([]);
@@ -231,15 +234,15 @@ export default function ResidentMedicines() {
     <>
       {cart.length === 0 ? <Empty>Tap “Request” on a medicine to fill in the request form.</Empty> : (
         <ul className="cart-list">
-          {cart.map((c, idx) => (
+          {currentCart.map((c, idx) => (
             <li key={c.medicine.medicine_id}>
               <div className="cart-line">
                 <div className="cart-name">
                   <strong>{c.medicine.medicine_name}</strong>
                   <span className="muted small">{quantityText(c.medicine.available_stock, c.medicine.unit)} available</span>
                 </div>
-                <QtyStepper value={c.quantity} max={Math.min(c.medicine.available_stock, MAX_REQUEST_QUANTITY)}
-                  onChange={(v) => setCart(cart.map((x, i) => (i === idx ? { ...x, quantity: v } : x)))} />
+                {automaticRequestQuantity(c.medicine) !== null ? <strong className="mr-preset-inline">{quantityText(c.quantity, c.medicine.unit)}</strong> : <QtyStepper value={c.quantity} max={Math.min(c.medicine.available_stock, MAX_REQUEST_QUANTITY)}
+                  onChange={(v) => setCart(cart.map((x, i) => (i === idx ? { ...x, quantity: v } : x)))} />}
                 <button className="icon-btn" onClick={() => setCart(cart.filter((_, i) => i !== idx))} aria-label={`Remove ${c.medicine.medicine_name}`}>
                   <Svg d={ICONS.trash} size={18} />
                 </button>
@@ -267,7 +270,7 @@ export default function ResidentMedicines() {
             <div className="page-title">
               <h1>{step === 'review' ? 'Review Your Request' : 'Medicine Request Form'}</h1>
             </div>
-            <p className="muted">{step === 'review' ? 'Check your medicines and quantities. Send your request when everything is correct.' : 'Choose your quantities, attach any required prescriptions, then review your request.'}</p>
+            <p className="muted">{step === 'review' ? 'Check your medicines and quantities. Send your request when everything is correct.' : 'Check the quantities, attach any required prescriptions, then review your request.'}</p>
           </div>
         </header>
         <ol className="mr-steps" aria-label="Request progress">
@@ -280,7 +283,7 @@ export default function ResidentMedicines() {
           <section className="mr-section" aria-labelledby="mr-medicines-title">
           <div className="mr-section-heading">
             <div className="mr-heading-line"><h2 id="mr-medicines-title">Your medicines</h2><span className="mr-count">{cart.length} / {MAX_REQUEST_ITEMS} selected</span></div>
-            <p>Up to {MAX_REQUEST_ITEMS} different medicines per request. Up to {MAX_REQUEST_QUANTITY} of each, depending on stock.</p>
+            <p>Up to {MAX_REQUEST_ITEMS} different medicines per request. Tablets and capsules are automatically set to 10. Choose quantities for other forms, up to {MAX_REQUEST_QUANTITY} each and subject to available stock.</p>
           </div>
           <FieldError message={requestErrors.items || requestIssues.items} />
           {currentCart.map((c, idx) => {
@@ -301,14 +304,18 @@ export default function ResidentMedicines() {
                 </div>
                 {step === 'form' ? (
                   <div className="mr-med-controls">
-                  <label className="mr-quantity">Quantity <span className="field-hint">{max > 0 ? `Choose 1–${max} ${unitPlural(c.medicine.unit)}` : 'No stock available. Remove this medicine.'}</span>
+                  {automaticRequestQuantity(c.medicine) !== null ? <div className="mr-quantity mr-fixed-quantity">
+                    <span>Quantity</span>
+                    <output aria-label={`Quantity of ${c.medicine.medicine_name}`}>{quantityText(c.quantity, c.medicine.unit)}</output>
+                    <span className="field-hint">Automatically set for tablets and capsules.</span>
+                  </div> : <label className="mr-quantity">Quantity <span className="field-hint">{max > 0 ? `Choose 1–${max} ${unitPlural(c.medicine.unit)}` : 'No stock available. Remove this medicine.'}</span>
                     <select className="select-pill" value={c.quantity} disabled={max < 1} aria-invalid={quantityError ? true : undefined} aria-describedby={quantityError ? `mr-quantity-${idx}` : undefined} onChange={(e) => setCart(cart.map((x, i) => (i === idx ? { ...x, quantity: Number(e.target.value) } : x)))}>
                       {(!Number.isInteger(c.quantity) || c.quantity < 1 || c.quantity > max) && <option value={Number.isNaN(c.quantity) ? '' : c.quantity}>Choose quantity</option>}
                       {Array.from({ length: Math.max(0, max) }, (_, i) => i + 1).map((q) => (
                         <option key={q} value={q}>{quantityText(q, c.medicine.unit)}</option>
                       ))}
                     </select>
-                  </label>
+                  </label>}
                   <button type="button" className="mr-remove" onClick={() => setCart(cart.filter((_, i) => i !== idx))} aria-label={`Remove ${c.medicine.medicine_name}`}>
                     <Svg d={ICONS.trash} size={16} /> Remove
                   </button>
@@ -533,12 +540,12 @@ export default function ResidentMedicines() {
           {inRequest.status === 'pending' ? (
             <p>
               You already requested <b>{inRequest.medicine.medicine_name}</b> in request No. {inRequest.requestId}, which is still under review.
-              To change the quantity, edit that request instead of making a new one, so the same medicine stays in one request.
+              To update the details or remove an item, open that request instead of making a new one.
             </p>
           ) : (
             <p>
               <b>{inRequest.medicine.medicine_name}</b> is already approved for you in request No. {inRequest.requestId} and is ready for pickup.
-              Please claim it at Botika ng Bayan first. If you need a different quantity, you can cancel that request and send a new one.
+              Please claim it at Botika ng Bayan. If you no longer need this medicine, you can cancel the request before claiming it.
             </p>
           )}
           <div className="modal-actions">

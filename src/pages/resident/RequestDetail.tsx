@@ -9,11 +9,17 @@ import RequestTracker from '../../components/RequestTracker';
 import { ICONS, Svg } from '../../components/RequestCards';
 import { PickupDeadlineBox, RequestSummaryCard, StatusBox } from '../../components/RequestDetailParts';
 import PrescriptionsEditor from '../../components/PrescriptionsEditor';
-import { prescriptionDraftsFromRequest, prescriptionPayload, validatePrescriptionDrafts, type PrescriptionDraft } from '../../medicineRequest';
+import { automaticRequestQuantity, requestItemPayload, prescriptionDraftsFromRequest, prescriptionPayload, validatePrescriptionDrafts, type PrescriptionDraft } from '../../medicineRequest';
 import type { MedicineRequest } from '../../types';
 import { MAX_REQUEST_QUANTITY, quantityWarning } from '../../validation';
 import { unitPlural } from '../../components/RequestCards';
 import { useAuth } from '../../auth';
+
+function requestForEditing(request: MedicineRequest): MedicineRequest {
+  const copy = structuredClone(request);
+  copy.items = copy.items.map((item) => ({ ...item, quantity: automaticRequestQuantity(item.medicine) ?? item.quantity }));
+  return copy;
+}
 
 /** Resident: one request with its tracking timeline (opened from My Requests). */
 export default function RequestDetail() {
@@ -37,7 +43,7 @@ export default function RequestDetail() {
   useEffect(() => {
     if (navState?.edit && r?.status === 'pending' && !autoEdited.current) {
       autoEdited.current = true;
-      setEditing(structuredClone(r));
+      setEditing(requestForEditing(r));
     }
   }, [navState, r]);
   const editWarnings = editing?.items.map((i) => quantityWarning(i.quantity ?? 0, unitPlural(i.medicine.unit))) ?? [];
@@ -102,7 +108,7 @@ export default function RequestDetail() {
     setBusy(true);
     setMsg(null);
     try {
-      const items = editing.items.map((i) => ({ medicine_id: i.medicine_id, quantity: i.quantity }));
+      const items = editing.items.map((i) => requestItemPayload(i.medicine, i.quantity));
       const res = await api.put<MedicineRequest>(`/requests/${editing.request_id}`, { items });
       setData((old) => old && { ...old, items: res.data.items });
       setEditing(null);
@@ -145,7 +151,7 @@ export default function RequestDetail() {
 
         <div className="detail-actions">
           {/* Restock requests have no quantity to update (they can be cancelled). */}
-          {r.status === 'pending' && r.request_type === 'medicine' && can('requests.create') && <button className="btn btn-outline btn-block" disabled={busy} onClick={() => { setMsg(null); setEditing(structuredClone(r)); }}>Update Request</button>}
+          {r.status === 'pending' && r.request_type === 'medicine' && can('requests.create') && <button className="btn btn-outline btn-block" disabled={busy} onClick={() => { setMsg(null); setEditing(requestForEditing(r)); }}>Update Request</button>}
           {(r.status === 'pending' || r.status === 'approved') && can('requests.cancel') && (
             <button className="btn btn-outline-danger btn-block" disabled={busy} onClick={cancel}>
               <Svg d={ICONS.trash} size={18} /> Cancel Request
@@ -171,14 +177,14 @@ export default function RequestDetail() {
 
       {editing && (
         <Modal title={`Update request No. ${editing.request_id}`} onClose={() => setEditing(null)}>
-          <p className="muted small">Change how many you need. Up to {MAX_REQUEST_QUANTITY} per medicine.</p>
+          <p className="muted small">Tablets and capsules are automatically set to 10. For other forms, choose up to {MAX_REQUEST_QUANTITY} per medicine. You can also remove an item.</p>
           {editing.items.map((item, idx) => (
             <div className="cart-row" key={item.medicine_id}>
               <div><strong>{item.medicine.medicine_name}</strong><div className="muted small">{unitPlural(item.medicine.unit)}</div></div>
-              <input type="number" min={1} max={MAX_REQUEST_QUANTITY} value={item.quantity === null || Number.isNaN(item.quantity) ? '' : item.quantity} onChange={(e) => {
+              {automaticRequestQuantity(item.medicine) !== null ? <output className="mr-preset-inline" aria-label={`Quantity of ${item.medicine.medicine_name}`}>{item.quantity} {unitPlural(item.medicine.unit)}</output> : <input type="number" min={1} max={MAX_REQUEST_QUANTITY} value={item.quantity === null || Number.isNaN(item.quantity) ? '' : item.quantity} onChange={(e) => {
                 const items = editing.items.map((x, i) => (i === idx ? { ...x, quantity: e.target.value === '' ? NaN : Number(e.target.value) } : x));
                 setEditing({ ...editing, items });
-              }} aria-label={`Quantity of ${item.medicine.medicine_name}`} />
+              }} aria-label={`Quantity of ${item.medicine.medicine_name}`} />}
               <button className="btn-ghost" disabled={editing.items.length === 1}
                 onClick={() => setEditing({ ...editing, items: editing.items.filter((_, i) => i !== idx) })} aria-label="Remove">✕</button>
               {editWarnings[idx] && <p className="field-warning walkin-warning">{editWarnings[idx]}</p>}

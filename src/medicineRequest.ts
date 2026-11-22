@@ -10,6 +10,24 @@ export const MAX_PRESCRIPTION_TOTAL_BYTES = 8 * 1024 * 1024;
 export interface PrescriptionDraft { key: string; file: PrescriptionFile | null; medicine_ids: number[]; existing?: PrescriptionInfo }
 export type RequestCartItem = { medicine: Medicine; quantity: number };
 
+/** The resident form presets tablets/capsules, including catalog entries measured in pieces. */
+export function automaticRequestQuantity(medicine: { unit: string; dosage_form?: string | null; medicine_name?: string }): number | null {
+  const form = medicine.dosage_form || medicine.medicine_name || '';
+  return /\b(?:tablets?|capsules?)\b/i.test(`${form} ${medicine.unit}`) ? 10 : null;
+}
+
+export function requestItemPayload(medicine: { medicine_id: number; unit: string; dosage_form?: string | null; medicine_name?: string }, quantity: number | null) {
+  return { medicine_id: medicine.medicine_id, quantity: automaticRequestQuantity(medicine) ?? quantity };
+}
+
+export function residentQuantityWarning(medicine: { unit: string; dosage_form?: string | null; medicine_name?: string; available_stock?: number }, quantity: number): string | null {
+  const automatic = automaticRequestQuantity(medicine);
+  if (automatic !== null && medicine.available_stock !== undefined && medicine.available_stock < automatic) {
+    return `The automatic quantity is ${automatic}, but only ${medicine.available_stock} are available. Remove this medicine and check again after restocking.`;
+  }
+  return quantityWarning(quantity, medicine.unit, { available: medicine.available_stock });
+}
+
 export function validateMedicineRequest(items: RequestCartItem[], note: string, prescription: PrescriptionFile | PrescriptionDraft[] | null,
   openMedicineIds: ReadonlySet<number> = new Set()): Record<string, string> {
   const errors: Record<string, string> = {};
@@ -24,7 +42,7 @@ export function validateMedicineRequest(items: RequestCartItem[], note: string, 
     else if (!Number.isFinite(m.available_stock) || m.available_stock < 1 || m.status === 'out_of_stock' || m.status === 'unrecorded') {
       errors[key] = 'This medicine is no longer available. Remove it or ask for a restock.';
     } else {
-      const warning = quantityWarning(quantity, m.unit, { available: m.available_stock });
+      const warning = residentQuantityWarning(m, quantity);
       if (warning) errors[key] = warning;
     }
     seen.add(m.medicine_id);
