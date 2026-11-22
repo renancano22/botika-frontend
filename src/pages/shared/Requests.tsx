@@ -9,7 +9,7 @@ import { Pagination, rowNo, useDebounced, usePagedApi } from '../../components/P
 import { Badge, Card, Empty, Loading, Message, Modal } from '../../components/ui';
 import RequestTracker from '../../components/RequestTracker';
 import { PrescriptionViewer, requiresPrescription, RxBadge, RX_ICON } from '../../components/Prescription';
-import MedicineReview, { reviewProblem, type ItemReviews } from '../../components/MedicineReview';
+import MedicineReview, { reviewActionLabel, reviewProblem, type ItemReviews } from '../../components/MedicineReview';
 import { ItemDecision } from '../../components/RequestCards';
 import { prescriptionStatus } from '../../components/RequestDetailParts';
 import { storedPrescriptions } from '../../medicineRequest';
@@ -149,12 +149,20 @@ export default function Requests() {
     if (actingId || reviewProblem(r, itemReviews, checkedRxIds)) return;
     const approved = r.items.filter((i) => itemReviews[i.request_item_id]?.decision === 'approved');
     const rejected = r.items.filter((i) => itemReviews[i.request_item_id]?.decision === 'rejected');
+    const allRejected = approved.length === 0;
+    const partial = approved.length > 0 && rejected.length > 0;
     if (!(await confirmSave({
-      title: `Save review for Request No. ${r.request_id}?`,
+      title: allRejected ? `Reject Request No. ${r.request_id}?`
+        : partial ? `Approve selected medicines for Request No. ${r.request_id}?`
+        : `Approve Request No. ${r.request_id}?`,
       message: <><p><strong>Approved:</strong> {approved.map((i) => `${i.medicine.medicine_name} ×${i.quantity}`).join(', ') || 'None'}</p>
         <p><strong>Rejected:</strong> {rejected.map((i) => `${i.medicine.medicine_name}: ${itemReviews[i.request_item_id].reason.trim()}`).join('; ') || 'None'}</p></>,
-      details: 'The resident will be notified of both decisions. Only approved medicines will be set aside for pickup.',
-      confirmLabel: 'Confirm and Save Review',
+      details: allRejected
+        ? 'The resident will be notified of the rejection reasons. No medicines will be reserved for pickup.'
+        : partial ? 'The resident will be notified of the approved medicines and rejection reasons. Only approved medicines will be set aside for pickup.'
+        : 'The approved medicines will be set aside for pickup, and the resident will be notified of the claim deadline.',
+      confirmLabel: allRejected ? 'Confirm and Reject' : 'Confirm and Approve',
+      tone: allRejected ? 'danger' : 'primary',
     }))) return;
     setActingId(r.request_id);
     try {
@@ -163,7 +171,7 @@ export default function Requests() {
         prescription_verified: checkedRxIds.length > 0,
         verified_prescription_ids: checkedRxIds,
       });
-      toast.success('Medicine review saved', { description: `${approved.length} approved · ${rejected.length} rejected. The resident was notified.` });
+      toast.success(allRejected ? 'Request rejected' : partial ? 'Request partially approved' : 'Request approved', { description: `${approved.length} approved · ${rejected.length} rejected. The resident was notified.` });
       setViewingId(null); reload(true);
     } catch (err) { toast.fromError(err, { title: 'The review was not saved' }); }
     finally { setActingId(null); }
@@ -172,9 +180,9 @@ export default function Requests() {
   /** Medicine decisions are made separately; restock requests keep their existing workflow. */
   const reviewButtons = (r: MedicineRequest, inDetails = false) => canReview(r) && <>
     {r.request_type === 'medicine' && inDetails
-      ? <button className="btn btn-sm" disabled={actingId !== null || !!reviewProblem(r, itemReviews, checkedRxIds)} onClick={() => saveReview(r)}>{actingId ? 'Saving…' : 'Save review'}</button>
+      ? <button className={`btn btn-sm${r.items.every((item) => itemReviews[item.request_item_id]?.decision === 'rejected') ? ' btn-danger' : ''}`} disabled={actingId !== null || !!reviewProblem(r, itemReviews, checkedRxIds)} onClick={() => saveReview(r)}>{actingId ? 'Processing…' : reviewActionLabel(r, itemReviews)}</button>
       : r.request_type === 'medicine' && (requiresPrescription(r) || r.items.length > 1)
-      ? <button className="btn btn-sm" onClick={() => openDetails(r)}>Review medicines</button>
+      ? <button className="btn btn-sm" onClick={() => openDetails(r)}>Review &amp; approve</button>
       : <button className="btn btn-sm" disabled={actingId !== null || (requiresPrescription(r) && (!storedPrescriptions(r).length || !storedPrescriptions(r).every((file) => checkedRxIds.includes(file.prescription_id))))} onClick={() => approve(r)}>
         {actingId === r.request_id ? 'Approving…' : 'Approve'}
       </button>}

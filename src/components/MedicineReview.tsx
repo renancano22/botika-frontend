@@ -3,6 +3,13 @@ import { storedPrescriptions } from '../medicineRequest';
 
 export type ItemReviews = Record<number, { decision: '' | 'approved' | 'rejected'; reason: string }>;
 
+export function reviewActionLabel(request: MedicineRequest, reviews: ItemReviews): string {
+  const decisions = request.items.map((item) => reviews[item.request_item_id]?.decision);
+  if (decisions.every((decision) => decision === 'rejected')) return 'Reject medicines';
+  if (decisions.includes('approved') && decisions.includes('rejected')) return 'Approve selected';
+  return request.items.length === 1 ? 'Approve' : 'Approve medicines';
+}
+
 export function reviewProblem(r: MedicineRequest, reviews: ItemReviews, checked: number[]): string {
   const files = storedPrescriptions(r).filter((f) => checked.includes(f.prescription_id));
   for (const item of r.items) {
