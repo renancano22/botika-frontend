@@ -83,6 +83,67 @@ function toCsv(rows: ReportData['rows']): string {
 }
 const NO_ROWS: ReportData['rows'] = [];
 
+interface ReportColumn { title: string; fields: string[]; width: number }
+/** Related fields share a column so reports remain readable on paper as well as on screen. */
+const REPORT_COLUMNS: Record<string, ReportColumn[]> = {
+  inventory: [
+    { title: 'Medicine', fields: ['generic_name', 'medicine_id', 'strength', 'dosage_form', 'category'], width: 29 },
+    { title: 'Stock', fields: ['available_stock', 'unit', 'reorder_level'], width: 16 },
+    { title: 'Stock status', fields: ['status', 'near_expiry_qty', 'expired_qty'], width: 19 },
+    { title: 'Batches & expiry', fields: ['nearest_expiry', 'batches'], width: 32 },
+  ],
+  usage: [
+    { title: 'Medicine', fields: ['medicine_name', 'category', 'unit'], width: 46 },
+    { title: 'Quantity dispensed', fields: ['total_dispensed'], width: 25 },
+    { title: 'Transactions', fields: ['transactions'], width: 25 },
+  ],
+  dispensing: [
+    { title: 'Release details', fields: ['dispensed_at', 'dispensing_id', 'request_no', 'source'], width: 23 },
+    { title: 'Resident', fields: ['resident', 'resident_id'], width: 23 },
+    { title: 'Medicines given', fields: ['medicines'], width: 32 },
+    { title: 'Dispensed by', fields: ['dispensed_by'], width: 18 },
+  ],
+  most_requested: [
+    { title: 'Medicine', fields: ['medicine_name', 'category', 'unit'], width: 40 },
+    { title: 'Times requested', fields: ['times_requested'], width: 18 },
+    { title: 'Quantity requested', fields: ['total_quantity'], width: 18 },
+    { title: 'Restock requests', fields: ['restock_requests'], width: 20 },
+  ],
+  transactions: [
+    { title: 'Transaction', fields: ['date', 'type'], width: 20 },
+    { title: 'Medicine', fields: ['medicine'], width: 22 },
+    { title: 'Quantity & batch', fields: ['quantity', 'batch_no', 'batch_expiry'], width: 20 },
+    { title: 'Reason', fields: ['reason'], width: 20 },
+    { title: 'Performed by', fields: ['performed_by'], width: 14 },
+  ],
+  shortages: [
+    { title: 'Medicine', fields: ['medicine_name', 'medicine_id', 'category', 'unit'], width: 40 },
+    { title: 'Stock', fields: ['available_stock', 'reorder_level'], width: 20 },
+    { title: 'Stock status', fields: ['status'], width: 16 },
+    { title: 'Restock requests', fields: ['restock_requests'], width: 20 },
+  ],
+};
+const FIELD_LABELS: Record<string, string> = {
+  available_stock: 'Available', reorder_level: 'Reorder level', near_expiry_qty: 'Near expiry', expired_qty: 'Expired',
+  nearest_expiry: 'Nearest expiry', dispensing_id: 'Record no.', batch_no: 'Batch no.', batch_expiry: 'Batch expiry',
+};
+function reportColumns(type: string, keys: string[]): ReportColumn[] {
+  const layout = (REPORT_COLUMNS[type] ?? []).map((c) => ({ ...c, fields: c.fields.filter((f) => keys.includes(f)) })).filter((c) => c.fields.length);
+  const remaining = keys.filter((k) => !layout.some((c) => c.fields.includes(k)));
+  // Keep new server fields visible even if the report schema grows.
+  if (remaining.length) layout.push({ title: 'Other details', fields: remaining, width: 20 });
+  return layout;
+}
+function ReportCell({ row, column }: { row: ReportData['rows'][number]; column: ReportColumn }) {
+  const fields = column.fields.filter((field) => field !== 'dosage_form' || !column.fields.includes('strength'));
+  return <div className="rp-cell-details">{fields.map((field, index) => (
+    <div key={field} className={index === 0 ? 'rp-cell-primary' : 'rp-cell-secondary'}>
+      {(FIELD_LABELS[field] || (column.title === 'Other details')) && <span className="rp-field-label">{FIELD_LABELS[field] ?? heading(field)}: </span>}
+      {field === 'batches' && row[field] ? <ul className="rp-batches">{String(row[field]).split('; ').map((batch, i) => <li key={i}>{batch}</li>)}</ul> : field === 'strength' && column.fields.includes('dosage_form') ? `${cellText(row[field])} · ${cellText(row.dosage_form)}` : field === 'status' ? heading(String(row[field] ?? '—')) : cellText(row[field])}
+    </div>
+  ))}</div>;
+}
+
 const PRESETS: { label: string; range: () => [string, string] }[] = [
   { label: 'Last 7 days', range: () => [shiftDays(-6), ymd(new Date())] },
   { label: 'Last 30 days', range: () => [shiftDays(-30), ymd(new Date())] },
@@ -147,7 +208,7 @@ export default function Reports() {
   };
 
   const cols = report?.rows.length ? Object.keys(report.rows[0]) : [];
-  const numericCols = new Set(cols.filter((c) => report?.rows.every((r) => r[c] === null || typeof r[c] === 'number')));
+  const displayCols = reportColumns(report?.type ?? '', cols);
   const generated = report ? niceDateTime(report.generated_at) : null;
 
   return (
@@ -240,13 +301,14 @@ export default function Reports() {
           </div>
           {!report.rows.length ? <Empty>No data for this period. Try a longer period.</Empty> : (
             <div className="rp-table-wrap">
-              <ResponsiveTable className="rp-table">
-                <thead><tr><th className="col-no">No.</th>{cols.map((c) => <th key={c} className={numericCols.has(c) ? 'right' : ''}>{heading(c)}</th>)}</tr></thead>
+              <ResponsiveTable className="rp-table rp-data-table">
+                <colgroup><col style={{ width: '4%' }} />{displayCols.map((c) => <col key={c.title} style={{ width: `${c.width}%` }} />)}</colgroup>
+                <thead><tr><th className="col-no">No.</th>{displayCols.map((c) => <th key={c.title}>{c.title}</th>)}</tr></thead>
                 <tbody>
                   {report.rows.map((r, i) => (
                     <tr key={i} className={resultPages.onPage(i) ? '' : 'pg-off'}>
                       <td className="col-no">{i + 1}</td>
-                      {cols.map((c) => <td key={c} className={numericCols.has(c) ? 'right num' : ''}>{cellText(r[c])}</td>)}
+                      {displayCols.map((c) => <td key={c.title}><ReportCell row={r} column={c} /></td>)}
                     </tr>
                   ))}
                 </tbody>

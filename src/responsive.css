@@ -1,4 +1,40 @@
 /* All roles: tables respond to their available space, including an open desktop sidebar. */
+.rp-cell-details { display: grid; gap: 5px; line-height: 1.5; }
+.rp-cell-primary { font-weight: 600; }
+.rp-cell-secondary { font-size: 0.84rem; color: #465a52; }
+.rp-field-label { font-weight: 600; }
+.rp-batches { list-style: none; padding: 0; margin: 0; }
+.rp-batches li + li { margin-top: 5px; }
+.rp-table-wrap > .adaptive-table > .rp-data-table th,
+.rp-table-wrap > .adaptive-table > .rp-data-table td { vertical-align: top; overflow-wrap: break-word; word-break: normal; padding: 14px 12px; }
+.rp-table-wrap > .adaptive-table > .rp-data-table .adaptive-cell-value { overflow-wrap: break-word; }
+.rp-table-wrap > .adaptive-table > .rp-data-table th.col-no { width: auto; }
+@page report { size: A4 landscape; margin: 12mm; }
+@media print {
+  body:has(.rp-result) :is(.toaster, .conn-banner, .modal-backdrop) { display: none !important; }
+  body:has(.rp-result) { background: white; }
+  body:has(.rp-result) .app,
+  body:has(.rp-result) .content { display: block; width: 100%; max-width: none; margin: 0; padding: 0; }
+  .rp-page { display: block; margin: 0; padding: 0; }
+  .rp-result { display: block; page: report; overflow: visible; border-radius: 0; color: #172820; }
+  .rp-result > .print-only h2 { font-size: 12pt; margin: 0 0 5mm; }
+  .rp-result-head { display: block; margin-bottom: 5mm; break-inside: avoid; }
+  .rp-result-head h2 { font-size: 16pt; margin: 0 0 3mm; }
+  .rp-meta { gap: 3mm; margin: 0; }
+  .rp-meta > span { font-size: 9pt; border: 0; border-left: 2px solid #bdcec4; border-radius: 0; padding: 1mm 3mm; background: white; }
+  .rp-meta small { font-size: 7.5pt; }
+  .rp-result .pager { display: none !important; }
+  .rp-table-wrap { overflow: visible; border: 0; }
+  .rp-table-wrap > .adaptive-table { container-type: normal; overflow: visible; }
+  .rp-table-wrap > .adaptive-table > .rp-data-table { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: 10pt; }
+  .rp-table-wrap > .adaptive-table > .rp-data-table th,
+  .rp-table-wrap > .adaptive-table > .rp-data-table td { padding: 2.5mm; line-height: 1.35; border-bottom: 1px solid #c9d4ce; }
+  .rp-table-wrap > .adaptive-table > .rp-data-table th { font-size: 9pt; letter-spacing: 0; text-transform: none; color: #172820; background: #edf3ef; border-top: 1px solid #859d8e; }
+  .rp-data-table thead { display: table-header-group; }
+  .rp-data-table tr { break-inside: avoid; page-break-inside: avoid; }
+  .rp-cell-secondary { font-size: 9pt; color: #394b41; }
+  .rp-cell-details { gap: 0.5mm; line-height: 1.35; }
+}
 .mr-fixed-quantity output { display: block; margin-top: 6px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--primary-50); font-weight: 700; color: var(--primary-dark); }
 .mr-preset-inline { display: inline-block; padding: 8px 12px; border-radius: 8px; background: var(--primary-50); color: var(--primary-dark); font-weight: 700; font-size: 0.85rem; overflow-wrap: anywhere; }
 .dr-table .dr-meds-head { gap: 10px; }
